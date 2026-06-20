@@ -28,6 +28,8 @@
         let y=0;
         let ydir=1;
         const pi = Math.PI;
+        const bounceSound = new Audio("click.wav");
+
         t=0
         function tick() {
             x+=xdir*3;
@@ -45,28 +47,33 @@
                 while (x >= document.body.clientWidth - 85) {
                     x--;
                 }
+                bounceSound.play()
             }
             if (x <= 0) {
                 xdir = 1;
                 while (x <=0) {
                     x++
                 }
+                bounceSound.play()
             }
             if (y >= window.innerHeight-100) {
                 ydir = -1;
                 while (y >= window.innerHeight-100) {
                     y--;
                 }
+                bounceSound.play()
             }
             if (y<=0) {
                 ydir=1;
                 while (y<=0) {
                     y++;
                 }
+                bounceSound.play()
             }
         }
-   
-        
-        tick();
+        alert("click to start")
+        window.addEventListener("click", (e) => {
+            tick();
+        })
     </script>
 </html>
