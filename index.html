@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>parkes.com</title>
+    <title>Home | Parkes-Codes</title>
     <link rel="icon" type="image/x-icon" href="icon.ico" />
   </head>
   <style>
@@ -14,6 +14,8 @@
         font-size: 16px;
         background-color: #000;
         color: #f0f0f0;
+        overflow: hidden;
+        margin-top: -10px;
     }
     .button {
         background: #000000;
@@ -21,7 +23,11 @@
         color: #ffffff;
         width: auto;
         margin: 3px;
-        cursor: pointer
+        cursor: pointer;
+        border-radius: 5px;
+        height: 25px;
+        font-family: "Courier  New", courier, monospace;
+        transition: transform 0.28s cubic-bezier(0.23,1.3,0.32,1)
     }
     .text {
         color: hsl(0, 100%, 100%);
@@ -29,6 +35,17 @@
     #profilepicture {
         transform-origin: center center;
         display: inline-block;
+        transition: transform 0.28s cubic-bezier(0.23,1.3,0.32,1)
+    }
+    #profilepicture:hover {
+        transform: scale(1.13) rotate(-5deg);
+        box-shadow: 0 4px 26px #113388cc, 0 0 0 5px #a0a0ff22;
+        z-index: 2;
+    }
+    .button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 26px #113388cc, 0 0 0 5px #a0a0ff22;
+        z-index: 2;
     }
     #column {
       display: flex;
@@ -54,7 +71,7 @@
     </a> 
     
     <p style="color: #f0f0f0; font-size: 10px; margin-top: 120px;" class="text">
-      Wow this is a cool website huh i made this to learn html and css
+      Wow this is a cool website huh I made this to learn html and css
     </p>
     <div id="column">
       <div class="button-row">
@@ -63,7 +80,7 @@
         <a href="Canvaspractice.html" target="_blank" class="linkbutton"><button class="button text">Open Canvasse</button></a>
       </div>
       <div class="button-row">
-        <a href="Amazing_Graphs_2.html" target="_blank" class="linkbutton"><button class="button text" style="color: #aff">Open Amazing Graphs 2</button></a>
+        <a href="Amazing_Graphs_2.html" target="_blank" class="linkbutton"><button class="button text" id ="ag2text">Open Amazing Graphs 2</button></a>
         <a href="oscilloscope.html" target="_blank" class="linkbutton"><button class="button text">Open Oscilloscope</button></a>
         <a href="spectrogram.html" target="_blank" class="linkbutton"><button class="button text">Open Spectrogram</button></a>
       </div>
@@ -80,7 +97,7 @@
       <div class="button-row">
         <a href="sierp.html" target="_blank" class="linkbutton"><button class="button text">Open Fractals</button></a>
         <a href="ant.html" target="_blank" class="linkbutton"><button class="button text" style = "color: rgb(184, 205, 252)">Open Langton's Ant</button></a>
-        <a href="mousetrails.html" target="_blank" class="linkbutton"><button class="button text" style="color: #ddd">Open Mouse Trails</button></a>
+        <a href="mousetrails.html" target="_blank" class="linkbutton"><button class="button text" style="color: #eef; font-weight: bold;" >Open Mouse Trails</button></a>
       </div>
       <div class="button-row">
         <a href="texteffects.html" target="_blank" class="linkbutton"><button class="button text">Open Text Effects</button></a>
@@ -90,8 +107,13 @@
       <div class="button-row">
         <a href="car.html" target="_blank" class="linkbutton"><button class="button text">Open Car</button></a>
         <a href="particles.html" target="_blank" class="linkbutton"><button class="button text" style="color: #dfd">Open Particles</button></a>
-        <button onclick="movestuff()" class="button text" style="max-width: 90px;" id="funbutton">Fun button</button>
-        <a href="fourier.html" target="_blank" class="linkbutton"><button class="button text">Open Fourier Draw</button></a>
+        <button onclick="movestuff()" class="button text" style="max-width: 120px;" id="funbutton">Fun button</button>
+        <a href="fourier.html" target="_blank" class="linkbutton">
+          <button class="button text">
+            <span class="text" style="color: #dfd;">Open</span> <span class="text" style="color: #cff;">Fourier</span> <span class="text" style="color: #bcf;">Draw</span>
+      
+          </button>
+        </a>
       </div>
       <div class="button-row">
         <a href="screensaver.html" target="_blank" class="linkbutton"><button class="button text">Open Screensaver</button></a>
@@ -111,7 +133,8 @@
         const bounceSound = new Audio("click.wav");
         const pfp = document.getElementById("profilepicture");
         const funbutton = document.getElementById("funbutton");
-        const golbutton = document.getElementById("golbtn")
+        const golbutton = document.getElementById("golbtn");
+        const ag2text = document.getElementById("ag2text")
         let funclicked = false;
 
 
@@ -135,8 +158,11 @@
         
         function tick() {
             t+= 0.1; 
-            funbutton.style.borderColor = `hsl(${(t*10)%360},50%,80%)`
-            golbutton.style.color =   `hsl(0,0%,${(Math.sin(t))*25+75}%)`
+            funbutton.style.borderColor = `hsl(${(t*50)%360},50%,80%)`
+            golbutton.style.color =   `hsl(0,0%,${(Math.sin(t))*10+85}%)`
+            ag2text.style.color = `hsl(200,50%,${(Math.sin(t))*8+85}%)`
+
+
 
             requestAnimationFrame(tick);
         }
