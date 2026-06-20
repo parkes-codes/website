@@ -73,7 +73,13 @@ let mouseX = 0;
 let mouseY = 0;
 let screensaver = false;
 
-function animate() {
+let lastTime = performance.now();
+
+function animate(now) {
+    if (typeof now !== "number") now = performance.now();
+    const delta = Math.max(1, now - lastTime);
+    lastTime = now;
+
     ctx.clearRect(0,0,canvas.width,canvas.height)
     if (mousedown && !screensaver) {
         particles.push({x: mouseX, y: mouseY, color: Math.random()*360, xv: (Math.random()-0.5)*(powerinput.value*1.25), yv: (Math.random()-1)*(powerinput.value), trail: []});
@@ -105,10 +111,12 @@ function animate() {
         }
    
         if (!(mousedown && screensaver)) {
-        particles[i].x += particles[i].xv;
-        particles[i].y += particles[i].yv;
-        particles[i].yv += 0.1;
-        particles[i].xv *= 0.985;
+
+        const fpsNorm = delta / 16.67;
+        particles[i].x += particles[i].xv / fpsNorm;
+        particles[i].y += particles[i].yv / fpsNorm;
+        particles[i].yv += 0.1 / fpsNorm;
+        particles[i].xv *= Math.pow(0.985, 1 / fpsNorm);
         particles[i].trail.unshift({x: particles[i].x, y: particles[i].y});
         if (particles[i].trail.length > 10) {
             particles[i].trail.splice(10, 1);
