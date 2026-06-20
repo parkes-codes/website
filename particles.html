@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Particles</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico" />
+</head>
+<style>
+
+    body {
+        background-color: #000;
+    }
+      #gamecanvas {
+        border: #fff 5px solid;
+        border-radius: 10px;
+        width: calc(100vw - 11px);
+        height: calc(100vh - 11px);
+        margin-left: -8px;
+        margin-top: -8px;
+        position: relative;
+        z-index: 1;
+        display: block;
+        background: none;
+    }
+    #powerinput {
+        position: absolute;
+        z-index: 1;
+        left: 69px;
+        bottom: 7px;
+        width: 30px;
+        height: 12px;
+        font-size: 10px
+    }
+    #powertext {
+        position: absolute;
+        z-index: 2;
+        left: 28px;
+        bottom: -1px;
+        width: 30px;
+        height: 12px;
+        font-size: 14px;
+        color: #fff;
+    }
+    #screensavertog {
+        position: absolute;
+        z-index: 3;
+        left: 4px;
+        bottom: 5px;
+        width: 16px;
+        height: 16px;
+        font-size: 14px;
+        color: #fff;
+    }
+</style>
+<body>
+
+ <canvas id="gamecanvas"></canvas>
+ <input id="powerinput" type="number" value="5" class="thingy">
+<input id="screensavertog" type="checkbox" value="off">
+ <p id="powertext" class="thingy">power:</p>
+
+</body>
+<script>
+const canvas = document.getElementById("gamecanvas")
+const ctx = canvas.getContext('2d')
+const showhide = document.getElementsByClassName("thingy");
+const playa = document.getElementById("screensavertog");
+
+let mousedown = false;
+let particles = [];
+let mouseX = 0;
+let mouseY = 0;
+let screensaver = false;
+
+function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    if (mousedown && !screensaver) {
+        particles.push({x: mouseX, y: mouseY, color: Math.random()*360, xv: (Math.random()-0.5)*(powerinput.value*1.25), yv: (Math.random()-1)*(powerinput.value), trail: []});
+    }
+
+    if (screensaver && !mousedown) {
+        particles.push({x: Math.random()*canvas.width+10, y: -100, color: Math.random()*360, xv: (Math.random()-0.5)*6, yv: (Math.random()-1)*(9), trail: []});
+    }
+
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+
+        ctx.beginPath();
+        ctx.strokeStyle = `hsl(${particles[i].color}, 30%, 80%)`;
+        ctx.lineWidth = 3;
+        ctx.arc(particles[i].x, particles[i].y, 1, 0, Math.PI * 2);
+        ctx.stroke();
+
+
+        if (particles[i].trail.length > 1) {
+            for (let t = 1; t < particles[i].trail.length; t++) {
+                ctx.beginPath();
+                ctx.moveTo(particles[i].trail[t - 1].x, particles[i].trail[t - 1].y);
+                ctx.lineTo(particles[i].trail[t].x, particles[i].trail[t].y);
+                ctx.lineWidth = 3*Math.max(2 - t * 0.15, 0.5);
+                ctx.strokeStyle = `hsla(${particles[i].color}, 30%, 80%, ${100-t*10}%)`;
+                ctx.stroke();
+            }
+        }
+   
+        if (!(mousedown && screensaver)) {
+        particles[i].x += particles[i].xv;
+        particles[i].y += particles[i].yv;
+        particles[i].yv += 0.1;
+        particles[i].xv *= 0.985;
+        particles[i].trail.unshift({x: particles[i].x, y: particles[i].y});
+        if (particles[i].trail.length > 10) {
+            particles[i].trail.splice(10, 1);
+        }
+   
+        if (particles[i].trail[particles[i].trail.length-1].y > canvas.height) {
+            // last y value in trail
+            particles.splice(i,1);
+        }
+    }
+    }
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+function resizeCanvas() {
+  canvas.width = (window.innerWidth) - 25;
+  canvas.height = (window.innerHeight) - 25;
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+canvas.addEventListener("mousedown", function(e)  {
+    mousedown = true;
+})
+
+canvas.addEventListener("mouseup", function(e) {
+    mousedown = false;
+})
+
+window.addEventListener("mousemove", function(e) {
+    mouseX = e.clientX/1.02;
+    mouseY = e.clientY/1.02;
+})
+
+
+playa.addEventListener("click", function(e) {
+    screensaver = !screensaver;
+    if (screensaver) {
+        for (let i = 0; i < showhide.length; i++) {
+            showhide[i].style.display = "none";
+        }
+    } else {
+        for (let i = 0; i < showhide.length; i++) {
+            showhide[i].style.display = "block";
+        }
+    }
+});
+
+
+
+</script>
+</html>

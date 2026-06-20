@@ -1,0 +1,1083 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Conways Game Of Life</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico" />
+</head>
+<style>
+    body {
+        background-color: #000;
+        overflow: hidden;
+        font-family: 'Fira Mono', 'Consolas', 'Menlo', 'Monaco', monospace;
+        color: #fff;
+    }
+    #gamecanvas {
+        border: #fff 5px solid;
+        border-radius: 10px;
+        width: calc(100vw - 11px);
+        height: calc(100vh - 11px);
+        margin-left: -8px;
+        margin-top: -8px;
+        position: relative;
+        z-index: 1;
+        display: block;
+        background: none;
+    }
+    #display {
+        position: fixed;
+        left: 10px;
+        bottom: 0px;
+        text-align: left;
+        z-index: 1;
+        font-size: 10px;
+    }
+    .buttons {
+        width: 50px;
+        height: 20px;
+        border-radius: 5px;
+        z-index: 2;
+        font-size: 12px;
+        background: #fff;
+        border-color: #0ff;
+        border-width: 2px;
+        margin-left: 3px;
+        margin-right: 3px;
+        z-index: 2;
+    }
+    .buttons:hover {
+        background: #ccc;
+    }
+    #confirm{
+        position: fixed;
+        right: 4px;
+        top: 6px;
+        width: 50px;
+        height: 20px;
+        font-size: 15px;
+        opacity: 0%;
+        cursor: default;
+        z-index:  2;
+    }
+    #loaded{
+        position: fixed;
+        right: 10px;
+        top: 25px; 
+        width: 120px;  
+        height: 25px;
+        font-size: 13px;
+        color: #fff;
+        opacity: 100%;
+        cursor: default;
+        z-index:  4;
+        text-align: right;
+    }
+    #btnrow {
+        display: flex;
+        flex-direction: row-reverse;
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+    }
+    #lex {
+        width: 60px
+    }
+
+    #lexicon {
+        display: none; /* Hidden by default; shown when Lexicon is triggered */
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.6);
+        z-index: 2000;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 40px 0;
+    }
+    #lexicon-inner {
+        background: #fff;
+        margin: 40px auto 40px auto;
+        border-radius: 10px;
+        max-width: 600px;
+        min-height: 150px;
+        box-shadow: 0 0 16px rgba(0,0,0,0.23);
+        padding: 32px;
+        color: #000;
+    }
+    #close-lexicon {
+        position: fixed;
+        right: 20px;
+        top: calc(3vh * 1%);
+        font-size: 28px;
+        color: #fff;
+        background: none;
+        border: none;
+        cursor: pointer;
+        z-index: 2010;
+        opacity: 0.7;
+    }
+    #close-lexicon:hover { opacity: 1; }
+</style>
+<body>
+
+ <canvas id="gamecanvas"></canvas>
+ <p id="display">cam: (0,0) hover: (0,0)</p>
+ <div id="confirm">Saved</div>
+ <div id="loaded">Loaded</div>
+ <div id="btnrow">
+   <button id="import" class="buttons" onclick="importlist()">Import</button>
+   <button id="export" class="buttons" onclick="exportlist()">Export</button>
+   <button id="lex" class="buttons">Lexicon</button>
+</div>
+
+<div id="lexicon">
+  <button id="close-lexicon" aria-label="Close overlay">&times;</button>
+  <div id="lexicon-inner">
+    <h2>Lexicon</h2>
+    <p> List of a ton of starting sequences </p>
+    <p>1: Glider 
+        <a href="#" onclick="loadLexi('gliderNE')">NE</a> 
+        <a href="#" onclick="loadLexi('gliderSE')">SE</a> 
+        <a href="#" onclick="loadLexi('gliderSW')">SW</a> 
+        <a href="#" onclick="loadLexi('gliderNW')">NW</a>
+    </p>
+    <p>2: 4 Glider Creator
+        <a href="#" onclick="loadLexi('4gc')">Spawn</a>
+    </p>
+    <p>3: Glider Gun
+        <a href="#" onclick="loadLexi('gliderGun1')">Spawn</a>
+    </p>
+    <p>4: R Pentomino
+        <a href="#" onclick="loadLexi('rpent')">Spawn</a>
+    </p>
+    <p>5: Acorn
+        <a href="#" onclick="loadLexi('acorn')">Spawn</a>
+    </p>
+    <p>6: Horizontal Glider
+        <a href="#" onclick="loadLexi('horGliderL')">Left</a>
+        <a href="#" onclick="loadLexi('horGliderR')">Right</a>
+    </p>
+    <p>7: 15-Cycle
+        <a href="#" onclick="loadLexi('15cycle')">Spawn</a>
+    </p>
+    <p>8: Queen Bee Shuttle
+        <a href="#" onclick="loadLexi('queenbeeshuttle')">Spawn</a>
+    </p>
+    <p>9: Glider Train
+        <a href="#" onclick="loadLexi('glidertrain')">Spawn</a>
+    </p>
+    <p>10: Spaceship1
+        <a href="#" onclick="loadLexi('spaceship1N')">N</a>
+        <a href="#" onclick="loadLexi('spaceship1R')">E</a>
+        <a href="#" onclick="loadLexi('spaceship1S')">S</a>
+        <a href="#" onclick="loadLexi('spaceship1L')">W</a>
+    </p>
+    <p>11: Spaceship2
+        <a href="#" onclick="loadLexi('diagship')">Spawn</a>
+    </p>
+    <p>12: 2-engine cordership
+        <a href="#" onclick="loadLexi('2engcordership')">Spawn</a>
+    </p>
+    <p>13: Spaceship3
+        <a href="#" onclick="loadLexi('spaceship3N')">Spawn</a>
+    </p>
+     
+</div>
+</div>
+</body>
+
+<script>
+  
+console.clear();
+
+  document.getElementById('lex').addEventListener('click', function() {
+    document.getElementById('lexicon').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  });
+  // Close Lexicon panel
+  document.getElementById('close-lexicon').addEventListener('click', function() {
+    document.getElementById('lexicon').style.display = 'none';
+    document.body.style.overflow = '';
+  });
+
+const canvas = document.getElementById("gamecanvas");
+const ctx = canvas.getContext('2d', { alpha: false });
+const display = document.getElementById("display");
+const importbtn = document.getElementById("import");
+const confirmMsg = document.getElementById("confirm");
+const loadedMsg = document.getElementById("loaded");
+const exportbtn = document.getElementById("export");
+
+
+let startingArray = [];
+let pixels = [];
+
+let camx = 0;
+let camy = 0;
+let zoom = 10;
+let keysPressed = [];
+let paused = true;
+let mouseX = 0;
+let mouseY = 0;
+let mousedown = 0;
+let clickedFirst = 0;
+let hoverX = 0;
+let hoverY = 0;
+let tickn = 0;
+let livePx = 0;
+let cmdPressed = false;
+let shiftpressed = false;
+// Use only two corners for hilite rectangle
+let hiliteCorner1 = {x: -1, y: 1};
+let hiliteCorner2 = {x: 1, y: -1};
+let t2 = 0;
+
+// Array to hold selected/highlighted live pixels after shift released
+let selectedLivePixels = [];
+
+// Clipboard for copy/paste of selections
+let copiedPixels = [];
+
+// -- Clipboard paste preview state --
+let pastePreviewActive = false;
+let pastePreviewOffset = {x:0, y:0}; // Offset from top-left of copied pattern to current hover
+
+// Dragging logic for selection
+let draggingSelection = false;
+let dragStart = null; // {x, y}
+let dragOffset = {x:0, y:0};
+// Store original selection positions at drag begin so we can set the new positions
+let selectionOriginal = [];
+
+// NEW: track which mouse button is pressed
+let mouseButtonDown = null;
+// Define right mouse constant for readability
+const RIGHT_MOUSE_BUTTON = 2;
+
+function resetState() {
+    pixels = startingArray.map(p => ({x: p.x, y: p.y}));
+    tickn = 0;
+    paused = true;
+    camx = 0;
+    camy = 0;
+    selectedLivePixels = []; // Clear selections on reset
+    draggingSelection = false;
+    dragStart = null;
+    selectionOriginal = [];
+    pastePreviewActive = false;
+}
+
+let confOpac = 0;
+
+function saveCurrent() {
+    startingArray = pixels.map(p => ({x: p.x, y: p.y}));
+    confOpac = 100;
+    animateConf();
+}
+
+function animateConf() {
+    confirmMsg.style.opacity = `${confOpac}%`
+    if (confOpac > 0) {
+        confOpac--;
+        requestAnimationFrame(animateConf)
+    } 
+}
+
+
+let loadedOpac = 100;
+function animateLoad() {
+    loadedMsg.style.opacity = `${loadedOpac}%`
+    if (loadedOpac > 0) {
+        loadedOpac--;
+        requestAnimationFrame(animateLoad)
+    } 
+}
+
+function loadLexi(id) {
+    let patterns = {
+        "blank": [
+            
+        ],
+        "gliderNE": [
+            { x: 1, y: 0 },
+            { x: 2, y: 1 },
+            { x: 0, y: 2 },
+            { x: 1, y: 2 },
+            { x: 2, y: 2 }
+        ],
+        "gliderSE": [
+            { x: 0, y: 0 },
+            { x: 1, y: 0 },
+            { x: 2, y: 0 },
+            { x: 2, y: 1 },
+            { x: 1, y: 2 }
+        ],
+        "gliderSW": [
+            { x: 0, y: 0 },
+            { x: 1, y: 0 },
+            { x: 2, y: 0 },
+            { x: 0, y: 1 },
+            { x: 1, y: 2 }
+        ],
+        "gliderNW": [
+            { x: 1, y: 0 },
+            { x: 0, y: 1 },
+            { x: 0, y: 2 },
+            { x: 1, y: 2 },
+            { x: 2, y: 2 }
+        ],
+   
+        "4gc":  [
+            {x:-3,y:-5}, {x:-2,y:-5},
+            {x:-1,y:-5}, {x:0,y:-5},
+            {x:-5,y:-3}, {x:-4,y:-3},
+            {x:-3,y:-3}, {x:-2,y:-3},
+            {x:-1,y:-3}, {x:0,y:-3},
+            {x:1,y:-3},  {x:2,y:-3},
+            {x:-7,y:-1}, {x:-6,y:-1},
+            {x:-5,y:-1}, {x:-4,y:-1},
+            {x:-3,y:-1}, {x:-2,y:-1},
+            {x:-1,y:-1}, {x:0,y:-1},
+            {x:1,y:-1},  {x:2,y:-1},
+            {x:3,y:-1},  {x:4,y:-1},
+            {x:2,y:1},   {x:1,y:1},
+            {x:0,y:1},   {x:-1,y:1},
+            {x:-2,y:1},  {x:-3,y:1},
+            {x:-4,y:1},  {x:-5,y:1},
+            {x:-3,y:3},  {x:-2,y:3},
+            {x:-1,y:3},  {x:0,y:3}],
+        "gliderGun1": [
+            {x:14,y:-5},
+            {x:12,y:-4}, {x:14,y:-4}, {x:2,y:-3}, {x:3,y:-3}, {x:10,y:-3},
+            {x:11,y:-3}, {x:24,y:-3}, {x:25,y:-3}, {x:1,y:-2}, {x:5,y:-2},
+            {x:10,y:-2}, {x:11,y:-2}, {x:24,y:-2}, {x:25,y:-2},
+            {x:-10,y:-1}, {x:-9,y:-1}, {x:0,y:-1}, {x:6,y:-1}, {x:10,y:-1},
+            {x:11,y:-1}, {x:-10,y:0}, {x:-9,y:0}, {x:0,y:0}, {x:4,y:0},
+            {x:6,y:0}, {x:7,y:0}, {x:12,y:0}, {x:14,y:0}, {x:0,y:1},
+            {x:6,y:1}, {x:14,y:1}, {x:1,y:2}, {x:5,y:2}, {x:2,y:3},
+            {x:3,y:3}
+        ],
+   
+        "rpent": 
+        [{x:-1,y:-1},{x:0,y:-1},{x:0,y:0},{x:0,y:-2},{x:1,y:-2}],
+        "acorn":
+        [{x:-3,y:1},{x:-2,y:1},{x:-2,y:3},{x:0,y:2},{x:1,y:1},{x:2,y:1},{x:3,y:1}],
+        "horGliderL":
+        [{x:-1,y:2},{x:-2,y:1},{x:-2,y:0},{x:-2,y:-1},{x:-1,y:-1},{x:0,y:-1},{x:1,y:-1},{x:2,y:0},{x:2,y:2}],
+        "horGliderR":
+        [{x:1,y:2},{x:2,y:1},{x:2,y:0},{x:2,y:-1},{x:1,y:-1},{x:0,y:-1},{x:-1,y:-1},{x:-2,y:0},{x:-2,y:2}],
+        "15cycle":
+        [{x:-5,y:1},{x:-4,y:1},{x:-3,y:2},{x:-3,y:0},{x:-2,y:1},{x:-1,y:1},{x:1,y:1},{x:0,y:1},{x:2,y:2},{x:2,y:0},{x:3,y:1},{x:4,y:1}],
+        "queenbeeshuttle": 
+        [{x:-6,y:1},{x:-6,y:2},{x:-5,y:2},{x:-5,y:1},{x:-1,y:2},{x:0,y:1},{x:0,y:3},{x:1,y:4},{x:1,y:0},{x:2,y:1},
+        {x:2,y:2},{x:2,y:3},{x:3,y:4},{x:3,y:5},{x:3,y:0},{x:3,y:-1},{x:12,y:0},{x:12,y:-1},{x:13,y:0},{x:14,y:-1},{x:14,y:-2},{x:14,y:-3},{x:15,y:-3}],
+        "glidertrain": 
+        [{x:10,y:-20},{x:11,y:-19},{x:5,y:-18},{x:11,y:-18},{x:6,y:-17},{x:7,y:-17},{x:8,y:-17},{x:9,y:-17},{x:10,y:-17},
+        {x:17,y:-17},{x:18,y:-17},{x:19,y:-17},{x:20,y:-17},{x:21,y:-17},{x:16,y:-14},{x:21,y:-14},{x:18,y:-13},{x:19,y:-13},
+        {x:17,y:-11},{x:16,y:-10},{x:15,y:-9},{x:16,y:-9},{x:20,y:-9},{x:21,y:-9},{x:15,y:-8},{x:17,y:-8},{x:16,y:-7},
+        {x:20,y:-7},{x:21,y:-7},{x:20,y:-6},{x:20,y:-4},{x:16,y:-3},{x:15,y:-2},{x:17,y:-2},{x:15,y:-1},{x:16,y:-1},
+        {x:20,y:-1},{x:21,y:-1},{x:16,y:0},{x:17,y:1},{x:18,y:3},{x:19,y:3},{x:-17,y:4},{x:-16,y:4},{x:16,y:4},{x:6,y:7},
+        {x:7,y:7},{x:8,y:7},{x:9,y:7},{x:10,y:7},{x:17,y:7},{x:18,y:7},{x:19,y:7},{x:20,y:7},{x:21,y:7},{x:5,y:8},{x:11,y:8},
+        {x:11,y:9},{x:10,y:10},{x:11,y:-17},{x:11,y:7},{x:22,y:-15},{x:22,y:-16},{x:22,y:-17},{x:16,y:-16},{x:21,y:4},{x:22,y:5},
+        {x:22,y:7},{x:22,y:6},{x:16,y:6},{x:21,y:-8},{x:22,y:-8},{x:20,y:-3},{x:21,y:-3},{x:21,y:-2},{x:22,y:-2},{x:-16,y:7},
+        {x:-15,y:6},{x:-15,y:5},{x:-19,y:4},{x:-20,y:5},{x:-18,y:4},{x:-15,y:4},{x:-16,y:-17},{x:-15,y:-16},{x:-15,y:-15},
+        {x:-15,y:-14},{x:-17,y:-14},{x:-16,y:-14},{x:-18,y:-14},{x:-19,y:-14},{x:-20,y:-15}],
+"spaceship1R":
+        [{x:-3,y:-3},{x:-3,y:-2},{x:-2,y:-2},{x:-1,y:-2},{x:0,y:-2},{x:1,y:-2},{x:2,y:-2},{x:3,y:-2},{x:-3,y:0},
+        {x:-3,y:1},{x:-2,y:0},{x:-1,y:0},{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:4,y:1},{x:5,y:1},{x:5,y:2},
+        {x:6,y:2},{x:4,y:-3},{x:5,y:-3},{x:5,y:-4},{x:6,y:-4},{x:7,y:3},{x:7,y:-5},{x:3,y:2},{x:2,y:2},{x:1,y:2},
+        {x:1,y:3},{x:2,y:3},{x:1,y:4},{x:2,y:4},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:6,y:4},{x:5,y:5},{x:4,y:5},{x:1,y:5},
+        {x:2,y:5},{x:2,y:6},{x:2,y:7},{x:2,y:8},{x:1,y:9},{x:-3,y:9},{x:0,y:6},{x:0,y:5},{x:-1,y:6},{x:-3,y:7},{x:-2,y:9},
+        {x:3,y:-4},{x:2,y:-4},{x:1,y:-4},{x:1,y:-5},{x:2,y:-5},{x:2,y:-6},{x:1,y:-6},{x:3,y:-6},{x:4,y:-6},{x:5,y:-6},
+        {x:6,y:-6},{x:5,y:-7},{x:4,y:-7},{x:1,y:-7},{x:2,y:-7},{x:2,y:-8},{x:2,y:-9},{x:2,y:-10},{x:1,y:-11},{x:-2,y:-11},{x:-3,y:-11},{x:-3,y:-9},{x:0,y:-7},{x:0,y:-8},{x:-1,y:-8}],
+"spaceship1L": 
+[{x:7,y:1},{x:7,y:0},{x:6,y:0},{x:5,y:0},{x:4,y:0},{x:3,y:0},{x:2,y:0},{x:1,y:0},{x:7,y:-2},{x:7,y:-3},{x:6,y:-2},{x:5,y:-2},
+{x:4,y:-2},{x:3,y:-2},{x:2,y:-2},{x:1,y:-2},{x:0,y:-3},{x:-1,y:-3},{x:-1,y:-4},{x:-2,y:-4},{x:0,y:1},{x:-1,y:1},{x:-1,y:2},
+{x:-2,y:2},{x:-3,y:-5},{x:-3,y:3},{x:1,y:-4},{x:2,y:-4},{x:3,y:-4},{x:3,y:-5},{x:2,y:-5},{x:3,y:-6},{x:2,y:-6},{x:1,y:-6},
+{x:0,y:-6},{x:-1,y:-6},{x:-2,y:-6},{x:-1,y:-7},{x:0,y:-7},{x:3,y:-7},{x:2,y:-7},{x:2,y:-8},{x:2,y:-9},{x:2,y:-10},{x:3,y:-11},
+{x:7,y:-11},{x:4,y:-8},{x:4,y:-7},{x:5,y:-8},{x:7,y:-9},{x:6,y:-11},{x:1,y:2},{x:2,y:2},{x:3,y:2},{x:3,y:3},{x:2,y:3},{x:2,y:4},
+{x:3,y:4},{x:1,y:4},{x:0,y:4},{x:-1,y:4},{x:-2,y:4},{x:-1,y:5},{x:0,y:5},{x:3,y:5},{x:2,y:5},{x:2,y:6},{x:2,y:7},{x:2,y:8},
+{x:3,y:9},{x:6,y:9},{x:7,y:9},{x:7,y:7},{x:4,y:5},{x:4,y:6},{x:5,y:6}],
+"spaceship1S": 
+[{x:0,y:7},{x:1,y:7},{x:1,y:6},{x:1,y:5},{x:1,y:4},{x:1,y:3},{x:1,y:2},{x:1,y:1},{x:3,y:7},{x:4,y:7},{x:3,y:6},{x:3,y:5},
+{x:3,y:4},{x:3,y:3},{x:3,y:2},{x:3,y:1},{x:4,y:0},{x:4,y:-1},{x:5,y:-1},{x:5,y:-2},{x:0,y:0},{x:0,y:-1},{x:-1,y:-1},{x:-1,y:-2},
+{x:6,y:-3},{x:-2,y:-3},{x:5,y:1},{x:5,y:2},{x:5,y:3},{x:6,y:3},{x:6,y:2},{x:7,y:3},{x:7,y:2},{x:7,y:1},{x:7,y:0},{x:7,y:-1},
+{x:7,y:-2},{x:8,y:-1},{x:8,y:0},{x:8,y:3},{x:8,y:2},{x:9,y:2},{x:10,y:2},{x:11,y:2},{x:12,y:3},{x:12,y:7},{x:9,y:4},{x:8,y:4},
+{x:9,y:5},{x:10,y:7},{x:12,y:6},{x:-1,y:1},{x:-1,y:2},{x:-1,y:3},{x:-2,y:3},{x:-2,y:2},{x:-3,y:2},{x:-3,y:3},{x:-3,y:1},
+{x:-3,y:0},{x:-3,y:-1},{x:-3,y:-2},{x:-4,y:-1},{x:-4,y:0},{x:-4,y:3},{x:-4,y:2},{x:-5,y:2},{x:-6,y:2},{x:-7,y:2},{x:-8,y:3},
+{x:-8,y:6},{x:-8,y:7},{x:-6,y:7},{x:-4,y:4},{x:-5,y:4},{x:-5,y:5}],
+"spaceship1N":
+[{x:2,y:-3},{x:1,y:-3},{x:1,y:-2},{x:1,y:-1},{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:1,y:3},{x:-1,y:-3},{x:-2,y:-3},{x:-1,y:-2},{x:-1,y:-1},
+{x:-1,y:0},{x:-1,y:1},{x:-1,y:2},{x:-1,y:3},{x:-2,y:4},{x:-2,y:5},{x:-3,y:5},{x:-3,y:6},{x:2,y:4},{x:2,y:5},{x:3,y:5},{x:3,y:6},
+{x:-4,y:7},{x:4,y:7},{x:-3,y:3},{x:-3,y:2},{x:-3,y:1},{x:-4,y:1},{x:-4,y:2},{x:-5,y:1},{x:-5,y:2},{x:-5,y:3},{x:-5,y:4},
+{x:-5,y:5},{x:-5,y:6},{x:-6,y:5},{x:-6,y:4},{x:-6,y:1},{x:-6,y:2},{x:-7,y:2},{x:-8,y:2},{x:-9,y:2},{x:-10,y:1},
+{x:-10,y:-3},{x:-7,y:0},{x:-6,y:0},{x:-7,y:-1},{x:-8,y:-3},{x:-10,y:-2},{x:3,y:3},{x:3,y:2},{x:3,y:1},
+{x:4,y:1},{x:4,y:2},{x:5,y:2},{x:5,y:1},{x:5,y:3},{x:5,y:4},{x:5,y:5},{x:5,y:6},{x:6,y:5},
+{x:6,y:4},{x:6,y:1},{x:6,y:2},{x:7,y:2},{x:8,y:2},{x:9,y:2},{x:10,y:1},{x:10,y:-2},
+{x:10,y:-3},{x:8,y:-3},{x:6,y:0},{x:7,y:0},{x:7,y:-1}],
+          "spaceship3N": 
+         [{x:-5,y:0},{x:-5,y:1},{x:-4,y:1},{x:-4,y:0},{x:-4,y:2},{x:-2,y:2},{x:0,y:2},{x:0,y:1},{x:0,y:0},
+          {x:2,y:2},{x:4,y:1},{x:5,y:1},{x:5,y:2},{x:6,y:1},{x:7,y:0},{x:7,y:-1},{x:7,y:-3},{x:7,y:-4},
+         {x:5,y:-1},{x:5,y:-2},{x:4,y:-3},{x:3,y:-2},{x:-3,y:4},{x:-2,y:4},{x:-2,y:5},{x:-1,y:5},{x:-1,y:6},{x:0,y:5},{x:0,y:4},{x:1,y:4}],
+        "diagship":  // 295P5H1V1
+        [{x:-21,y:15},{x:-21,y:16},{x:-20,y:16},{x:-20,y:15},{x:-20,y:17},{x:-19,y:17},{x:-19,y:18},{x:-18,y:18},{x:-18,y:19},
+        {x:-17,y:19},{x:-17,y:20},{x:-16,y:20},{x:-16,y:19},{x:-18,y:15},{x:-18,y:14},{x:-16,y:17},{x:-15,y:17},{x:-14,y:16},
+        {x:-14,y:15},{x:-14,y:14},{x:-13,y:14},{x:-13,y:15},{x:-12,y:15},{x:-11,y:15},{x:-17,y:13},{x:-16,y:13},{x:-15,y:13},
+        {x:-15,y:12},{x:-16,y:12},{x:-16,y:11},{x:-16,y:10},{x:-10,y:14},{x:-10,y:13},{x:-10,y:12},{x:-10,y:11},{x:-10,y:10},
+        {x:-11,y:12},{x:-15,y:9},{x:-14,y:9},{x:-13,y:9},{x:-12,y:9},{x:-11,y:9},{x:-13,y:10},{x:-11,y:17},{x:-10,y:18},
+        {x:-11,y:18},{x:-11,y:19},{x:-11,y:20},{x:-10,y:20},{x:-10,y:19},{x:-9,y:19},{x:-8,y:19},{x:-8,y:20},{x:-8,y:21},
+        {x:-9,y:21},{x:-8,y:17},{x:-9,y:14},{x:-8,y:13},{x:-7,y:14},{x:-7,y:12},{x:-6,y:16},{x:-5,y:17},{x:-4,y:18},{x:-6,y:20},
+        {x:-3,y:16},{x:-2,y:16},{x:-15,y:8},{x:-14,y:7},{x:-13,y:6},{x:-15,y:6},{x:-18,y:10},{x:-19,y:10},{x:-20,y:10},{x:-21,y:10},
+        {x:-19,y:9},{x:-21,y:9},{x:-20,y:9},{x:-20,y:8},{x:-20,y:7},{x:-21,y:7},{x:-22,y:7},{x:-22,y:8},{x:-18,y:7},{x:-21,y:5},
+        {x:-17,y:5},{x:-18,y:4},{x:-19,y:3},{x:-17,y:2},{x:-17,y:1},{x:-8,y:9},{x:-7,y:9},{x:-6,y:9},{x:-6,y:10},{x:-5,y:9},
+        {x:-4,y:9},{x:-3,y:9},{x:-2,y:9},{x:-1,y:8},{x:0,y:8},{x:0,y:9},{x:-4,y:8},{x:-4,y:7},{x:-3,y:7},{x:-2,y:7},{x:-2,y:6},
+        {x:-1,y:6},{x:-1,y:5},{x:0,y:5},{x:0,y:4},{x:1,y:4},{x:-1,y:4},{x:-1,y:3},{x:-2,y:2},{x:-3,y:1},{x:0,y:2},{x:0,y:0},
+        {x:-1,y:-1},{x:-3,y:-1},{x:-4,y:0},{x:-5,y:0},{x:-5,y:-1},{x:-5,y:-2},{x:-6,y:-1},{x:-6,y:0},{x:-7,y:0},{x:-7,y:1},
+        {x:-8,y:1},{x:-8,y:2},{x:-8,y:3},{x:-9,y:3},{x:-10,y:3},{x:-10,y:2},{x:-10,y:1},{x:-9,y:0},{x:-9,y:-1},{x:-10,y:-1},
+        {x:-10,y:4},{x:-10,y:5},{x:-10,y:6},{x:-10,y:7},{x:-11,y:5},{x:2,y:1},{x:3,y:-1},{x:2,y:-2},{x:1,y:-3},{x:0,y:-4},
+        {x:-2,y:-3},{x:-6,y:-4},{x:-5,y:-4},{x:-4,y:-5},{x:-5,y:-6},{x:-6,y:-6},{x:-5,y:-7},{x:-5,y:-8},{x:3,y:5},{x:3,y:4},
+        {x:4,y:3},{x:5,y:4},{x:5,y:5},{x:6,y:4},{x:7,y:4},{x:3,y:-4},{x:5,y:-2},{x:5,y:-1},{x:6,y:-1},{x:6,y:0},{x:6,y:-2},
+        {x:7,y:-2},{x:7,y:-1},{x:0,y:-6},{x:1,y:-6},{x:1,y:-7},{x:1,y:-8},{x:0,y:-8},{x:0,y:-7},{x:-1,y:-7},{x:2,y:-9},
+        {x:2,y:-10},{x:8,y:-3},{x:9,y:-3},{x:-1,y:-10},{x:9,y:0},{x:4,y:-11},{x:5,y:-11},{x:6,y:-11},{x:7,y:-11},{x:8,y:-12},
+        {x:9,y:-12},{x:11,y:-10},{x:11,y:-9},{x:10,y:-8},{x:10,y:-7},{x:10,y:-6},{x:10,y:-5},{x:11,y:-2},{x:12,y:-2},
+        {x:13,y:-2},{x:1,y:-12},{x:1,y:-13},{x:1,y:-14},{x:3,y:-16},{x:3,y:-15},{x:4,y:-15},{x:6,y:-15},{x:6,y:-13},
+        {x:8,y:-15},{x:8,y:-16},{x:8,y:-17},{x:7,y:-17},{x:6,y:-17},{x:7,y:-18},{x:14,y:-5},{x:14,y:-4},{x:15,y:-4},
+        {x:12,y:-7},{x:14,y:-7},{x:14,y:-9},{x:15,y:-9},{x:16,y:-9},{x:16,y:-8},{x:16,y:-7},{x:17,y:-8},{x:16,y:-12},
+        {x:16,y:-11},{x:17,y:-11},{x:17,y:-12},{x:10,y:-18},{x:10,y:-17},{x:11,y:-17},{x:11,y:-18},{x:17,y:-14},
+        {x:16,y:-15},{x:13,y:-18},{x:14,y:-17},{x:12,y:-20},{x:19,y:-13},{x:11,y:-22},{x:10,y:-22},{x:9,y:-21},{x:14,y:-20},
+        {x:15,y:-20},{x:15,y:-19},{x:15,y:-21},{x:16,y:-19},{x:17,y:-20},{x:18,y:-20},{x:19,y:-21},{x:20,y:-20},{x:19,y:-19},
+        {x:19,y:-18},{x:18,y:-17},{x:18,y:-16},{x:19,y:-16},{x:19,y:-15},{x:20,y:-16},{x:21,y:-12},{x:21,y:-11},{x:20,y:-10},
+        {x:22,y:-17},{x:23,y:-18},{x:23,y:-19},{x:24,y:-20},{x:23,y:-20},{x:24,y:-17},{x:25,y:-17},{x:26,y:-18},{x:16,y:-23},
+        {x:17,y:-24},{x:18,y:-24},{x:19,y:-24},{x:19,y:-25},{x:16,y:-25},{x:16,y:-26},{x:17,y:-27},{x:24,y:-23},{x:25,y:-23},
+        {x:25,y:-22},{x:24,y:-22},{x:24,y:-24},{x:23,y:-24},{x:23,y:-25},{x:22,y:-26},{x:22,y:-25},{x:21,y:-25},{x:21,y:-26},
+        {x:27,y:-21},{x:28,y:-20},{x:29,y:-21},{x:29,y:-22},{x:27,y:-24},{x:23,y:-28},{x:20,y:-28},{x:19,y:-29},{x:20,y:-30},{x:21,y:-30}],
+        "2engcordership":
+        [{x:4,y:-24},{x:5,y:-24},{x:4,y:-23},{x:5,y:-23},{x:5,y:-22},{x:3,y:-23},{x:2,y:-23},{x:2,y:-22},{x:3,y:-22},{x:4,y:-20},
+        {x:5,y:-19},{x:4,y:-19},{x:4,y:-18},{x:5,y:-18},{x:3,y:-18},{x:3,y:-17},{x:-9,y:-16},{x:-9,y:-15},{x:-10,y:-15},
+        {x:-10,y:-16},{x:-10,y:-6},{x:-11,y:-7},{x:-12,y:-7},{x:-12,y:-8},{x:-11,y:-5},{x:-12,y:-5},{x:-14,y:-6},{x:-15,y:-5},
+        {x:-16,y:-4},{x:-15,y:-3},{x:-14,y:-2},{x:-13,y:-3},{x:-14,y:-1},{x:-14,y:0},{x:-14,y:1},{x:-15,y:1},{x:-15,y:0},
+        {x:-13,y:5},{x:-12,y:6},{x:-12,y:7},{x:-13,y:7},{x:-14,y:8},{x:-15,y:9},{x:-15,y:10},{x:-14,y:10},{x:-14,y:9},
+        {x:-13,y:10},{x:-13,y:9},{x:-2,y:7},{x:-2,y:6},{x:-1,y:5},{x:0,y:5},{x:0,y:4},{x:-1,y:8},{x:0,y:8},{x:0,y:7},{x:1,y:7},
+        {x:2,y:7},{x:2,y:6},{x:2,y:5},{x:8,y:5},{x:9,y:5},{x:10,y:5},{x:11,y:5},{x:12,y:5},{x:11,y:4},{x:13,y:6},{x:12,y:7},
+        {x:11,y:7},{x:11,y:8},{x:10,y:8},{x:9,y:9},{x:23,y:9},{x:23,y:10},{x:24,y:10},{x:24,y:9},{x:15,y:17},{x:15,y:18},
+        {x:16,y:18},{x:16,y:17},{x:0,y:20},{x:1,y:19},{x:2,y:18},{x:3,y:18},{x:4,y:19},{x:5,y:19},{x:0,y:21},{x:1,y:22},{x:2,y:22},
+        {x:2,y:23},{x:3,y:23},{x:4,y:23},{x:-4,y:20},{x:-4,y:21},{x:-3,y:22},{x:-5,y:22},{x:-4,y:23},{x:-4,y:24},{x:5,y:22},{x:6,y:21}]
+    };
+
+    
+    if (Object.prototype.hasOwnProperty.call(patterns, id)) {
+        startingArray = patterns[id].map(p => ({x: p.x, y: p.y}));
+        resetState();
+        saveCurrent();
+        document.getElementById('lexicon').style.display = 'none';
+        document.body.style.overflow = '';
+        loadedMsg.textContent = `Loaded ${id}`
+        loadedOpac = 100
+        animateLoad();
+    }
+    else {
+        alert("Unknown pattern: " + id);
+    }
+}
+
+loadLexi('blank');
+
+// New isLive function
+function isLive(pixel) {
+    return pixels.some(p => p.x === pixel.x && p.y === pixel.y);
+}
+
+// FLIP Y AXIS: new drawPixel function
+function drawPixel(pixel, hsla) {
+    ctx.fillStyle = hsla;
+    // To flip Y axis: subtract from canvas.height/2 instead of add
+    ctx.fillRect(
+        (pixel.x-camx)*zoom + canvas.width/2,
+        canvas.height/2 - (pixel.y-camy)*zoom,
+        zoom, zoom
+    );
+}
+
+function tick() {
+    if (draggingSelection) return; // Don't run simulation if dragging selection
+
+    let toRemove = []; // Array to keep track of cells that need to be removed (die)
+    let toAdd = [];    // Array to keep track of cells that need to be added (come alive)
+
+    let deadNeighborCounts = {};
+
+    // Loop through all live cells to process them
+    for (let i = 0; i < pixels.length; i++) {
+        // Will accumulate all the LIVE neighbors of this cell
+        let thisLiveNeighs = [];
+
+        let neighbors = [ // neighbor locations
+            {x: pixels[i].x,     y: pixels[i].y + 1}, // Up (N)
+            {x: pixels[i].x + 1, y: pixels[i].y + 1}, // Up-Right (NE)
+            {x: pixels[i].x + 1, y: pixels[i].y    }, // Right (E)
+            {x: pixels[i].x + 1, y: pixels[i].y - 1}, // Down-Right (SE)
+            {x: pixels[i].x,     y: pixels[i].y - 1}, // Down (S)
+            {x: pixels[i].x - 1, y: pixels[i].y - 1}, // Down-Left (SW)
+            {x: pixels[i].x - 1, y: pixels[i].y    }, // Left (W)
+            {x: pixels[i].x - 1, y: pixels[i].y + 1}, // Up-Left (NW)
+        ];
+
+        // Check each neighbor of this live cell. Optimize by only checking touching cells
+        for (let n = 0; n < neighbors.length; n++) {
+            let nx = neighbors[n].x, ny = neighbors[n].y;
+            if (isLive({x: nx, y: ny})) {
+                thisLiveNeighs.push({x: nx, y: ny});
+            } else {
+                let key = nx + "," + ny;
+                if (!deadNeighborCounts[key]) {
+                    deadNeighborCounts[key] = 0;
+                }
+                deadNeighborCounts[key]++;
+            }
+        }
+
+        // Game of Life rules for live cells
+        if (thisLiveNeighs.length < 2 || thisLiveNeighs.length > 3) {
+            toRemove.push(i);
+        }
+    }
+
+    // Check dead cells that might become alive
+    for (let key in deadNeighborCounts) {
+        if (deadNeighborCounts[key] === 3) {
+            let parts = key.split(",");
+            let x = parseInt(parts[0]), y = parseInt(parts[1]);
+            if (!isLive({x: x, y: y})) {
+                toAdd.push({x: x, y: y});
+            }
+        }
+    }
+    if (toAdd.length + toRemove.length > 0) {
+        tickn++;
+    }
+    // add new live pixels
+    for (let i  = 0; i < toAdd.length; i++) {
+        pixels.push(toAdd[i]);
+    }
+    // remove dead pixels
+    for (let i = toRemove.length - 1; i >= 0; i--) {
+        pixels.splice(toRemove[i], 1);
+    }
+}
+
+// Generic rotate point function, angle in multiples of 90 deg (dir in {0,1,2,3})
+function rotatePoint(px, py, ox, oy, dir) {
+    // dir: 1 = 90 CW, 2 = 180, 3 = 270 CW, 0 = no rotation
+    let dx = px - ox;
+    let dy = py - oy;
+    let rx, ry;
+    if (dir === 1) { // 90 deg CW
+        rx = oy - dy;
+        ry = ox + dx;
+    } else if (dir === 2) { // 180 deg
+        rx = ox - dx;
+        ry = oy - dy;
+    } else if (dir === 3) { // 270 deg CW (or 90 CCW)
+        rx = oy + dy;
+        ry = ox - dx;
+    } else { // 0 deg (no rotation)
+        rx = px;
+        ry = py;
+    }
+    return { x: Math.round(rx), y: Math.round(ry) };
+}
+
+// Integer bbox center for grid-locked rotation
+function getIntegerBBoxCenter(points) {
+    let minX = Math.min(...points.map(p => p.x));
+    let minY = Math.min(...points.map(p => p.y));
+    let maxX = Math.max(...points.map(p => p.x));
+    let maxY = Math.max(...points.map(p => p.y));
+    // Place center at upper-left of 2x2 if even size
+    let cx = (minX + maxX) / 2;
+    let cy = (minY + maxY) / 2;
+    // Snap center to nearest .5 (if even difference), else integer
+    // This ensures exact-grid rotation (see: Conway's Life logic).
+    if ((maxX - minX + 1) % 2 === 0) cx = Math.floor(cx) + 0.5;
+    else cx = Math.round(cx);
+    if ((maxY - minY + 1) % 2 === 0) cy = Math.floor(cy) + 0.5;
+    else cy = Math.round(cy);
+    return { cx, cy };
+}
+
+// Rotate selection by direction: 1 = 90CW, 2 = 180, 3 = 270CW, 0 = none
+function rotateSelection(direction) {
+    if (selectedLivePixels.length === 0 || draggingSelection) return;
+    let {cx, cy} = getIntegerBBoxCenter(selectedLivePixels);
+    let rotated = selectedLivePixels.map(p => rotatePoint(p.x, p.y, cx, cy, direction));
+    // Remove current selection from pixels
+    let selSet = new Set(selectedLivePixels.map(p => `${p.x},${p.y}`));
+    pixels = pixels.filter(p => !selSet.has(`${p.x},${p.y}`));
+    // Remove duplicates in placement
+    let pixelSet = new Set(pixels.map(p => `${p.x},${p.y}`));
+    let actuallyPlaced = [];
+    for (let i = 0; i < rotated.length; i++) {
+        let key = `${rotated[i].x},${rotated[i].y}`;
+        if (!pixelSet.has(key)) {
+            pixels.push({x: rotated[i].x, y: rotated[i].y});
+            actuallyPlaced.push({x: rotated[i].x, y: rotated[i].y});
+            pixelSet.add(key);
+        }
+    }
+    selectedLivePixels = actuallyPlaced;
+    loadedMsg.textContent = `Rotated ${actuallyPlaced.length} cells`;
+    loadedOpac = 100; animateLoad();
+}
+
+// Shorthand for 90 increments
+function rotateSelection90CW()   { rotateSelection(1); }
+function rotateSelection180()    { rotateSelection(2); }
+function rotateSelection90CCW()  { rotateSelection(3); }
+
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    hoverX = Math.floor(((mouseX - canvas.width / 2) / zoom + camx) - 12 / zoom);
+    hoverY = 1+Math.floor(((- (mouseY - canvas.height / 2) / zoom) + camy) + 12 / zoom);
+    t2++
+
+    if (shiftpressed) {
+        hiliteCorner2 = { x: hoverX, y: hoverY };
+    }
+
+    display.textContent = `cam: (${camx.toFixed(2)},${camy.toFixed(2)}) hover: (${hoverX},${hoverY}) tick: ${tickn} livepx: ${livePx}`
+
+    // Handle normal mouse click/paint/erase if not dragging the selection
+    if (mousedown && !draggingSelection) {
+        if (isLive({x: hoverX, y: hoverY}) && (clickedFirst == 0)) {
+            // Do not allow single deletion if cursor is on a highlighted pixel that is part of selection
+            let inHighlight = selectedLivePixels.find(p => p.x === hoverX && p.y === hoverY);
+            if (!inHighlight) {
+                const idx = pixels.findIndex(p => p.x === hoverX && p.y === hoverY);
+                if (idx !== -1) pixels.splice(idx, 1);
+            }
+        } else if (clickedFirst == 1 && !pixels.some(p => p.x === hoverX && p.y === hoverY)) {
+            // Do not allow drawing on top of moved selection during a drag
+            pixels.push({x: hoverX, y: hoverY})
+        }
+    }
+
+    // Draw background grid here
+    ctx.strokeStyle = "#222";
+    ctx.lineWidth = 1;
+
+    // Find the grid cell at the top-left of the canvas
+    let cols = Math.ceil(canvas.width / zoom) + 2;
+    let rows = Math.ceil(canvas.height / zoom) + 2;
+    let x0 = Math.floor(camx - canvas.width / (2 * zoom));
+    let y0 = Math.floor(camy - canvas.height / (2 * zoom)); // flipped sign for y0
+
+    // Vertical grid lines (X UNCHANGED)
+    for (let xx = 0; xx <= cols; xx++) {
+        ctx.beginPath();
+        let xCell = x0 + xx;
+        let xPixel = (xCell - camx) * zoom + canvas.width / 2;
+        ctx.moveTo(xPixel, 0);
+        ctx.lineTo(xPixel, canvas.height);
+        ctx.stroke();
+    }
+
+    // Horizontal grid lines (Y FLIPPED)
+    for (let yy = 0; yy <= rows; yy++) {
+        ctx.beginPath();
+        let yCell = y0 + yy;
+        // Flipped: higher y means up on the screen
+        let yPixel = canvas.height / 2 - (yCell - camy) * zoom;
+        ctx.moveTo(0, yPixel);
+        ctx.lineTo(canvas.width, yPixel);
+        ctx.stroke();
+    }
+
+    if (!paused) {
+        tick();
+    } 
+
+    // Draw live pixels
+    for (let i = 0; i < pixels.length; i++) {
+        // If this live pixel is in the selectedLivePixels array, draw it as green highlight
+        let inHighlight =
+            selectedLivePixels.some(
+                p => p.x === pixels[i].x && p.y === pixels[i].y
+            );
+        if (draggingSelection && inHighlight) {
+            // If we are dragging, DO NOT draw main pixel (stop double highlight effect)
+            continue;
+        }
+        if (inHighlight) {
+            drawPixel(pixels[i], `hsla(120,${(Math.sin(t2/10)+1.2)*25}%,80%,1)`);
+        } else {
+            drawPixel(pixels[i], "hsla(0,0%,100%,1)");
+        }
+    }
+
+    // During dragging, draw a semi-transparent preview of the selection at dragged position
+    if (draggingSelection && selectionOriginal.length > 0) {
+        for (let i = 0; i < selectionOriginal.length; i++) {
+            let nx = selectionOriginal[i].x + dragOffset.x;
+            let ny = selectionOriginal[i].y + dragOffset.y;
+            drawPixel({x: nx, y: ny}, "hsla(210,100%,70%,0.5)"); // Blueish with 0.5 alpha
+        }
+    }
+
+    // Draw paste preview if active (semi-transparent blue for possible paste area)
+    if (pastePreviewActive && copiedPixels.length > 0) {
+        // Always update preview offset each draw
+        let pasteMinX = Math.min(...copiedPixels.map(p => p.x));
+        let pasteMinY = Math.min(...copiedPixels.map(p => p.y));
+        let previewOffsetX = hoverX - pasteMinX;
+        let previewOffsetY = hoverY - pasteMinY;
+        let already = new Set(pixels.map(p => `${p.x},${p.y}`));
+        for (let i=0; i<copiedPixels.length; i++) {
+            let nx = copiedPixels[i].x + previewOffsetX;
+            let ny = copiedPixels[i].y + previewOffsetY;
+            // If target location is already populated, show as red, else blue
+            if (already.has(`${nx},${ny}`)) {
+                drawPixel({x:nx, y:ny}, "hsla(0,100%,60%,0.4)"); // conflict: reddish
+            } else {
+                drawPixel({x:nx, y:ny}, "hsla(210,100%,60%,0.5)");
+            }
+        }
+    }
+
+    // Draw rectangle selection using two corners, only if highlighting is active
+    if (shiftpressed) {
+        const minX = Math.min(hiliteCorner1.x, hiliteCorner2.x);
+        const maxX = Math.max(hiliteCorner1.x, hiliteCorner2.x);
+        const minY = Math.min(hiliteCorner1.y, hiliteCorner2.y);
+        const maxY = Math.max(hiliteCorner1.y, hiliteCorner2.y);
+
+        for (let hx = minX; hx <= maxX; hx++) {
+            for (let hy = minY; hy <= maxY; hy++) {
+                drawPixel({x: hx, y: hy}, "hsla(60,10%,60%,0.15)");
+            }
+        }
+    }
+
+    // Draw the hovered pixel
+    drawPixel({x: hoverX, y: hoverY}, "hsla(0,0%,50%,0.5)")
+
+    if (keysPressed["="]) {
+        zoom *= 1.05
+    } else if (keysPressed["-"]) {
+        zoom /= 1.05 
+    }
+
+    if (keysPressed["a"]) {
+        camx -= (1 / (Math.abs(Math.log(zoom + 1.5)))) * 1 
+    }
+    if (keysPressed["d"] && !cmdPressed) {
+        camx += (1 / (Math.abs(Math.log(zoom + 1.5)))) * 1 
+    }
+
+    if (keysPressed["w"]) {
+        camy += (1 / (Math.abs(Math.log(zoom + 1.5)))) * 1 
+    }
+    if (keysPressed["s"] && !cmdPressed) {
+        camy -= (1 / (Math.abs(Math.log(zoom + 1.5)))) * 1;
+    }
+
+    livePx = pixels.length
+    requestAnimationFrame(draw)
+}
+
+draw();
+
+function resizeCanvas() {
+  canvas.width = (window.innerWidth) - 25;
+  canvas.height = (window.innerHeight) - 25;
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+function importlist() {
+    paused = true;
+    let pixelListStr = prompt(
+        'Enter a list of pixels to import. Format: [{x:0,y:0},{x:1,y:1},...]'
+    ); 
+    if (pixelListStr === null || pixelListStr.trim() === "") {
+        importbtn.blur()
+        return;
+    }
+    try {
+        let fixed = pixelListStr.replace(/([{,]\s*)"(x|y)"\s*:/g, '$1$2:');
+        let imported = eval(fixed);
+        if (
+            Array.isArray(imported) &&
+            imported.every(
+                p => p && typeof p === "object" && Number.isFinite(p.x) && Number.isFinite(p.y)
+            )
+        ) {
+            startingArray = imported.map(p => ({x: p.x, y: p.y}));
+        } else {
+            alert('Invalid format. Please use: [{x:0,y:0},{x:1,y:1},...]');
+        }
+    } catch (e) {
+        alert(
+            'Invalid input. Please enter: [{x:0,y:0}] or [{x:0,y:0},{x:1,y:1}].\n(JSON with quoted keys is NOT accepted.)'
+        );
+    }
+    importbtn.blur();
+    resetState();
+}
+
+function exportlist() {
+    const str = '[' + pixels.map(p => `{x:${p.x},y:${p.y}}`).join(',') + ']';
+    console.log(`${str}`)
+    exportbtn.blur();
+}
+
+window.addEventListener("keydown", (e) => {
+    cmdPressed = e.metaKey || e.ctrlKey;
+    keysPressed[e.key.toLowerCase()] = true;
+
+    // -- Begin ctrl+c and ctrl+v support for selection copy/paste --
+    if (cmdPressed && e.key.toLowerCase() === "c") { // Ctrl+C
+        if (selectedLivePixels.length > 0) {
+            // Copy with relative coordinates from top-left
+            let minX = Math.min(...selectedLivePixels.map(p => p.x));
+            let minY = Math.min(...selectedLivePixels.map(p => p.y));
+            copiedPixels = selectedLivePixels.map(p => ({
+                x: p.x - minX,
+                y: p.y - minY
+            }));
+            // Optional: flash loadedMsg to indicate copy
+            loadedMsg.textContent = `Selection copied`;
+            loadedOpac = 100; animateLoad();
+        } else {
+            // Optional: no selection, clear copy
+            copiedPixels = [];
+        }
+        e.preventDefault();
+        return;
+    }
+
+    // Ctrl+V: Show preview on keydown, but don't paste until keyup.
+    if (cmdPressed && e.key.toLowerCase() === "v") {
+        if (copiedPixels.length > 0) {
+            // Only activate paste preview if not already active
+            if (!pastePreviewActive) {
+                pastePreviewActive = true;
+                // Directly update the visual feedback on first-press (message)
+                loadedMsg.textContent = `Release V to paste`;
+                loadedOpac = 100; animateLoad();
+            }
+        }
+        e.preventDefault();
+        return;
+    }
+
+    // Ctrl+D: Rotate selection 90 deg CW
+    if (cmdPressed && e.key.toLowerCase() === "d") {
+        if (selectedLivePixels.length > 0 && !draggingSelection) {
+            rotateSelection90CW();
+        }
+        e.preventDefault();
+        return;
+    }
+
+    // Ctrl+Shift+D: Rotate 270 degrees (aka 90° CCW)
+    if (cmdPressed && e.key.toLowerCase() === "d" && e.shiftKey) {
+        if (selectedLivePixels.length > 0 && !draggingSelection) {
+            rotateSelection90CCW();
+        }
+        e.preventDefault();
+        return;
+    }
+
+    // Ctrl+E: Rotate selection 180 degrees
+    if (cmdPressed && e.key.toLowerCase() === "e") {
+        if (selectedLivePixels.length > 0 && !draggingSelection) {
+            rotateSelection180();
+        }
+        e.preventDefault();
+        return;
+    }
+    // -- End ctrl+c and ctrl+v support for selection copy/paste --
+
+    // Handle shift for highlight selection
+    if (e.key === "Shift" || e.key === "ShiftRight" || e.key === "ShiftLeft" || e.shiftKey) {
+        shiftpressed = true;
+        // On first press, set hiliteCorner1; always update hiliteCorner2 to current hover
+        if (!hiliteCorner1 || hiliteCorner1.x === -1) {
+            hiliteCorner1 = { x: hoverX, y: hoverY };
+        }
+        hiliteCorner2 = { x: hoverX, y: hoverY };
+    }
+
+    if (e.key == " ") {
+        paused = !paused;
+    } else if (e.key == "r") {
+        e.preventDefault();
+        if (cmdPressed) {loadLexi("blank")} else {
+            resetState();
+        }
+    } else if (e.key.toLowerCase() === "s" && cmdPressed ) {
+        e.preventDefault();
+        saveCurrent();
+    } else if (e.key === "ArrowRight" && paused) {
+        tick();
+    }
+});
+
+window.addEventListener("keyup", (e) => {
+    keysPressed[e.key.toLowerCase()] = false;
+    cmdPressed = e.metaKey || e.ctrlKey;
+
+    // Handle ctrl+v paste completion on keyup
+    if (e.key.toLowerCase() === "v" && pastePreviewActive) {
+        // Must be Ctrl+V and WAS active
+        if (copiedPixels.length > 0) {
+            // Paste at hovered location (align top-left to hoverX,hoverY)
+            let pasteMinX = Math.min(...copiedPixels.map(p => p.x));
+            let pasteMinY = Math.min(...copiedPixels.map(p => p.y));
+            let pasteX = hoverX - pasteMinX;
+            let pasteY = hoverY - pasteMinY;
+            // Prevent adding duplicate pixels
+            let already = new Set(pixels.map(p => `${p.x},${p.y}`));
+            let newPaste = [];
+            for (let i=0; i<copiedPixels.length; i++) {
+                let nx = copiedPixels[i].x + pasteX;
+                let ny = copiedPixels[i].y + pasteY;
+                if (!already.has(`${nx},${ny}`)) {
+                    pixels.push({x: nx, y: ny});
+                    newPaste.push({x: nx, y: ny});
+                    already.add(`${nx},${ny}`);
+                }
+            }
+            selectedLivePixels = newPaste;
+            loadedMsg.textContent = `Pasted ${newPaste.length} cells`;
+            loadedOpac = 100; animateLoad();
+        }
+        pastePreviewActive = false;
+        e.preventDefault();
+        return;
+    }
+
+    if (e.key === "Shift" || e.key === "ShiftRight" || e.key === "ShiftLeft") {
+        shiftpressed = false;
+
+        // Compute range of selection on shift-release
+        const minX = Math.min(hiliteCorner1.x, hiliteCorner2.x);
+        const maxX = Math.max(hiliteCorner1.x, hiliteCorner2.x);
+        const minY = Math.min(hiliteCorner1.y, hiliteCorner2.y);
+        const maxY = Math.max(hiliteCorner1.y, hiliteCorner2.y);
+
+        // Find all live pixels in that range and save to selectedLivePixels
+        selectedLivePixels = pixels.filter(p =>
+            p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY
+        );
+
+        // Clear highlight selection corners
+        hiliteCorner1 = {x: -1, y: 1};
+        hiliteCorner2 = {x: 1, y: -1};
+    }
+});
+
+window.addEventListener("mousemove", (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    // If shift is pressed, update hiliteCorner2 to track the mouse
+    if (shiftpressed && (hiliteCorner1 && hiliteCorner1.x !== -1)) {
+        hiliteCorner2 = { x: hoverX, y: hoverY };
+    }
+
+    // Handle dragging highlighted pixels (live preview)
+    if (draggingSelection && dragStart != null) {
+        let curDragPos = { x: hoverX, y: hoverY };
+        dragOffset.x = curDragPos.x - dragStart.x;
+        dragOffset.y = curDragPos.y - dragStart.y;
+
+        // Not mutating selection, just use dragOffset for preview in draw()
+    }
+
+    // When showing paste preview, update preview offset on mousemove (not strictly needed as draw reads from hoverX/Y)
+    // But this hook ensures feel is good even if later logic changes
+    if (pastePreviewActive && copiedPixels.length > 0) {
+        // (We do not update anything here, draw() always recalculates based on current hoverX/hoverY)
+    }
+});
+
+// Only begin drag on right mouse button
+canvas.addEventListener("mousedown", (e) => {
+    mouseButtonDown = e.button;
+    mousedown = true;
+
+
+    // Only allow drag with right mouse button (button === 2)
+    if (e.button === RIGHT_MOUSE_BUTTON) {
+        // Is on selected pixel?
+        let isOnSelected = selectedLivePixels.some(
+            p => p.x === hoverX && p.y === hoverY
+        );
+        if (isOnSelected && selectedLivePixels.length > 0) {
+            draggingSelection = true;
+            dragStart = {x: hoverX, y: hoverY};
+            dragOffset = {x:0, y:0};
+            selectionOriginal = selectedLivePixels.map(p => ({x: p.x, y: p.y}));
+            // Prevent context menu from appearing
+            e.preventDefault();
+            return;
+        }
+    } else  {
+        selectedLivePixels = []
+    }
+
+    // Normal draw/erase with left click only (button === 0)
+    if (e.button === 0) {
+        if (isLive({x: hoverX, y: hoverY})) {
+            clickedFirst = 0;
+        } else {
+            clickedFirst = 1;
+        }
+    }
+});
+
+// Prevent context menu on right mouse drag (optional, feels better UX)
+canvas.addEventListener("contextmenu", e => {
+    if (draggingSelection) e.preventDefault();
+});
+
+// On mouseup, only complete drag if right button was used to start drag
+canvas.addEventListener("mouseup", (e) => {
+    mousedown = false;
+    // Always clear mouseButtonDown
+    mouseButtonDown = null;
+
+    if (e.button === RIGHT_MOUSE_BUTTON) {
+        if (draggingSelection && selectedLivePixels.length > 0 && dragStart) {
+            // Finalize drag: move all selected live pixels by dragOffset
+            // Remove all selected from pixels
+            pixels = pixels.filter(p =>
+                !selectedLivePixels.some(sel => sel.x === p.x && sel.y === p.y)
+            );
+            // Set all selectedLivePixels' x/y to final preview position, but prevent duplicates
+            let alreadyPresent = new Set(pixels.map(p => `${p.x},${p.y}`));
+            let newSel = [];
+            for (let i = 0; i < selectionOriginal.length; i++) {
+                let nx = selectionOriginal[i].x + dragOffset.x;
+                let ny = selectionOriginal[i].y + dragOffset.y;
+                // Only add if not overlapping another existing pixel
+                if (!alreadyPresent.has(`${nx},${ny}`)) {
+                    pixels.push({x: nx, y: ny});
+                    newSel.push({x: nx, y: ny});
+                }
+            }
+            selectedLivePixels = newSel;
+
+            draggingSelection = false;
+            dragStart = null;
+            dragOffset = {x:0, y:0};
+            selectionOriginal = [];
+        }
+    }
+})
+
+</script>
+</html>
+

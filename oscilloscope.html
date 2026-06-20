@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MP3 Oscilloscope Visualizer</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico" />
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+      }
+      body {
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        box-sizing: border-box;
+      }
+      #column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        max-width: 100%;
+        max-height: 100%;
+      }
+      #row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      #oscilloscope {
+        --osc-size: min(calc(100vw - 2rem), calc(100dvh - 5rem));
+        width: var(--osc-size);
+        height: var(--osc-size);
+        max-width: 100%;
+        max-height: 100%;
+        display: block;
+      }
+      #time {
+        color: #fff;
+      }
+      #fileInput {
+        margin-right: -160px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="column">
+      <div id="row">
+        <input type="file" id="fileInput" accept="audio/mp3, audio/mpeg" />
+        <div id="time">time:</div>
+        <button id="end" onclick="endandlog()">End</button>
+      </div>
+      <canvas id="oscilloscope" style="border:1px solid #ccc;"></canvas>
+    </div>
+    <script>
+      // --- DOM ELEMENTS ---
+      const fileInput = document.getElementById('fileInput');
+      const canvas = document.getElementById('oscilloscope');
+      const ctx = canvas.getContext('2d');
+      const timediv = document.getElementById("time");
+
+      // --- AUDIO VARIABLES ---
+      let audio;
+      let source;
+      let splitter;
+      let analyserL;
+      let analyserR;
+      let dataL, dataR;
+
+      const BUFFER_SIZE = 4096;
+      let scaleboost = 6;
+
+      // --- Resize Canvas Dynamically ---
+      function resizeCanvas() {
+        const size = Math.floor(canvas.getBoundingClientRect().width);
+        if (size > 0 && (canvas.width !== size || canvas.height !== size)) {
+          canvas.width = size;
+          canvas.height = size;
+        }
+      }
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // --- Audio Context Setup ---
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      function setup() {
+        analyserL = audioCtx.createAnalyser();
+        analyserR = audioCtx.createAnalyser();
+        analyserL.fftSize = BUFFER_SIZE;
+        analyserR.fftSize = BUFFER_SIZE;
+        analyserL.smoothingTimeConstant = 0;
+        analyserR.smoothingTimeConstant = 0;
+        dataL = new Float32Array(analyserL.fftSize);
+        dataR = new Float32Array(analyserR.fftSize);
+      }
+
+      // --- Oscilloscope Draw Loop ---
+      function draw() {
+        requestAnimationFrame(draw);
+
+        timediv.textContent = "time:" +
+          (audio && !isNaN(audio.currentTime) ? " " + audio.currentTime.toFixed(2) : "");
+
+        if (!analyserL || !analyserR) return;
+        analyserL.getFloatTimeDomainData(dataL);
+        analyserR.getFloatTimeDomainData(dataR);
+
+        ctx.fillStyle = `rgba(0,0,0,0.08)`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#00ff88";
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = "#00ff88";
+        ctx.beginPath();
+
+        if (!dataL || !dataR) return;
+
+        const scale = canvas.width * scaleboost*2;
+        let started = false;
+        for (let i = 0; i < BUFFER_SIZE; i++) {
+          let x = dataL[i];
+          let y = dataR[i];
+          x *= 1.4;
+          y *= 1.4;
+          const drawX = canvas.width / 2 + x * scale;
+          const drawY = canvas.height / 2 - y * scale;
+          if (!started) {
+            ctx.moveTo(drawX, drawY);
+            started = true;
+          } else {
+            ctx.lineTo(drawX, drawY);
+          }
+        }
+        ctx.stroke();
+      }
+      draw();
+
+      // --- End Button ---
+      function endandlog() {
+        if (audio) audio.pause();
+      }
+
+
+      // --- File Input Handler ---
+      fileInput.addEventListener('change', async () => {
+        // Stop previous audio
+        if (audio) {
+          audio.pause();
+          if (source) source.disconnect();
+          if (splitter) splitter.disconnect();
+          audio.removeEventListener('ended', audio._onEndedHandler);
+        }
+
+        const file = fileInput.files[0];
+        if (!file) return;
+
+
+        const url = URL.createObjectURL(file);
+        audio = new Audio(url);
+        audio.loop = false;
+        audio._onEndedHandler = function () {};
+        audio.addEventListener('ended', audio._onEndedHandler);
+
+        await audio.play();
+
+        if (audioCtx.state === "suspended") {
+          await audioCtx.resume();
+        }
+
+        source = audioCtx.createMediaElementSource(audio);
+        splitter = audioCtx.createChannelSplitter(2);
+        setup();
+
+        source.connect(splitter);
+        splitter.connect(analyserL, 0);
+        splitter.connect(analyserR, 1);
+        source.connect(audioCtx.destination);
+      });
+    </script>
+  </body>
+</html>

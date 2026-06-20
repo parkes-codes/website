@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico" />
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #333;
+        }
+        canvas {
+            border: 20px solid #fff;
+        }
+        .text {
+          display: none;
+          position: absolute;
+          font-size: 70px;
+          color: #fff;
+          font-family: Courier New;
+        }
+        #instr {
+          font-size: 80px;
+          margin-left: 150px;
+          width: 1200px;
+        }
+        #scoreBoard {
+          display: block;
+          margin-bottom: 600px;
+        }
+        #hsBoard {
+          display: block;
+          margin-bottom: 515px;
+          font-size: 30px;
+          margin-right: 0px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="1200" height="700"></canvas>
+    <div id="instr" class="text">Press any key or click to start</div>
+    <div id="scoreBoard" class="text"></div>
+    <div id="hsBoard" class="text"></div>
+    
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let birdY = 150;
+        let pipeSpeed = 10;
+        const gravity = .6;
+        let velocity = 0;
+        let dead = false;
+        let pipes = [];
+        const pipeWidth = 50;
+        const pipeGap = 100;
+        const pipeFrequency = 50;
+        let frameCounter = 0;
+        let jumpHeight = 10.5;
+        let fallSpeed = 8;
+        let isFalling = false;
+        let fallComplete = false;
+        let score = 0;
+        let lastPipeHeight = null;
+        const heightChangeLimit = 280;
+        const a = localStorage.getItem('hyescore');
+        let highscore;
+
+        // Changed: flap on any key press and any click
+        document.addEventListener('keydown', function(event) {
+          flap();
+        });
+        canvas.addEventListener('mousedown', function(event) {
+          flap();
+        });
+
+        if (a === null) {
+          highscore  = 0;
+        } else {
+          highscore = a;
+        }
+        death("floor")
+        if (window.location.href.includes("onecompiler")) {
+          document.body.style.transform = "scale(.4)"
+        } else {
+          document.body.style.transform = "scale(1)"
+        }
+        
+        function setup() {
+            birdY = 150;
+            velocity = 0;
+            fallSpeed = 0
+        }
+
+        function flap(g) {
+              velocity = 0 - jumpHeight;
+        }
+function updateBoard() {
+  const scor = document.getElementById('scoreBoard');
+  const hs = document.getElementById('hsBoard');
+  scor.innerHTML = `
+   <p> Score: ${score} </p>
+  `;
+  hs.innerHTML = `
+   <p> Hi Score: ${highscore} </p>
+  `;
+}
+        
+function createPipe() {
+    let topPipeHeight;
+    updateBoard();
+    do {
+        topPipeHeight = Math.random() * ((canvas.height - 50) - pipeGap - 20);
+    } while (lastPipeHeight !== null && Math.abs(topPipeHeight - lastPipeHeight) > heightChangeLimit);
+    
+    pipes.push({
+        x: canvas.width,
+        top: topPipeHeight,
+        bottom: canvas.height - topPipeHeight - pipeGap,
+    });
+    
+    lastPipeHeight = topPipeHeight;
+}
+
+
+
+function drawPipes() {
+    ctx.fillStyle = '#0fa';
+    pipes.forEach(pipe => {
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
+    });
+}
+
+function updatePipes() {
+    if (frameCounter % pipeFrequency === 0) {
+        createPipe();
+    }
+
+    pipes.forEach((pipe, index) => {
+        if (pipe.x < 76 + 20 && pipe.x + pipeWidth > 75) {
+            if (birdY < pipe.top || birdY > canvas.height - pipe.bottom - 20) {
+                death("pipe");
+            }
+        }
+        if (!dead) {
+        pipe.x -= pipeSpeed;}
+        if (pipe.x + pipeWidth < 0) {
+            pipes.splice(index, 1);
+            score++;
+            if (score > highscore) {
+              highscore = score;
+              localStorage.setItem('hyescore', score)
+            }
+        }
+    });
+}
+
+function death(type) {
+    if (type === "floor") {
+        birdY = canvas.height - 20;
+        isFalling = false;
+        fallComplete = true;
+        pipes = [];
+    } else if (type === "pipe") {
+        isFalling = true;
+    }
+    velocity = 0;
+    dead = true;
+}
+
+function fallAnimation() {
+    if (isFalling && birdY < canvas.height - 20) {
+        fallSpeed = fallSpeed + ((fallSpeed + 3) * 0.03)
+        birdY += fallSpeed;
+    } else if (birdY >= canvas.height - 20) {
+        pipes = [];
+        fallComplete = true;
+        isFalling = false;
+    }
+}
+
+function restartGame (event) {
+  dead = false;
+  setup();
+  document.removeEventListener('keydown', restartGame);
+  canvas.removeEventListener('mousedown', restartGame);
+}
+       function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000'
+    ctx.fillRect(0,0, canvas.width, canvas.height)
+    frameCounter++;
+    velocity += gravity;
+    if (!dead) {
+        birdY += velocity;
+        document.getElementById('instr').style.display = 'none';
+        document.getElementById('scoreBoard').style.display = 'block'
+    } else {
+        fallAnimation();
+    }
+        if (!dead) {
+        updatePipes();}
+        drawPipes();
+        ctx.fillStyle = 'yellow';
+    ctx.fillRect(75, birdY, 20, 20);
+    
+    if (birdY > canvas.height - 20) {
+        death("floor");
+    } else if (birdY < 0) {
+        birdY = 0;
+        velocity = 0;
+    }
+
+    if (fallComplete) {
+        document.getElementById('instr').style.display = 'block';
+        setTimeout(() => {
+            setup();
+            score = 0;
+            updateBoard();
+            document.addEventListener('keydown', restartGame);
+            canvas.addEventListener('mousedown', restartGame);
+            fallComplete = false;
+        }, 0);
+    }
+    requestAnimationFrame(gameLoop);
+}
+        setup();
+        requestAnimationFrame(gameLoop);
+    
+    window.addEventListener('beforeunload', function (event) {
+    event.preventDefault(); // Standard for most browsers
+    event.returnValue = 'You have unsaved changes. Are you sure you want to leave?'; // For older browsers
+});
+    
+    </script>
+</body>
+</html>

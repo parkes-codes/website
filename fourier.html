@@ -1,0 +1,256 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fourier Draw</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico" />
+</head>
+<style>
+
+body {background-color: #000;
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+    }
+      #gamecanvas {
+        border: #fff 5px solid;
+        border-radius: 10px;
+        width: calc(100vw - 11px);
+        height: calc(100vh - 11px);
+        margin-left: -8px;
+        margin-top: -8px;
+        position: relative;
+        z-index: 1;
+        display: block;
+        background: none;
+    }
+    #numinput {
+        position: absolute;
+        z-index: 2;
+        left: -1px;
+        bottom: 16px;
+        width: 30px;
+        height: 12px;
+        font-size: 10px
+    }
+    #display {
+        position: absolute;
+        z-index: 2;
+        left: 40px;
+        bottom: 8px;
+        width: 300px;
+        height: 12px;
+        font-size: 15px;
+        color: #fff
+    }
+</style>
+<body>
+
+ <canvas id="gamecanvas"></canvas>
+ <input id="numinput" type="number" value="1" max="11" min="1">
+ <p id="display">speed: 0</p>
+
+</body>
+<script>
+
+const canvas = document.getElementById("gamecanvas");
+const ctx = canvas.getContext('2d');
+const numin = document.getElementById("numinput");
+const display = document.getElementById("display")
+let rotspeed = [];
+let length = [];
+let offset = [];
+let t = 0;
+let res = 3;
+let pi = Math.PI
+
+function generateFractal(depth) {
+    rotspeed = []
+    length = []
+    offset = []
+
+ for (let i = depth; i > 0; i--) {
+    if (i%2 == 1) {
+        rotspeed.push(Math.pow(2,i)*-1)
+    } else {
+        rotspeed.push(Math.pow(2,i)*1)
+    }
+    length.push(200/Math.pow(2,i));
+    offset.push(pi/2)
+ }
+ rotspeed.reverse();
+ length.reverse();
+ offset.reverse();
+}
+
+
+let speedmult = 0;
+let lenmult = 0;
+let masterlenmult = 1;
+let endX = 0;
+let endY = 0;
+let pos = []
+
+
+function drawRod(x, y, dir, len, speed, it) {
+    ctx.strokeStyle = `hsl(${(rotspeed.length - it-1)*(360/rotspeed.length)},60%,70%)`;
+    ctx.lineWidth = 4;
+
+    const x1 = canvas.width / 2 + x;
+    const y1 = canvas.height / 2 - y;
+    const x2 = x1 + Math.sin(dir + (t * speed)) * len;
+    const y2 = y1 - Math.cos(dir + (t * speed)) * len;
+    endX =  x +  Math.sin(dir + (t * speed)) * len;
+    endY =  y +  Math.cos(dir + (t * speed)) * len;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+}
+
+let num = 1;
+function draw() {
+    if (numin.value != num) {
+        pos = [];
+        t = 0;
+    }
+
+    num = numin.value;
+
+    if (num == 1) {
+        speedmult = 0.05;
+        lenmult = 1.8 * res * masterlenmult;
+        generateFractal(14);
+    } else if (num == 2) {
+        rotspeed = [4, -5, -11];
+        length = [4, 8, 2];
+        offset = [0, 0, 0];
+        speedmult = 0.2;
+        lenmult = 20 * res * masterlenmult;
+    } else if (num == 3) {
+        rotspeed = [7, 4, -3];
+        offset = [0, 0, 0];
+        length = [6, 6, 3];
+        speedmult = 0.2;
+        lenmult = 20 * res * masterlenmult;
+    } else if (num == 4) {
+        rotspeed = [3, 5, 7];
+        length = [2.5, 2.5, 3.8];
+        offset = [0, 0, 0];
+        speedmult = 0.2;
+        lenmult = 30 * res * masterlenmult;
+    } else if (num == 5) {
+        rotspeed = [3, 4, 12];
+        length = [5, 1, 1];
+        offset = [0, 0, 0];
+        speedmult = 0.2;
+        lenmult = 30 * res * masterlenmult;
+    } else if (num == 6) {
+        rotspeed = [1, -8, 16];
+        length = [6, 1, 0.5];
+        offset = [0, 0, 0];
+        speedmult = 0.2;
+        lenmult = 30 * res * masterlenmult;
+    } else if (num == 7) {
+        rotspeed = [1, -4, 8, 16];
+        length = [3, 3, 1.5, 0.5];
+        offset = [0, 0, 0, 0];
+        speedmult = 0.2;
+        lenmult = 30 * res * masterlenmult;
+    } else if (num == 8 ) {
+        rotspeed = [2.5, -5, -20];
+        length = [7, 7, 2];
+        offset = [0, 0, 0];
+        speedmult = 0.2;
+        lenmult =20 * res * masterlenmult;
+    } else if (num == 9 ) {
+        rotspeed = [2.25, 9, -18];
+        length = [7.7, 5.4, 5.4];
+        offset = [0, 0, 0];
+        speedmult = 0.2;
+        lenmult =15 * res * masterlenmult;
+    } else if (num == 10 ) {
+        rotspeed = [4, -5, 2.5];
+        length = [6, 6, 4.5];
+        offset = [0, 0, 0];
+        speedmult = 0.5;
+        lenmult =15 * res * masterlenmult;
+    } else if (num == 11 ) {
+        rotspeed = [4.5, -2.25, 4.5,-9,18];
+        length = [3, 3, 3,3,3];
+        offset = [0, 0, 0,0,0];
+        speedmult = 0.2;
+        lenmult =20 * res * masterlenmult;
+    }
+
+
+    // Save the previous position before updating
+    let lastPos = null;
+    if (pos.length > 0) {
+        lastPos = { x: pos[pos.length - 1].x, y: pos[pos.length - 1].y };
+    }
+
+    t += 1 / 60;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < pos.length; i++) {
+        ctx.lineTo(pos[i].x + canvas.width / 2, ((0 - pos[i].y) + canvas.height / 2));
+    }
+    ctx.stroke();
+
+    endX = 0;
+    endY = 0;
+    let dir = (num == 1) ? Math.PI / 2 : 0;
+    for (let i = 0; i < rotspeed.length; i++) {
+        drawRod(endX, endY, offset[i], length[i] * lenmult, rotspeed[i] * speedmult, i);
+    }
+
+    if (!pos.some(p => p.x === endX && p.y === endY)) {
+        pos.push({ x: endX, y: endY });
+    }
+
+    // Calculate speed as distance between last frame's end point and current end point
+    let speed = 0;
+    if (lastPos) {
+        let dx = endX - lastPos.x;
+        let dy = endY - lastPos.y;
+        speed = Math.sqrt(dx * dx + dy * dy);
+    }
+
+    display.textContent = `speed: ${(speed/speedmult).toFixed(4)}`;
+
+    requestAnimationFrame(draw);
+}
+
+draw();
+
+function resizeCanvas() {
+  canvas.width = (window.innerWidth*res) - 25;
+  canvas.height = (window.innerHeight*res) -25;
+  masterlenmult = Math.min(canvas.height,canvas.width) / 2000
+  pos = []
+  t=0;
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+window.addEventListener("keydown", (e) => {
+    if (e.key == "r") {
+        t = 0;
+        pos = []
+    }
+});
+
+
+
+
+
+</script>
+</html>

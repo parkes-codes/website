@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>parkes.com</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico" />
+  </head>
+  <style>
+    html, body {
+        height: 100%;
+        min-height: 100vh;
+        font-family: "Courier  New", courier, monospace;
+        font-size: 16px;
+        background-color: #000;
+        color: #f0f0f0;
+    }
+    .button {
+        background: #000000;
+        border: #ffffff 2px solid;
+        color: #ffffff;
+        width: auto;
+        margin: 3px;
+        cursor: pointer
+    }
+    .text {
+        color: hsl(0, 100%, 100%);
+    }
+    #profilepicture {
+        transform-origin: center center;
+        display: inline-block;
+    }
+    #column {
+      display: flex;
+      flex-direction: column;
+      gap: 0px;
+    }
+    .button-row {
+      display: flex;
+      flex-direction: row;
+      gap: 0px;
+      margin-bottom: 0px;
+    }
+    .linkbutton {
+      width: fit-content;
+      cursor: default;
+    }
+  </style>
+  <body>
+    <h1 class="text" style="margin-bottom: -16px;">Bienvenido a mi sitio web</h1>
+    <p class="text" style="margin-bottom: 9px">Va a la mi scratch pagina↓</p>
+    <a href="https://scratch.mit.edu/users/sadie_is_awesome" target="_blank" style="color: #a0a0ff; font-size: 20px;">
+        <img src="SCRATCH PFP.jpg" id="profilepicture" alt="My scratch profile picture" width="100" height="100"  style="border-radius: 10%; position: absolute;">
+    </a> 
+    
+    <p style="color: #f0f0f0; font-size: 10px; margin-top: 120px;" class="text">
+      Wow this is a cool website huh i made this to learn html and css
+    </p>
+    <div id="column">
+      <div class="button-row">
+        <a href="clicker.html" target="_blank" class="linkbutton"><button class="button text">Open My Clicker Game</button></a>
+        <a href="Listpractice.html" target="_blank" class="linkbutton"><button class="button text">Open List Learning</button></a>
+        <a href="Canvaspractice.html" target="_blank" class="linkbutton"><button class="button text">Open Canvasse</button></a>
+      </div>
+      <div class="button-row">
+        <a href="Amazing_Graphs_2.html" target="_blank" class="linkbutton"><button class="button text" style="color: #aff">Open Amazing Graphs 2</button></a>
+        <a href="oscilloscope.html" target="_blank" class="linkbutton"><button class="button text">Open Oscilloscope</button></a>
+        <a href="spectrogram.html" target="_blank" class="linkbutton"><button class="button text">Open Spectrogram</button></a>
+      </div>
+      <div class="button-row">
+        <a href="flappy.html" target="_blank" class="linkbutton"><button class="button text">Open Flappy Bird</button></a>
+        <a href="2048.html" target="_blank" class="linkbutton"><button class="button text">Open 2048</button></a>
+        <a href="tetris.html" target="_blank" class="linkbutton"><button class="button text">Open Tetris</button></a>
+        <a href="dvd.html" target="_blank" class="linkbutton"><button class="button text">Open DVD Sim</button></a>
+      </div>
+      <div class="button-row">
+        <a href="game1.html" target="_blank" class="linkbutton"><button class="button text">Open Arrassio</button></a>
+        <a href="game2.html" target="_blank" class="linkbutton"><button class="button text">Open Jetpack Horse Ultra Pro Extreme 3D</button></a>
+      </div>
+      <div class="button-row">
+        <a href="sierp.html" target="_blank" class="linkbutton"><button class="button text">Open Fractals</button></a>
+        <a href="ant.html" target="_blank" class="linkbutton"><button class="button text" style = "color: rgb(184, 205, 252)">Open Langton's Ant</button></a>
+        <a href="mousetrails.html" target="_blank" class="linkbutton"><button class="button text" style="color: #ddd">Open Mouse Trails</button></a>
+      </div>
+      <div class="button-row">
+        <a href="texteffects.html" target="_blank" class="linkbutton"><button class="button text">Open Text Effects</button></a>
+        <a href="funnytext.html" target="_blank" class="linkbutton"><button class="button text">Open Funny Text</button></a>
+        <a href="rocketlaunch.html" target="_blank" class="linkbutton"><button class="button text" style="color: #fed">Open Rocket Launch</button></a>
+      </div>
+      <div class="button-row">
+        <a href="car.html" target="_blank" class="linkbutton"><button class="button text">Open Car</button></a>
+        <a href="particles.html" target="_blank" class="linkbutton"><button class="button text" style="color: #dfd">Open Particles</button></a>
+        <button onclick="movestuff()" class="button text" style="max-width: 90px;" id="funbutton">Fun button</button>
+        <a href="fourier.html" target="_blank" class="linkbutton"><button class="button text">Open Fourier Draw</button></a>
+      </div>
+      <div class="button-row">
+        <a href="screensaver.html" target="_blank" class="linkbutton"><button class="button text">Open Screensaver</button></a>
+        <a href="gol.html" target="_blank" class="linkbutton"><button class="button text" id = "golbtn">Open GOL</button></a>
+      </div>
+    </div>
+
+    <script>
+        let t = 0;
+        const pi = Math.pi;
+        let x=10;
+        let xdir=1;
+        let y=105;
+        let ydir=1;
+        let hue=0;
+        const bounceSound = new Audio("click.wav");
+        const pfp = document.getElementById("profilepicture");
+        const funbutton = document.getElementById("funbutton");
+        const golbutton = document.getElementById("golbtn")
+        let funclicked = false;
+
+
+        function movestuff() {
+          funclicked = true;
+            const texts = document.getElementsByClassName("text");
+            const scale = (Math.sin(t) + 5) *0.2;
+            for (let i = 0; i < texts.length; i++) {
+                texts[i].style.color = `hsl(${t*100 % 360}, 50%, 70%)`;
+                texts[i].style.transform = `rotate(${Math.sin(t+i)*10}deg)`;
+            }
+
+            x+=xdir*3;
+            y+=ydir*3;
+            pfp.style.left = `${x}px`;
+            pfp.style.top = `${y}px`;
+            bounce();
+            
+            requestAnimationFrame(movestuff);
+        }
+        
+        function tick() {
+            t+= 0.1; 
+            funbutton.style.borderColor = `hsl(${(t*10)%360},50%,80%)`
+            golbutton.style.color =   `hsl(0,0%,${(Math.sin(t))*25+75}%)`
+
+            requestAnimationFrame(tick);
+        }
+
+        function bounce() {
+            const scrollX = window.scrollX || window.pageXOffset || document.documentElement.scrollLeft || 0;
+            const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+
+            const maxX = document.documentElement.clientWidth + scrollX - 100;
+            const maxY = document.documentElement.clientHeight + scrollY - 100;
+
+            if (x >= maxX) {
+                xdir = -1;
+                hue += 20;
+                bounceSound.play();
+                pfp.style.filter = `hue-rotate(${hue}deg)`;
+                x = maxX; 
+            }
+            if (x <= scrollX) {
+                xdir = 1;
+                hue += 20;
+                bounceSound.play();
+                pfp.style.filter = `hue-rotate(${hue}deg)`;
+                x = scrollX;
+            }
+            if (y >= maxY) {
+                ydir = -1;
+                hue += 20;
+                bounceSound.play();
+                pfp.style.filter = `hue-rotate(${hue}deg)`;
+                y = maxY;
+            }
+            if (y <= scrollY) {
+                ydir = 1;
+                hue += 20;
+                bounceSound.play();
+                pfp.style.filter = `hue-rotate(${hue}deg)`;
+                y = scrollY; 
+            }
+
+        }
+
+        tick();
+    </script>
+  </body>
+</html>

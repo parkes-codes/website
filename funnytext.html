@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>font thingy</title>
+  </head>
+  <body>
+    <h1 class="title">font thingy</h1>
+    <input type="text" id="textInput" placeholder="Type here..." />
+  
+    <div id="modeButtons" style="margin: 10px 0;">
+    </div>
+    
+    <p id="outputText"></p>
+    <button id="copyBtn" style="display:none;">Copy</button>
+<style>
+  #textInput{
+    width: 300px;
+  }
+</style>
+<script>
+  const input = document.getElementById('textInput');
+  const output = document.getElementById('outputText');
+  const copyBtn = document.getElementById('copyBtn');
+  const modeButtons = document.getElementById('modeButtons');
+
+  // Current selected mode number
+  let textMode = 1;
+
+  // Create buttons 1 to 9 dynamically
+for(let i = 1; i <= 10; i++) {
+  const btn = document.createElement('button');
+  btn.textContent = i;
+  btn.style.marginRight = '5px';
+  btn.addEventListener('click', () => {
+    setMode(i);
+  });
+  modeButtons.appendChild(btn);
+}
+
+
+  function highlightSelectedButton(selected) {
+    [...modeButtons.children].forEach(button => {
+      button.style.fontWeight = button.textContent == selected ? 'bold' : 'normal';
+    });
+  }
+
+  highlightSelectedButton(textMode);
+
+  function alternateCaps(text) {
+    return text.split(' ').map(word => {
+      return word.split('').map((char, index) => {
+        return ((index + textMode) % 2 === 0) ? char.toUpperCase() : char.toLowerCase();
+      }).join('');
+    }).join(' ');
+  }
+
+ function randomizeWords(text) {
+    let words = text.trim().split(/\s+/);
+    for(let i = words.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [words[i], words[j]] = [words[j], words[i]];
+    }
+    return words.join(' ');
+  }
+
+function alphabetizeWords(str) {
+  return str
+    .split(/\s+/)         
+    .sort((a, b) => a.localeCompare(b)) 
+    .join(" ");          
+}
+
+
+function lengthSort(str) {
+  const words = str.split(/\s+/);
+
+  return words
+    .map((w, i) => [w, i])
+    .sort((a, b) => {
+      // 1️⃣ clean words for length: letters + numbers only
+      const lenA = a[0].replace(/[^a-zA-Z0-9]/g, "").length;
+      const lenB = b[0].replace(/[^a-zA-Z0-9]/g, "").length;
+
+      // sort by length
+      if (lenA !== lenB) return lenA - lenB;
+
+      // 2️⃣ identical words stay together
+      if (a[0] !== b[0]) return a[0].localeCompare(b[0]);
+
+      // 3️⃣ stable order
+      return a[1] - b[1];
+    })
+    .map(x => x[0])
+    .join(" ");
+}
+
+function reverseLetters(str) {
+  return str
+    .split(/\s+/)
+    .map(w => w.split('').reverse().join(''))
+    .join(' ');
+}
+
+function reverseWords(str) {
+  return str.split(/\s+/).reverse().join(' ');
+}
+
+function shuffleLetters(str) {
+  return str
+    .split(/\s+/)
+    .map(w => {
+      const arr = w.split('');
+      for(let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr.join('');
+    })
+    .join(' ');
+}
+
+function germanAccentSort(str) {
+  return str
+    .replace(/\bthis\b/gi, 'zees')   
+    .replace(/\bthe\b/gi, 'zee')     
+    .replace(/\bwhat\b/gi, 'vat')    
+    .replace(/\bis\b/gi, 'eez')      
+    .replace(/\bany\b/gi, 'eeny')
+    .replace(/\bof\b/gi, 'ov')       
+    .replace(/\bpart\b/gi, 'paart')  
+    .replace(/\bcan\b/gi, 'coon')    
+    .replace(/\bare\b/gi, 'arr')    
+    .replace(/\btheir\b/gi, 'thair') 
+    .replace(/\bthen\b/gi, 'theen')  
+    .replace(/\band\b/gi, 'eend')
+    .replace(/\bhave\b/gi, 'hav')
+    .replace(/\bover\b/gi, 'ovah')
+    .replace(/\bother\b/gi, 'uthah')
+    .replace(/\bcolor\b/gi, 'collar')
+    .replace(/\bcolour\b/gi, 'collar')
+    .replace(/\btreated\b/gi, 'treeated')
+    .replace(/\bzealand\b/gi, 'zeeland')
+    .replace(/\bonly\b/gi, 'oonly')
+    .replace(/\bkill\b/gi, 'keel')
+    .replace(/\blay\b/gi, 'laye')
+    .replace(/\bby\b/gi, 'bie')
+    .replace(/\bgroup\b/gi, 'groop')
+    .replace(/\bthat\b/gi, 'zat')
+    .replace(/\btribe\b/gi, 'trieb')
+    .replace(/\bwhere\b/gi, 'weere')
+    .replace(/\bwere\b/gi, 'weer')
+    .replace(/\bto\b/gi, 'too')
+    .replace(/\bwith\b/gi, 'weeth')
+    .replace(/\bappear\b/gi, 'appeer')
+    .replace(/\ball\b/gi, 'oll')
+    .replace(/\bband\b/gi, 'bond')
+    .replace(/\bon\b/gi, 'oon')
+    .replace(/\bwe\b/gi, 'wee')
+    .replace(/um/gi, 'oom')   
+    .replace(/ittle/gi, 'eetle')
+    .replace(/kid/gi, 'keed')
+    .replace(/ack/gi, 'eek')         
+    .replace(/or/gi, 'oor')        
+    .replace(/tec/gi, 'teec') 
+    .replace(/fem/gi, 'feem') 
+    .replace(/ten/gi, 'teen') 
+    .replace(/in/gi, 'een')
+    .replace(/hair/gi, 'har') 
+    .replace(/ead/gi, 'eed')
+    .replace(/you/gi, 'yoo') 
+    .replace(/uck/gi, 'ook') 
+    .replace(/re/gi, 'ree') 
+    .replace(/land/gi, 'leend') 
+    .replace(/mania/gi, 'meenia') 
+    .replace(/s/gi, 'z')
+    .replace(/zh/gi, 'sh')        
+    .replace(/ity/gi, 'eety');            
+}
+
+function caveman(text) {
+  const contractions = {
+    "that's":"that","thats":"that",
+    "it's":"it","its":"it",
+    "there's":"there","theres":"there",
+    "what's":"what","whats":"what",
+    "who's":"who","whos":"who",
+    "where's":"where","wheres":"where",
+    "when's":"when","whens":"when",
+    "why's":"why","whys":"why",
+    "how's":"how","hows":"how"
+  };
+
+  const pronouns = {
+    "i":"me","me":"me","my":"me",
+    "you":"you","your":"you",
+    "he":"him","him":"him",
+    "she":"her","her":"her",
+    "they":"them","them":"them",
+    "we":"us","us":"us",
+    "it":"thing"
+  };
+
+  const remove = new Set([
+    "the","a","an",
+    "to","from","in","on","at","by","with","about","against","between",
+    "into","through","during","before","after","above","below","under",
+    "over","near","of","for","as",
+    "is","are","was","were","am","been","being",
+    "do","does","did",
+    "very","really","just","quite","maybe","basically"
+  ]);
+
+  let out = [];
+
+  for (let raw of text.toLowerCase().replace(/[^\w\s']/g,"").split(/\s+/)) {
+    if (!raw) continue;
+
+    let w = contractions[raw] || raw;
+    if (remove.has(w)) continue;
+
+    if (pronouns[w]) w = pronouns[w];
+
+    if (w.endsWith("ing") && w.length > 4) w = w.slice(0,-3);
+    else if (w.endsWith("ed") && w.length > 3) w = w.slice(0,-2);
+
+    if (out[out.length - 1] !== w) out.push(w);
+  }
+
+  return out.join(" ");
+}
+
+
+function uncomfortableCaps(text) {
+  return text
+    .split(/\s+/)
+    .map(w =>
+      w.replace(/[a-zA-Z]/, c => c.toUpperCase())
+    )
+    .join(" ");
+}
+
+
+
+
+  function transformAndDisplay(text) {
+    let transformed = '';
+    
+    if (textMode == 1) { transformed = alternateCaps(text)}
+    if (textMode == 2) { transformed = randomizeWords(text)}
+    if (textMode == 3) { transformed = alphabetizeWords(text)}
+    if (textMode == 4) { transformed = lengthSort(text)}
+    if (textMode == 5) { transformed = reverseLetters(text)}
+    if (textMode == 6) { transformed = reverseWords(text)}
+    if (textMode == 7) { transformed = shuffleLetters(text)}
+    if (textMode == 8) { transformed = germanAccentSort(text)}
+    if (textMode == 9) { transformed = caveman(text)}
+    if (textMode == 10) { transformed = uncomfortableCaps(text)}
+    
+    output.textContent = transformed;
+    copyBtn.style.display = transformed.trim().length > 0 ? 'inline-block' : 'none';
+  }
+
+  input.addEventListener('input', () => {
+    transformAndDisplay(input.value);
+  });
+
+  copyBtn.addEventListener('click', () => {
+    const textToCopy = output.textContent;
+    if (textToCopy.trim().length > 0) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(textToCopy)
+          .then(() => {
+            alert('Copied to clipboard!');
+          })
+          .catch(err => {
+            fallbackCopy(textToCopy);
+          });
+      } else {
+        fallbackCopy(textToCopy);
+      }
+    }
+  });
+
+  function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      const successful = document.execCommand('copy');
+      alert(successful ? 'Copied to clipboard!' : 'Failed to copy text.');
+    } catch (err) {
+      alert('Failed to copy text: ' + err);
+    }
+    document.body.removeChild(textarea);
+  }
+  
+  const title = document.querySelector('.title');
+
+function updateTitle(mode) {
+  if(mode === 1) {
+    title.textContent = 'fOnT tHiNgY  (alternating caps)';
+  } else  if (mode === 2) {
+    title.textContent = 'thingy font (randomized words)';
+  } else if (mode === 3) {
+    title.textContent = 'font thingy (alphabetical sort)';
+  } else if (mode === 4) {
+    title.textContent = 'font thingy (length sort)';
+  } else if (mode === 5) {
+    title.textContent = 'tnof ygniht (reverse words)';
+  } else if (mode === 6) {
+    title.textContent = 'thingy font (reverse words)';
+  } else if (mode === 7) {
+    title.textContent = 'ftno thigny (shuffle letters)'
+  } else if (mode === 8) {
+    title.textContent = 'foont theengy (german sort)'
+  } else if (mode === 9) {
+    title.textContent = 'me change font (confusing)'
+  } else if (mode === 10) {
+    title.textContent = 'Font Thingy (Title Caps)'
+  }
+}
+
+// Call this when mode changes
+function setMode(newMode) {
+  textMode = newMode;
+  highlightSelectedButton(newMode);
+  updateTitle(newMode);
+  transformAndDisplay(input.value);
+}
+
+
+
+updateTitle(textMode);
+
+</script>
+
+  </body>
+</html>
