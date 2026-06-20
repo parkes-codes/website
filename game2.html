@@ -98,7 +98,7 @@
 
     let px = 0;
     let py = -150;
-    let yv = 0;
+    let yv = 2;
     let xv = 0;
     let camy = 0;
     let t = 0;
@@ -222,35 +222,51 @@
     const backgroundSpeedX = 0.7;
     const backgroundSpeedY = 0.7;
 
-    function updateBackground() {
-      backgroundX += backgroundSpeedX;
-      backgroundY += backgroundSpeedY;
+    function updateBackground(delta) {
+      backgroundX += backgroundSpeedX * delta;
+      backgroundY += backgroundSpeedY * delta;
 
       // update opacity-layer background position
       updateBackgroundLayerPosition(backgroundX, backgroundY);
     }
 
+    // FPS/delta setup
+    let lastTime = performance.now();
+
     function draw() {
+      const now = performance.now();
+      let delta = (now - lastTime) / 1000; // in seconds
+      lastTime = now;
+
+      // Clamp delta to prevent jumps on tab switch etc.
+      if (delta > 0.1) delta = 0.1; // max 100ms per frame
+
+      // Use delta for everything time-based
+      const baseFps = 60; // for scaling legacy values
+
       if (firstmove) {
-        t += 1 / 60;
+        t += delta;
       }
       if (yv == 0) {
         grounded = true;
       }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      updateBackground();
+      updateBackground(delta * baseFps);
 
-      yv -= 0.4;
+      // gravity, divided by fps
+      yv -= (0.4 * delta * baseFps);
       if (yv < -20) {
         yv = -20;
       }
-      px += xv;
-      py += yv;
 
-      camy = py + yv;
+      // divide velocities per frame by fps so the game speed does not depend on frame rate
+      px += xv * delta * baseFps;
+      py += yv * delta * baseFps;
 
-      xv *= 0.9;
+      camy = py + yv * delta * baseFps;
+
+      xv *= Math.pow(0.9, delta * baseFps);
 
       if (grounded) {
         jumptimer = 0;
@@ -262,8 +278,8 @@
           jumptimer++;
         }
         if (jumptimer <= maxHold) {
-          yv += 1;
-          fuelUsed += Math.abs(yv * yv * yv) / 500;
+          yv += (1 * delta * baseFps);
+          fuelUsed += Math.abs(yv * yv * yv) / 500 * delta * baseFps;
           grounded = false;
         }
       }
@@ -272,7 +288,7 @@
         firstmove = true;
         dir = "left";
         if (xv > -5) {
-          xv -= 0.5;
+          xv -= (0.5 * delta * baseFps);
         } else {
           xv = -5;
         }
@@ -282,7 +298,7 @@
         firstmove = true;
         dir = "right";
         if (xv < 5) {
-          xv += 0.5;
+          xv += (0.5 * delta * baseFps);
         } else {
           xv = 5;
         }
@@ -290,7 +306,6 @@
 
       collided = 0;
       platformsDrawn = 0;
-
 
       let needNewPlatform = true;
       for (let i = 0; i < platforms.length; i++) {
@@ -320,7 +335,7 @@
         ctx.save();
         ctx.translate(
           canvas.width / 2 + px + 40,
-          canvas.height / 2 - py + camy+yv
+          canvas.height / 2 - py + camy + yv * delta * baseFps
         );
         ctx.scale(-1, 1);
         ctx.drawImage(playerimg, 0, 0, 80, 50);
@@ -329,14 +344,14 @@
         ctx.drawImage(
           playerimg,
           canvas.width / 2 + px - 40,
-          canvas.height / 2 - py + camy+yv,
+          canvas.height / 2 - py + camy + yv * delta * baseFps,
           80,
           50
         );
       }
 
       fire();
-      display.textContent = `Height: ${(py/100+1.5).toFixed(2)}m Time: ${t.toFixed(2)}s Fuel Used: ${(fuelUsed/100).toFixed(2)}L`
+      display.textContent = `Height: ${(py / 100 + 1.5).toFixed(2)}m Time: ${t.toFixed(2)}s Fuel Used: ${(fuelUsed / 100).toFixed(2)}L`
 
       requestAnimationFrame(draw);
     }
