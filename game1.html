@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>arrasio</title>
+    <title>Arass io</title>
     <meta charset="UTF-8">
     <link rel="icon" type="image/x-icon" href="icon.ico" />
     <style>
@@ -125,6 +125,22 @@
     const keysPressed = {};
     const bullets = [];
 
+    // --- FPS and Delta Time Setup ---
+    let lastTimestamp = null;
+    let fps = 60;
+    let delta = 1; // Ratio of frame time to ideal 60fps frame (1 means 16.666ms per frame)
+    function getDelta(current) {
+        if (lastTimestamp === null) {
+            lastTimestamp = current;
+            return 1;
+        }
+        const frameTime = (current - lastTimestamp) || (1000/60);
+        lastTimestamp = current;
+        fps = 1000 / frameTime;
+        return frameTime / (1000/60); // Delta (relative to 60 fps)
+    }
+    // --------------------------------
+
     window.addEventListener('keydown', (e) => {
         keysPressed[e.key.toLowerCase()] = true;
     });
@@ -148,19 +164,20 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    function updateVelocity() {
-        moveSpeed = speedinput.value ? speedinput.value : 6
-        if (keysPressed['w']) yvel -= moveSpeed/10;
-        if (keysPressed['s']) yvel += moveSpeed/10;
-        if (keysPressed['a']) xvel -= moveSpeed/10;
-        if (keysPressed['d']) xvel += moveSpeed/10;
+    function updateVelocity(frameDelta) {
+        moveSpeed = speedinput.value ? speedinput.value : 6;
+        // The /10 divisor makes this "units per frame"; multiply by frameDelta to make it not frame dependent
+        if (keysPressed['w']) yvel -= (moveSpeed/10) * frameDelta;
+        if (keysPressed['s']) yvel += (moveSpeed/10) * frameDelta;
+        if (keysPressed['a']) xvel -= (moveSpeed/10) * frameDelta;
+        if (keysPressed['d']) xvel += (moveSpeed/10) * frameDelta;
     }
 
     let originalDraw;
     if (typeof draw === "function") {
         originalDraw = draw;
         function drawWithInput() {
-            updateVelocity();
+            updateVelocity(delta);
             originalDraw();
         }
         draw = drawWithInput;
@@ -211,25 +228,27 @@
     let centerX = 0;
     let centerY = 0;
 
-    function draw() {
+    function drawWithDelta(currentTime) {
+        delta = getDelta(currentTime); // Get new delta for this frame
+
         firespeed = fireinput.value ? fireinput.value : 500;
         recoilStrength = (recoilinput.value ? recoilinput.value : 5)*Math.log((firespeed+300)/100)/10;
         bulletspeed = bsinput.value ? bsinput.value : 8
 
-
+        // Cooldown (should be framerate independent)
         if (cooldown > 0) {
-            cooldown -= 0.03333/Math.max((firespeed/1000),0.01);
+            cooldown -= (0.03333/Math.max((firespeed/1000),0.01)) * delta;
         }
 
-        // Apply velocity: total is movement + recoil
-        x += xvel + xvelRecoil;
-        y += yvel + yvelRecoil;
-        // Decay movement velocity quickly
-        xvel *= 0.9;
-        yvel *= 0.9;
-        // Decay recoil velocity more slowly
-        xvelRecoil *= 0.97;
-        yvelRecoil *= 0.97;
+        // Apply velocity: total is movement + recoil (framerate independent)
+        x += (xvel + xvelRecoil) * delta;
+        y += (yvel + yvelRecoil) * delta;
+        // Decay movement velocity quickly (frame rate independent exponential decay)
+        xvel *= Math.pow(0.9, delta);
+        yvel *= Math.pow(0.9, delta);
+        // Decay recoil velocity more slowly (framerate independent)
+        xvelRecoil *= Math.pow(0.97, delta);
+        yvelRecoil *= Math.pow(0.97, delta);
         collision();
 
         const fixedbaseWidth = size;
@@ -248,9 +267,10 @@
                 ctx.arc(bullet.x, bullet.y, 8, 0, 2 * pi);
                 ctx.fillStyle = "#000";
                 ctx.fill();
-                bullets[i].x += Math.sin(bullet.dir) * bulletspeed;
-                bullets[i].y += Math.cos(bullet.dir) * bulletspeed;
-                bullets[i].t += 0.033333;
+                // Move bullet, framerate independent
+                bullets[i].x += Math.sin(bullet.dir) * bulletspeed * delta;
+                bullets[i].y += Math.cos(bullet.dir) * bulletspeed * delta;
+                bullets[i].t += 0.033333 * delta;
                 if (bullet.t > 100/(Math.max(bulletspeed,0.01))) {
                     bullets.splice(i, 1);
                     i--;
@@ -279,8 +299,10 @@
 
         ctx.drawImage(base, x, y, fixedbaseWidth, fixedbaseHeight);
 
-        requestAnimationFrame(draw);
+        // Call updateVelocity AFTER possible mouse events (for WASD responsive to real delta time)
+        updateVelocity(delta);
 
+        requestAnimationFrame(drawWithDelta);
     }
 
     // REMOVED problematic document.body.appendChild() calls
@@ -307,10 +329,10 @@
                     yvelRecoil += 0-(Math.cos(dir - pi / 2) * recoilStrength);
                 }
 
-
             }
             if (mouseDown) {
-                setTimeout(fireBullet, firespeed/10); 
+                // Repeated fire rate should be frame rate independent
+                setTimeout(fireBullet, (firespeed/10) / (fps/60)); // Adjust for real FPS (so at 120fps this is about half the ms)
             }
         }
         fireBullet();
@@ -320,7 +342,8 @@
 
     });
 
-    draw();
+    // Initial call
+    requestAnimationFrame(drawWithDelta);
 
 </script>
 </html>
