@@ -4,6 +4,12 @@
     <title>Amazing Graphs 2</title>
     <link rel="icon" type="image/x-icon" href="icon.ico" />
     <style>
+      html, body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
       body {
         margin: 0;
         padding: 20px;
@@ -11,13 +17,16 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 10vh;
+        min-height: 100vh;
+        min-width: 100vw;
+        width: 100vw;
+        height: 100vh;
         background: #000;
         color: white;
         font-family: Arial, sans-serif;
         position: relative;
         overflow: hidden;
-        
+        box-sizing: border-box;
       }
       canvas {
         border: 1px solid #fff;
@@ -174,12 +183,9 @@ input[type="range"].slid::-webkit-slider-thumb {
   #right-arrow-btn {
     right: 10px;
   }
-
-
     </style>
   </head>
 <body tabindex="0">
-    <h1></h1>
     <div id="slider-container-z">
       <input type="range" min="0" max="10000" value="0" id="graph-slider-z" class="slid">
       <div id="graph-value-z">Z=0</div>
@@ -1968,10 +1974,8 @@ coordDisplay.style.zIndex = 10;
 document.body.appendChild(coordDisplay);
 coordDisplay.style.display = 'none';
 
- let pixelX=0;
- let pixelY=0;
- 
-
+let pixelX=0;
+let pixelY=0;
 
 function updateCoordDisplay(mx, my) {
   zoom = graphNumZoom / 100;
@@ -1991,7 +1995,6 @@ const rect = canvas.getBoundingClientRect();
   
     const coords = ZS2(pixelX, pixelY);
 
-  
   coordDisplay.textContent =
     `g${selectedGraphNumber} of (${coords.graphX.toFixed(3)}, ${coords.graphY.toFixed(3)}) with t ${t.toFixed(3)} is ${value.toFixed(5)}`;
 
@@ -2026,6 +2029,18 @@ window.addEventListener('mouseup', () => {
 
 
 function animate(timestamp) {
+
+ document.body.style.transformOrigin = "center center";
+ // Compute the scale to fit the content within the window, but prevent going offscreen by limiting scale by width and height.
+ let baseWidth = 600;
+ let baseHeight = 600;
+ let scaleW = window.innerWidth / baseWidth;
+ let scaleH = window.innerHeight / baseHeight;
+ // Choose the minimum scale so content always fits, never overflows
+ let scale = Math.min(scaleW, scaleH);
+
+ document.body.style.transform = `scale(${scale})`;
+ document.body.style.transformOrigin = "center center";
 
  const deltaTime = lastTimestamp ? (timestamp - lastTimestamp) / 1000 : 0;
   lastTimestamp = timestamp;
