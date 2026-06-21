@@ -46,6 +46,21 @@
       #fileInput {
         margin-right: -160px;
       }
+      #scalelabel {
+        color: #fff;
+        margin-left: 1rem;
+        margin-right: 0.2rem;
+        font-size: 14px;
+      }
+      #scaleInput {
+        width: 56px;
+        font-size: 14px;
+        padding: 2px 4px;
+        border-radius: 3px;
+        border: 1px solid #bbb;
+        background: #111;
+        color: #fff;
+      }
     </style>
   </head>
   <body>
@@ -54,6 +69,8 @@
         <input type="file" id="fileInput" accept="audio/mp3, audio/mpeg" />
         <div id="time">time:</div>
         <button id="end" onclick="endandlog()">End</button>
+        <span id="scalelabel">Scale</span>
+        <input id="scaleInput" type="number" step="0.1" min="0.1" max="50" value="2" title="Scale" />
       </div>
       <canvas id="oscilloscope" style="border:1px solid #ccc;"></canvas>
     </div>
@@ -63,6 +80,7 @@
       const canvas = document.getElementById('oscilloscope');
       const ctx = canvas.getContext('2d');
       const timediv = document.getElementById("time");
+      const scaleInput = document.getElementById("scaleInput");
 
       // --- AUDIO VARIABLES ---
       let audio;
@@ -73,7 +91,15 @@
       let dataL, dataR;
 
       const BUFFER_SIZE = 4096;
-      let scaleboost = 6;
+      let scaleboost = parseFloat(scaleInput.value);
+
+      // UI: Scale input handler
+      scaleInput.addEventListener('input', function() {
+        let val = parseFloat(this.value);
+        if (!isNaN(val) && val > 0) {
+          scaleboost = val;
+        }
+      });
 
       // --- Resize Canvas Dynamically ---
       function resizeCanvas() {
@@ -120,7 +146,7 @@
 
         if (!dataL || !dataR) return;
 
-        const scale = canvas.width * scaleboost*2;
+        const scale = canvas.width * scaleboost * 2;
         let started = false;
         for (let i = 0; i < BUFFER_SIZE; i++) {
           let x = dataL[i];
@@ -158,7 +184,6 @@
 
         const file = fileInput.files[0];
         if (!file) return;
-
 
         const url = URL.createObjectURL(file);
         audio = new Audio(url);
