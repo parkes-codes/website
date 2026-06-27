@@ -7,12 +7,13 @@
     <link rel="icon" type="image/x-icon" href="icon.ico" />
 </head>
 <style>
-
-body {background-color: #000;
+body {
+    background-color: #000;
         position: fixed;
         width: 100vw;
         height: 100vh;
         overflow: hidden;
+        font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     }
       #gamecanvas {
         border: #fff 5px solid;
@@ -38,92 +39,404 @@ body {background-color: #000;
     #display {
         position: absolute;
         z-index: 2;
-        left: 40px;
-        bottom: 8px;
+        right: 15px;
+        bottom: 7px;
         width: 300px;
         height: 12px;
-        font-size: 15px;
-        color: #fff
+        font-size: 12px;
+        color: #fff;
+        text-align: right;
+    }
+    #speedinput {
+        position: absolute;
+        z-index: 2;
+        left: 40px;
+        bottom: 16px;
+        width: 40px;
+        height: 12px;
+        font-size: 10px;
+    }
+    #inputnames {
+        position: absolute;
+        z-index: 3;
+        left: 4px;
+        bottom: 24px;
+        width: fit-content;
+        height: 12px;
+        font-size: 8px;
+        color: #cefff7;
+    }
+    #clearbtn {
+        position: absolute;
+        z-index: 3;
+        left: 0px;
+        top: 0px;
+        width: 50px;
+        height: 22px;
+        font-size: 13px;
+    }
+    #depthinput {
+        position: absolute;
+        z-index: 2;
+        left: 91px;
+        bottom: 16px;
+        width: 30px;
+        height: 12px;
+        font-size: 10px;
+    }
+    #layersContainer {
+        position: absolute;
+        z-index: 2;        
+        top: 7px;
+        left: 0px;
+        width: max-content;
+        height: fit-content;
+        max-height: 100vh;
+        font-size: 10px;
+        background-color: rgba(0,0%,0%,0);
+        color: #fff;
+    }
+    /* Make sure checkbox containers align as columns are added */
+    .checkboxCont {
+        width: fit-content;
+        display: flex;
+        flex-direction: row;
+        text-align: left;
+        justify-content: flex-end;
+        margin-left: auto;
+        margin-top: -7px;
+        margin-bottom: -7px;
+        font-size: 8px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    #linethickinput {
+        width: 30px;
+        height: 10px;
+        font-size: 8px;
+    }
+    #lineThickCont {
+        margin-top: 5px;
+        text-align: right;
     }
 </style>
 <body>
 
  <canvas id="gamecanvas"></canvas>
  <input id="numinput" type="number" value="1" max="11" min="1">
- <p id="display">speed: 0</p>
+ <p id="display">Velocity: 0</p>
+ <input id="speedinput" type="number" value="1" max="10" min="0" step="0.08">
+ <p id="inputnames"></p>
+ <button id="clearbtn" onclick="clearr()">Clear</button>
+ <input id="depthinput" type="number" value="15" max="15" min="1">
+ <div id="layersContainer">
+    <!-- Rod checkboxes will be dynamically generated here -->
+ </div>
 
 </body>
 <script>
 
+// Utility functions to calculate GCD and LCM
+function gcd(a, b) {
+    if (!b) return a;
+    return gcd(b, a % b);
+}
+
+function lcm(a, b) {
+    if (a === 0 || b === 0) return 0;
+    return Math.abs(a * b) / gcd(Math.abs(a), Math.abs(b));
+}
+
+// For floats, compute the least common multiple using rational approximations.
+function lcmOfFloatList(arr, tol = 1e-8) {
+    function toFraction(x, tol = 1e-8) {
+        let h1=1, h2=0, k1=0, k2=1, b=x;
+        do {
+            let a = Math.floor(b);
+            let aux = h1; h1 = a*h1+h2; h2 = aux;
+            aux = k1; k1 = a*k1+k2; k2 = aux;
+            b = 1/(b-a);
+        } while (Math.abs(x - h1/k1) > x * tol);
+
+        return [h1, k1]; // numerator, denominator
+    }
+    let denoms = arr.map(v => {
+        let val = Math.abs(v);
+        if (Math.floor(val) === val) return 1;
+        return toFraction(val, tol)[1];
+    });
+    let commonDenom = denoms.reduce((acc, d) => lcm(acc, d), 1);
+    let ints = arr.map(n => Math.round(n * commonDenom));
+    let lcmNum = ints.reduce((acc, n) => lcm(acc, Math.abs(n)), 1);
+
+    if (commonDenom === 0) return 0;
+    return lcmNum / commonDenom;
+}
+
+
 const canvas = document.getElementById("gamecanvas");
 const ctx = canvas.getContext('2d');
 const numin = document.getElementById("numinput");
+const speedin = document.getElementById("speedinput");
+const depthin = document.getElementById("depthinput");
 const display = document.getElementById("display")
+const layersctojtntaino = document.getElementById("layersContainer")
+const inputnames = document.getElementById("inputnames")
 let rotspeed = [];
 let length = [];
 let offset = [];
-let t = 0;
+let enabled = [];
+let t = 0
 let res = 3;
-let pi = Math.PI
+let pi = Math.PI;
+
+// Use an object to hold arrays of positions for each rod (by index), and the endpoint as 'end'
+let poslist = {};
 
 function generateFractal(depth) {
     rotspeed = []
     length = []
     offset = []
 
- for (let i = depth; i > 0; i--) {
-    if (i%2 == 1) {
-        rotspeed.push(Math.pow(2,i)*-1)
-    } else {
-        rotspeed.push(Math.pow(2,i)*1)
+    for (let i = depth; i > 0; i--) {
+        if (i%2 == 1) {
+            rotspeed.push(Math.pow(2,i)*-1)
+        } else {
+            rotspeed.push(Math.pow(2,i)*1)
+        }
+        length.push(200/Math.pow(2,i));
+        offset.push(pi/2)
     }
-    length.push(200/Math.pow(2,i));
-    offset.push(pi/2)
- }
- rotspeed.reverse();
- length.reverse();
- offset.reverse();
+    rotspeed.reverse();
+    length.reverse();
+    offset.reverse();
 }
 
 
 let speedmult = 0;
+let bigspeedmult = 1;
 let lenmult = 0;
 let masterlenmult = 1;
 let endX = 0;
 let endY = 0;
-let pos = []
+
+// Helper to reset all paths
+function clearr() {
+    poslist = {};
+    t = 0;
+}
 
 
+// Make thicknessInput globally accessible
+let thicknessInput = null;
+// Store the thickness value separately so it persists across UI rebuilds
+let thicknessValue = '2';
+
+function updateRodCheckboxes() {
+    enabled = [];
+
+    layersctojtntaino.innerHTML = '';
+    const existing = document.getElementById('lineThickCont');
+    if (existing) existing.remove();
+
+
+    const masterDiv = document.createElement('div');
+    masterDiv.id = 'masterdiv';
+    masterDiv.className = 'checkboxCont'
+    const masterLabel = document.createElement('label');
+    masterLabel.textContent = 'All';
+    masterLabel.style.marginTop = "3.5px"
+    masterLabel.style.fontSize = "10px"
+    const masterCheckbox = document.createElement('input');
+    masterCheckbox.type = 'checkbox';
+    masterCheckbox.style.transform = "scale(1.3)";
+    masterDiv.style.marginBottom = "4px"
+    masterCheckbox.checked = true;
+    masterDiv.appendChild(masterLabel);
+    masterDiv.appendChild(masterCheckbox);
+    layersctojtntaino.appendChild(masterDiv);
+
+    masterCheckbox.addEventListener('change', function() {
+        if (masterCheckbox.checked) {
+            for (let i = 0; i < rotspeed.length; i++) {
+                enabled[i] = true;
+            }
+        } else {
+            // Show all
+            for (let i = 0; i < rotspeed.length; i++) {
+                enabled[i] = false;
+            }
+            enabled[enabled.length-1] = true;
+        }
+        // Sync all rod checkboxes
+        for (let i = 0; i < rotspeed.length; i++) {
+            const rodBox = document.getElementById(`rodcb_${i}`);
+            if (rodBox) {
+                rodBox.checked = enabled[i];
+            }
+        }
+    });
+
+    // Build rod checkboxes
+    for (let i = 0; i < rotspeed.length; i++) {
+        enabled.push(true);
+        const boxDiv = document.createElement('div');
+        boxDiv.className = 'checkboxCont';
+        const label = document.createElement('p');
+        label.textContent = `Show Rod ${i + 1} Path`;
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `rodcb_${i}`;
+        boxDiv.appendChild(label);
+        boxDiv.appendChild(checkbox);
+        layersctojtntaino.appendChild(boxDiv);
+        checkbox.checked = true; 
+
+        checkbox.addEventListener('change', function() {
+            enabled[i] = checkbox.checked;
+
+            // If any but the last rod is re-enabled, uncheck master
+            if (i !== rotspeed.length-1 && checkbox.checked && masterCheckbox.checked) {
+                masterCheckbox.checked = false;
+            }
+
+            // If all but last become unchecked and last checked, set master checkbox to checked
+            let onlyLastOn = enabled.filter((v, ind) => ind !== rotspeed.length-1).every(v => !v) && enabled[rotspeed.length-1];
+            if (onlyLastOn) {
+                masterCheckbox.checked = true;
+            } else {
+                if (masterCheckbox.checked && i !== rotspeed.length-1) masterCheckbox.checked = false;
+            }
+        });
+    }
+
+    // Add the line thickness input UI
+    const lineThickCont = document.createElement('div');
+    lineThickCont.id = 'lineThickCont';
+    const lineThickLabel = document.createElement('label');
+    lineThickLabel.htmlFor = 'linethickinput';
+    lineThickLabel.textContent = 'Line Thickness: ';
+    const lineThickInput = document.createElement('input');
+    lineThickInput.type = 'number';
+    lineThickInput.id = 'linethickinput';
+    lineThickInput.min = '1';
+    lineThickInput.max = '10';
+    // Restore the previously stored thickness value
+    lineThickInput.value = thicknessValue;
+
+    // Listen to changes and store the value globally
+    lineThickInput.addEventListener('input', function() {
+        thicknessValue = lineThickInput.value;
+    });
+
+    // Assign globally for use elsewhere
+    thicknessInput = lineThickInput;
+
+    lineThickLabel.appendChild(lineThickInput);
+    lineThickCont.appendChild(lineThickLabel);
+    layersctojtntaino.appendChild(lineThickCont);
+
+}
+
+// Draw the path for an array of points (rodPath)
+function drawPath(path, color, width = 2) {
+    if (!path || path.length < 2) return;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    for (let i = 0; i < path.length; i++) {
+        if (i === 0) {
+            ctx.moveTo(path[i].x + canvas.width/2, -path[i].y + canvas.height/2);
+        } else {
+            ctx.lineTo(path[i].x + canvas.width/2, -path[i].y + canvas.height/2);
+        }
+    }
+    ctx.stroke();
+}
+
+// Draw a rod, return new (x,y) endpoint of this rod
 function drawRod(x, y, dir, len, speed, it) {
     ctx.strokeStyle = `hsl(${(rotspeed.length - it-1)*(360/rotspeed.length)},60%,70%)`;
     ctx.lineWidth = 4;
 
+    const nextX = x + Math.sin(dir + (t * speed)) * len;
+    const nextY = y + Math.cos(dir + (t * speed)) * len;
+
     const x1 = canvas.width / 2 + x;
     const y1 = canvas.height / 2 - y;
-    const x2 = x1 + Math.sin(dir + (t * speed)) * len;
-    const y2 = y1 - Math.cos(dir + (t * speed)) * len;
-    endX =  x +  Math.sin(dir + (t * speed)) * len;
-    endY =  y +  Math.cos(dir + (t * speed)) * len;
+    const x2 = canvas.width / 2 + nextX;
+    const y2 = canvas.height / 2 - nextY;
 
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
-}
 
-let num = 1;
-function draw() {
-    if (numin.value != num) {
-        pos = [];
-        t = 0;
+    // Store the endpoint for this rod (in its own path)
+    if (!poslist[it]) poslist[it] = [];
+    // Only push if different from previous
+    let prev = poslist[it][poslist[it].length-1];
+    if (!prev || prev.x !== nextX || prev.y !== nextY) {
+        poslist[it].push({x: nextX, y: nextY});
     }
 
-    num = numin.value;
+    return {x: nextX, y: nextY};
+}
+
+
+function getSystemPeriod(speedlist, speedmultReal) {
+    if (!speedlist || speedlist.length === 0) return null;
+    if (speedlist.some(s => s === 0)) return null;
+    let absSpeeds = speedlist.map(s => Math.abs(s));
+    let allInts = absSpeeds.every(n => Number.isInteger(n));
+    let basePeriod;
+
+    if (allInts) {
+        let minGcd = absSpeeds.reduce((acc, n) => gcd(acc, n), absSpeeds[0]);
+        if (minGcd === 0) return null;
+        basePeriod = 2 * Math.PI / minGcd;
+    } else {
+        // lcm of 1/abs(rot_i)
+        let recipSpeeds = absSpeeds.map(s => 1/s);
+        let lcmRecip = lcmOfFloatList(recipSpeeds);
+        if (!isFinite(lcmRecip) || lcmRecip === 0) return null;
+        basePeriod = 2 * Math.PI * lcmRecip;
+    }
+    if (!speedmultReal) return null;
+    return basePeriod / speedmultReal;
+}
+
+
+let changecheck = "";
+function draw() {
+    bigspeedmult = speedin.value;
+
+    const computedWidth = window.getComputedStyle(layersctojtntaino).width;
+    const widthNum = parseFloat(computedWidth);
+    layersctojtntaino.style.left = `calc(100% - ${(isNaN(widthNum) ? 0 : widthNum)+15}px)`;
+
+
+    let shouldUpdate = false;
+    if (`${numin.value}v${depthin.value}` !== changecheck) {
+        clearr();
+        shouldUpdate = true;
+    }
+
+    changecheck = `${numin.value}v${depthin.value}`;
+
+    let num = numin.value;
+
+    if (num == 1) {
+        inputnames.textContent = "Draw #          Speed           Depth";
+        depthin.style.display = "block"
+    } else {
+        inputnames.textContent = "Draw #          Speed"
+        depthin.style.display = "none" 
+    }
 
     if (num == 1) {
         speedmult = 0.05;
         lenmult = 1.8 * res * masterlenmult;
-        generateFractal(14);
+        generateFractal(depthin.value);
     } else if (num == 2) {
         rotspeed = [4, -5, -11];
         length = [4, 8, 2];
@@ -137,7 +450,7 @@ function draw() {
         speedmult = 0.2;
         lenmult = 20 * res * masterlenmult;
     } else if (num == 4) {
-        rotspeed = [3, 5, 7];
+        rotspeed = [6, 10, 14];
         length = [2.5, 2.5, 3.8];
         offset = [0, 0, 0];
         speedmult = 0.2;
@@ -186,44 +499,65 @@ function draw() {
         lenmult =20 * res * masterlenmult;
     }
 
+    // Only update checkboxes if rod count may have changed
+    if (shouldUpdate) updateRodCheckboxes();
 
-    // Save the previous position before updating
-    let lastPos = null;
-    if (pos.length > 0) {
-        lastPos = { x: pos[pos.length - 1].x, y: pos[pos.length - 1].y };
-    }
+    // Calculate last endpoint velocity for "main endpoint" (the last rod)
+    let lastEnd = poslist['end'] && poslist['end'].length > 0 ? poslist['end'][poslist['end'].length-1] : null;
 
-    t += 1 / 60;
+    t += bigspeedmult / 60;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.beginPath();
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    for (let i = 0; i < pos.length; i++) {
-        ctx.lineTo(pos[i].x + canvas.width / 2, ((0 - pos[i].y) + canvas.height / 2));
+    // Draw all rods' trails
+    for(let i = 0; i < rotspeed.length; i++) {
+        let color = `hsl(${(rotspeed.length-i-1)*(360/rotspeed.length)},80%,30%)`;
+        if (enabled[i]) {
+          drawPath(poslist[i], color, thicknessInput.value);
+        }
     }
-    ctx.stroke();
 
-    endX = 0;
-    endY = 0;
+    if (enabled[enabled.length-1]) {
+    drawPath(poslist['end'], "#fff", 2);
+   }
+
+    // now walk the rods, record path for each rod and update the endpoint
+    let x = 0, y = 0;
     let dir = (num == 1) ? Math.PI / 2 : 0;
     for (let i = 0; i < rotspeed.length; i++) {
-        drawRod(endX, endY, offset[i], length[i] * lenmult, rotspeed[i] * speedmult, i);
+        let pt = drawRod(x, y, offset[i], length[i] * lenmult, rotspeed[i] * speedmult, i);
+        x = pt.x;
+        y = pt.y;
+    }
+    endX = x;
+    endY = y;
+
+    // Track endpoint as "end" in poslist
+    if (!poslist['end']) poslist['end'] = [];
+    let lastMain = poslist['end'][poslist['end'].length-1];
+    if (!lastMain || lastMain.x !== endX || lastMain.y !== endY) {
+        poslist['end'].push({ x: endX, y: endY });
     }
 
-    if (!pos.some(p => p.x === endX && p.y === endY)) {
-        pos.push({ x: endX, y: endY });
-    }
-
-    // Calculate speed as distance between last frame's end point and current end point
+    // Velocity only for main end point
     let speed = 0;
-    if (lastPos) {
-        let dx = endX - lastPos.x;
-        let dy = endY - lastPos.y;
+    if (lastEnd) {
+        let dx = endX - lastEnd.x;
+        let dy = endY - lastEnd.y;
         speed = Math.sqrt(dx * dx + dy * dy);
     }
 
-    display.textContent = `speed: ${(speed/speedmult).toFixed(4)}`;
+    // Compute and display system period using system realignment logic;
+    // period is in t-units so you want to include speedmult to get real t (when rods realign as they look in the animation)
+    let period = getSystemPeriod(rotspeed, speedmult);
+    let velVal = ((speed/speedmult)/bigspeedmult);
+    let velocityText = `Velocity: ${isNaN(velVal) ? "0.0000" : velVal.toFixed(4)}`;
+    if (period && isFinite(period)) {
+        velocityText += ` | Period: ${period.toFixed(4)}`;
+    } else {
+        velocityText += ` | Period: ∞`;
+    }
+    velocityText+= ` | Time: ${t.toFixed(3)}`
+    display.textContent = velocityText;
 
     requestAnimationFrame(draw);
 }
@@ -231,11 +565,10 @@ function draw() {
 draw();
 
 function resizeCanvas() {
-  canvas.width = (window.innerWidth*res) - 25;
-  canvas.height = (window.innerHeight*res) -25;
-  masterlenmult = Math.min(canvas.height,canvas.width) / 2000
-  pos = []
-  t=0;
+    canvas.width = (window.innerWidth*res) - 25;
+    canvas.height = (window.innerHeight*res) -25;
+    masterlenmult = Math.min(canvas.height,canvas.width) / 2000
+    clearr();
 }
 
 resizeCanvas();
@@ -243,14 +576,9 @@ window.addEventListener("resize", resizeCanvas);
 
 window.addEventListener("keydown", (e) => {
     if (e.key == "r") {
-        t = 0;
-        pos = []
+        clearr();
     }
 });
-
-
-
-
 
 </script>
 </html>
