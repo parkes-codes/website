@@ -1,0 +1,194 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Number Things</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico" />
+</head>
+<style>
+    body {
+        background-color: #000;
+        color: #fff;
+    }
+
+</style>
+<body>
+    
+    <image src="space.jpg" style="width: 100%; height: 100%; margin: 0; position: absolute; top: 0px; left: 0px; z-index: -2"></image>
+    <div style="width: 100%; height: 100%; margin: 0; position: absolute; top: 0px; left: 0px; z-index: -1"></div> <!-- Image drag blocker-->
+
+    <div style="align-items: center; justify-content: center; display: flex; flex-direction: column; margin-top: -20px;">
+      <h2 style="margin-bottom: 5px;">Encode Number to Any Base</h1>
+      <input id="numberInput" style="width: 200px; margin-bottom: 5px;" placeholder="Number">
+      <input id="baseInput" style="width: 30px" placeholder="Base">
+      <div id="outputtext" style="margin-top: 5px;">Encoded outputs here</div>
+      <h2 style="margin-bottom: 5px;">Decode Number From Any Base</h1>
+      <input id="numberInput2" style="width: 200px; margin-bottom: 5px;" placeholder="Encoded">
+      <input id="baseInput2" style="width: 30px" placeholder="Base">
+      <div id="outputtext2" style="margin-top: 5px; width: fit-content; max-width: 500px;">Decoded outputs here</div>
+    </div>
+</body>
+<script>
+const outputDiv = document.getElementById("outputtext");
+const outputDiv2 = document.getElementById("outputtext2")
+const numberInput = document.getElementById("numberInput");
+const numberInput2 = document.getElementById("numberInput2");
+const baseInput = document.getElementById("baseInput");
+const baseInput2 = document.getElementById("baseInput2");
+
+const chars = [
+  "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+  "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+  "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
+  "u", "v", "w", "x", "y", "z",
+  "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+  "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
+  "U", "V", "W", "X", "Y", "Z",
+  "∑", "#", "$", "∉", "ℶ", "∬", "⨎", "⨗", "⨖", "⨕",
+  "⨘", "⨙", "⨚",
+  "€", "¥", "¢", "£", "₽", "₩", "฿", "₺", "₮", "₱",
+  "₭", "₴", "₦", "₹", "₲", "₡", "₫", "₢", "₳", "₥",
+  "ⱺ", "ß", "ƛ", "ȣ", "ℵ"
+];
+
+function encodeToBase(n, b) {
+
+    let num;
+    let base;
+    try {
+        num = BigInt(n);
+        base = BigInt(b);
+    } catch (e) {
+        return "(invalid input)";
+    }
+
+    if (base < 2n || base > BigInt(chars.length)) return "(base out of supported range)";
+
+    let isNegative = false;
+    if (num < 0n) {
+        isNegative = true;
+        num = -num;
+    }
+
+    if (num === 0n) return chars[0];
+
+    let encodedDigits = [];
+    while (num > 0n) {
+        const rem = num % base;
+        encodedDigits.push(chars[Number(rem)]);
+        num = num / base;
+    }
+    let encoded = encodedDigits.reverse().join('');
+    return isNegative ? '-' + encoded : encoded;
+}
+
+function encodeStuff() {
+    // Get and trim user input
+    const value = numberInput.value.trim();
+    const baseVal = baseInput.value.trim();
+
+    // Input presence check
+    if (value === "") {
+        outputDiv.textContent = "Output: (input needed)";
+        return;
+    }
+    if (baseVal === "") {
+        outputDiv.textContent = "Output: (base needed)";
+        return;
+    }
+    if (!/^-?[0-9]+$/.test(value)) {
+        outputDiv.textContent = "Input needs to be a number.";
+        return;
+    }
+
+    if (!/^[0-9-]+$/.test(baseVal)) {
+        outputDiv.textContent = "Base needs to be a number.";
+        return;
+    }
+
+    let baseNum;
+    try {
+        baseNum = BigInt(baseVal);
+    } catch(e) {
+        outputDiv.textContent = "Base needs to be a number.";
+        return;
+    }
+    if (baseNum > BigInt(chars.length)) {
+        outputDiv.textContent = "Maximum supported base is " + chars.length;
+        return;
+    }
+    if (baseNum < BigInt(2)) {
+        outputDiv.textContent = "Minimum base is 2."
+        return
+    }
+
+    outputDiv.textContent = "Output: " + encodeToBase(value, baseVal);
+}
+
+function decodeFromBase(n, b) {
+    const nStr = n.toString();
+    const base = BigInt(b);
+
+    let output = BigInt(0);
+    let power = BigInt(1);
+
+    for (let i = nStr.length - 1; i >= 0; i--) {
+        const digit = chars.indexOf(nStr.charAt(i));
+        if (digit === -1) {
+            throw new Error("Invalid digit in input string for decoding.");
+        }
+        output += BigInt(digit) * power;
+        power *= base;
+    }
+
+    return output;
+}
+
+function decodeStuff() {
+
+    const value2 = numberInput2.value.trim();
+    const baseVal2 = baseInput2.value.trim();
+
+    // Input presence check
+    if (value2 === "") {
+        outputDiv2.textContent = "Output: (input needed)";
+        return;
+    }
+    if (baseVal2 === "") {
+        outputDiv2.textContent = "Output: (base needed)";
+        return;
+    }
+
+    if (!/^[0-9-]+$/.test(baseVal2)) {
+        outputDiv2.textContent = "Base needs to be a number.";
+        return;
+    }
+
+    let baseNum2;
+    try {
+        baseNum2 = BigInt(baseVal2);
+    } catch(e) {
+        outputDiv2.textContent = "Base needs to be a number.";
+        return;
+    }
+    if (baseNum2 > BigInt(chars.length)) {
+        outputDiv2.textContent = "Maximum supported base is " + chars.length;
+        return;
+    }
+    if (baseNum2 < BigInt(2)) {
+        outputDiv2.textContent = "Minimum base is 2."
+        return
+    }
+
+    outputDiv2.textContent = "Output: " + decodeFromBase(value2, baseVal2)
+}
+
+numberInput.addEventListener("input", encodeStuff);
+baseInput.addEventListener("input", encodeStuff);
+
+numberInput2.addEventListener("input", decodeStuff);
+baseInput2.addEventListener("input", decodeStuff)
+
+</script>
+</html>
