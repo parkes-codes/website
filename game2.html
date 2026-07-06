@@ -96,26 +96,40 @@
     const fireGifElem2 = document.getElementById("firegif2");
     const platforms = [];
 
-    let px = 0;
-    let py = -150;
-    let yv = 2;
-    let xv = 0;
-    let camy = 0;
-    let t = 0;
+    // Start position and state variables, moved to allow resetting via initpos
+    let px, py, yv, xv, camy, t, fuelUsed, platformsDrawn, grounded, dir, firstmove, delta;
     const maxHold = 24;
-    let fuelUsed = 0;
-    let platformsDrawn = 0;
-    let grounded = false;
-    let dir = "right";
-    let firstmove = false;
+    let jumptimer = 0;
+    const baseFps = 60;
 
-    let why = -200;
-    for (let i = 0; i <= 2; i++) {
-      platforms.push({ x: Math.random() * 150, y: why });
-      why += Math.random() * 200 + 150;
+    // Generate starting platforms and initial player position
+    function initpos() {
+      // Clear old platforms
+      platforms.length = 0;
+      let why = -200;
+      for (let i = 0; i <= 2; i++) {
+        platforms.push({ x: Math.random() * 150, y: why });
+        why += Math.random() * 200 + 150;
+      }
+      // Set player at first platform
+      px = platforms[0].x + 8;
+      py = -101;
+      yv = 2;
+      xv = 0;
+      camy = 0;
+      t = 0;
+      fuelUsed = 0;
+      platformsDrawn = 0;
+      grounded = false;
+      dir = "right";
+      firstmove = false;
+      delta = 0;
+      jumptimer = 0;
+      // Immediately clear and redraw to avoid visual glitch
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-
-    px = platforms[0].x + 8;
+    // Initialize for start
+    initpos();
 
     function resizeCanvas() {
       canvas.width = window.innerWidth - 25;
@@ -131,6 +145,10 @@
 
     window.addEventListener("keydown", (e) => {
       keysPressed[e.key.toLowerCase()] = true;
+      // Optional: quick keyboard restart with R key
+      if (e.key.toLowerCase() === 'r') {
+        initpos();
+      }
     });
 
     window.addEventListener("keyup", (e) => {
@@ -170,7 +188,7 @@
         playerLeft < platRight
       ) {
         py = platTop + playerHeight / 2 - feetOffset+0.1;
-        yv =yv/2;
+        yv = yv/2;
         collided++;
       } else if (
         Math.abs(curFeetY - platTop) < 2 &&
@@ -183,10 +201,8 @@
       }
     }
 
-    let jumptimer = 0;
-
     function fire() {
-      if (jumptimer <= maxHold && keysPressed["w"]) {
+      if (jumptimer <=  (maxHold/delta)/baseFps && keysPressed["w"]) {
         fireGifElem.style.display = "block";
 
         let fire1offset = 20;
@@ -234,15 +250,18 @@
     let lastTime = performance.now();
 
     function draw() {
+
+      if (py < -1000) {
+        initpos();
+      }
+
+
       const now = performance.now();
-      let delta = (now - lastTime) / 1000; // in seconds
+       delta = (now - lastTime) / 1000; // in seconds
       lastTime = now;
 
       // Clamp delta to prevent jumps on tab switch etc.
       if (delta > 0.1) delta = 0.1; // max 100ms per frame
-
-      // Use delta for everything time-based
-      const baseFps = 60; // for scaling legacy values
 
       if (firstmove) {
         t += delta;
@@ -277,8 +296,8 @@
         if (!grounded) {
           jumptimer++;
         }
-        if (jumptimer <= maxHold) {
-          yv += (1 * delta * baseFps);
+        if (jumptimer <= (maxHold/delta)/baseFps) {
+          yv += 1.06*delta*baseFps
           fuelUsed += Math.abs(yv * yv * yv) / 500 * delta * baseFps;
           grounded = false;
         }
