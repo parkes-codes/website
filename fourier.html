@@ -131,6 +131,15 @@ body {
     font-size: 7px;
     color: #ffffffc0;
 }
+#mutebtn {
+    position: absolute;
+    width: 1em;
+    height: fit-content;
+    z-index: 4;
+    left: 55px;
+    top: 4px;
+    filter: invert(1);
+}
 </style>
 <body>
 
@@ -140,7 +149,8 @@ body {
  <input id="speedinput" type="number" value="1" max="10" min="0" step="0.08">
  <p id="inputnames"></p>
  <button id="clearbtn" onclick="clearr()">Clear</button>
- <p id="versiondisplay">ver jul 5 2026</p>
+ <img src="plinkk.gif" id="mutebtn" alt="Mute Button" onclick="toggleSound()">
+ <p id="versiondisplay">ver jul 6 2026</p>
  <input id="depthinput" type="number" value="10" max="15" min="1">
  <div id="layersContainer">
     <!-- Rod checkboxes will be dynamically generated here -->
@@ -192,6 +202,7 @@ const depthin = document.getElementById("depthinput");
 const display = document.getElementById("display")
 const layersctojtntaino = document.getElementById("layersContainer")
 const inputnames = document.getElementById("inputnames")
+const mutebtn = document.getElementById("mutebtn");
 const clickSfx = new Audio()
 clickSfx.src = "click.wav"
 let rotspeed = [];
@@ -202,11 +213,20 @@ let t = 0
 let res = 3;
 let filltype = 0;
 let pi = Math.PI;
+let sound = true;
+let paused = false;
 let fillTypeValue;
-let fillOpacityValue 
+let fillOpacityValue = 0.35;
 
 // Use an object to hold arrays of positions for each rod (by index), and the endpoint as 'end'
 let poslist = {};
+
+function toggleSound() {
+    sound = !sound;
+    mutebtn.src = sound ? "soundtrue.png" : "soundfalse.png"
+}
+
+toggleSound();
 
 // --- Matched Rods Flash (Flash state management) ---
 let rodsToFlash = new Set();      // Set of rod indices to flash
@@ -416,7 +436,7 @@ function updateRodCheckboxes() {
     fillOpacityInput.min = '0';
     fillOpacityInput.max = '1';
     fillOpacityInput.step = '0.01';
-    fillOpacityInput.value = (typeof fillOpacityValue !== 'undefined') ? fillOpacityValue : '0.5';
+    fillOpacityInput.value = (typeof fillOpacityValue !== 'undefined') ? fillOpacityValue : '0.25';
     fillOpacityInput.addEventListener('input', function() {
         fillOpacityValue = fillOpacityInput.value;
     });
@@ -454,11 +474,6 @@ function drawPath(path, color, width = 2, rodIndex = null, rodCount = null, doFi
 
     let isLast = (path == poslist['end']);
     let baseColor = isLast ? "#fff" : color;
-
-    // Do NOT flash the path or change the line color for blinking/flash animations.
-    // Just use normal color logic for both rods and main end.
-
-    // Parse the fillOpacityValue carefully: 
     let normalizedOpacity = 1.0; // default
     if (typeof fillOpacityValue !== 'undefined' && fillOpacityValue !== null && fillOpacityValue !== "") {
         let parsed = parseFloat(fillOpacityValue);
@@ -473,17 +488,6 @@ function drawPath(path, color, width = 2, rodIndex = null, rodCount = null, doFi
             // Clamp
             normalizedOpacity = Math.max(0, Math.min(1, normalizedOpacity));
         }
-    }
-
-    // For filltype == 2, fill all visible rod paths as solid with per-path alpha.
-    if (filltype == 2 && rodIndex !== null && rodCount !== null && path.length > 2) {
-        // Compute alpha as pathnum * 100/pathcount percent (as a fraction)
-        let perPathAlpha = ((rodIndex + 1) * 0.5) / rodCount;
-        fillMainPathWithAlpha(path, color, perPathAlpha * normalizedOpacity);
-    }
-    // For filltype == 1, only fill last as solid white.
-    else if ((filltype == 1 || doFillOverride) && isLast && path.length > 2) {
-        fillMainPathWithAlpha(path, "#fff", normalizedOpacity);
     }
 
     for (let i = 1; i < path.length; i++) {
@@ -702,7 +706,7 @@ function draw() {
         }
     }
 
-    t += bigspeedmult / 60;
+    if (!paused) {t += bigspeedmult / 60;}
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // New: Fill all visible rod paths as solid for filltype==2, using alpha = (i+1)/rodscount
@@ -710,7 +714,7 @@ function draw() {
         for (let i = 0; i < rotspeed.length; i++) {
             if (enabled[i] && poslist[i] && poslist[i].length > 2) {
                 let alpha = ((i + 1) * 1.0) / rotspeed.length;
-                fillMainPathWithAlpha(poslist[i], "#fff", alpha*normalizedOpacity);
+                fillMainPathWithAlpha(poslist[i], `hsl(${(rotspeed.length - i - 2)*(360/rotspeed.length)},50%,50%)`, alpha*normalizedOpacity);
             }
         }
         // For filltype 2 we do NOT need a separate solid fill for 'end', since that is already handled in above loop as i==rotspeed.length-1 if enabled
@@ -775,7 +779,6 @@ function draw() {
     display.textContent = velocityText ;
     if (typeof matchedRodPairs === "undefined") matchedRodPairs = new Set();
 
-    // --- Modified Rod Pair Matching: Only play sound and flash for adjacent rods (i,j==i+1) ---
     if (rotspeed.length > 1) {
         let newMatchingPairs = new Set();
 
@@ -789,20 +792,26 @@ function draw() {
             let modB = ((angleB % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
             let diff = Math.abs(modA - modB);
             diff = Math.min(diff, 2 * Math.PI - diff);
-            let threshold = 0.5/60 * 2 * Math.PI;
+            let threshold = 0;
+            if (num == 1) {
+               threshold = (1+Math.log(rotspeed[i]*2))/60  * Math.PI;
+            } else {
+                threshold = 1/30 * Math.PI;
+            }
             let id = i < j ? `${i},${j}` : `${j},${i}`;
 
             if (diff < threshold) {
                 newMatchingPairs.add(id);
                 if (!matchedRodPairs.has(id)) {
-                    // Only play sound for new adjacent match
-                    let sfx = new Audio(clickSfx.src);
-                    sfx.currentTime = 0;
-                    sfx.play();
+                    
+                    if (sound) {
+                     let sfx = new Audio(clickSfx.src);
+                     sfx.currentTime = 0;
+                     sfx.play();
+                    }
 
-                    // --- Animate flash: 200ms = 100ms up, 100ms down ---
                     let nowTime = Date.now();
-                    // For both i and j, set a rising/falling state for animation
+
                     [i, j].forEach(idx => {
                         rodsToFlash.add(idx);
                         rodsFlashTime[idx] = nowTime;
@@ -834,6 +843,8 @@ window.addEventListener("resize", resizeCanvas);
 window.addEventListener("keydown", (e) => {
     if (e.key == "r") {
         clearr();
+    } else if (e.key == ' ') {
+        paused = !paused
     }
 });
 
