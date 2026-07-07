@@ -119,12 +119,14 @@
     }
     #close-lexicon:hover { opacity: 1; }
 </style>
+
+
 <body>
 
  <canvas id="gamecanvas"></canvas>
  <p id="display">cam: (0,0) hover: (0,0)</p>
  <div id="confirm">Saved</div>
- <div id="loaded">Loaded</div>
+ <div id="loaded"></div>
  <div id="btnrow">
    <button id="import" class="buttons" onclick="importlist()">Import</button>
    <button id="export" class="buttons" onclick="exportlist()">Export</button>
@@ -182,10 +184,19 @@
     <p>13: Spaceship3
         <a href="#" onclick="loadLexi('spaceship3N')">Spawn</a>
     </p>
+    <p>14: Infection
+        <a href="#" onclick="loadLexi('infection')">Spawn</a>
+    </p>
+    <p>15: Decaying Sword
+        <a href="#" onclick="loadLexi('sword')">Spawn</a>
+    </p>
+
      
 </div>
 </div>
 </body>
+
+<script src="lexiconData.js"></script>
 
 <script>
   
@@ -208,6 +219,18 @@ const importbtn = document.getElementById("import");
 const confirmMsg = document.getElementById("confirm");
 const loadedMsg = document.getElementById("loaded");
 const exportbtn = document.getElementById("export");
+
+let lexloaded = true;
+
+
+// Only run this check if lexloaded is still true after 2s AND lexiconData is not loaded.
+// If lexiconData is already loaded (lexloaded still true and lexiconData defined), do nothing.
+setTimeout(function() {
+    if (typeof patterns === "undefined") {
+        lexloaded = false;
+        console.log("job had one bro");
+    }
+}, 2000);
 
 
 let startingArray = [];
@@ -295,179 +318,13 @@ function animateLoad() {
 }
 
 function loadLexi(id) {
-    let patterns = {
-        "blank": [
-            
-        ],
-        "gliderNE": [
-            { x: 1, y: 0 },
-            { x: 2, y: 1 },
-            { x: 0, y: 2 },
-            { x: 1, y: 2 },
-            { x: 2, y: 2 }
-        ],
-        "gliderSE": [
-            { x: 0, y: 0 },
-            { x: 1, y: 0 },
-            { x: 2, y: 0 },
-            { x: 2, y: 1 },
-            { x: 1, y: 2 }
-        ],
-        "gliderSW": [
-            { x: 0, y: 0 },
-            { x: 1, y: 0 },
-            { x: 2, y: 0 },
-            { x: 0, y: 1 },
-            { x: 1, y: 2 }
-        ],
-        "gliderNW": [
-            { x: 1, y: 0 },
-            { x: 0, y: 1 },
-            { x: 0, y: 2 },
-            { x: 1, y: 2 },
-            { x: 2, y: 2 }
-        ],
-   
-        "4gc":  [
-            {x:-3,y:-5}, {x:-2,y:-5},
-            {x:-1,y:-5}, {x:0,y:-5},
-            {x:-5,y:-3}, {x:-4,y:-3},
-            {x:-3,y:-3}, {x:-2,y:-3},
-            {x:-1,y:-3}, {x:0,y:-3},
-            {x:1,y:-3},  {x:2,y:-3},
-            {x:-7,y:-1}, {x:-6,y:-1},
-            {x:-5,y:-1}, {x:-4,y:-1},
-            {x:-3,y:-1}, {x:-2,y:-1},
-            {x:-1,y:-1}, {x:0,y:-1},
-            {x:1,y:-1},  {x:2,y:-1},
-            {x:3,y:-1},  {x:4,y:-1},
-            {x:2,y:1},   {x:1,y:1},
-            {x:0,y:1},   {x:-1,y:1},
-            {x:-2,y:1},  {x:-3,y:1},
-            {x:-4,y:1},  {x:-5,y:1},
-            {x:-3,y:3},  {x:-2,y:3},
-            {x:-1,y:3},  {x:0,y:3}],
-        "gliderGun1": [
-            {x:14,y:-5},
-            {x:12,y:-4}, {x:14,y:-4}, {x:2,y:-3}, {x:3,y:-3}, {x:10,y:-3},
-            {x:11,y:-3}, {x:24,y:-3}, {x:25,y:-3}, {x:1,y:-2}, {x:5,y:-2},
-            {x:10,y:-2}, {x:11,y:-2}, {x:24,y:-2}, {x:25,y:-2},
-            {x:-10,y:-1}, {x:-9,y:-1}, {x:0,y:-1}, {x:6,y:-1}, {x:10,y:-1},
-            {x:11,y:-1}, {x:-10,y:0}, {x:-9,y:0}, {x:0,y:0}, {x:4,y:0},
-            {x:6,y:0}, {x:7,y:0}, {x:12,y:0}, {x:14,y:0}, {x:0,y:1},
-            {x:6,y:1}, {x:14,y:1}, {x:1,y:2}, {x:5,y:2}, {x:2,y:3},
-            {x:3,y:3}
-        ],
-   
-        "rpent": 
-        [{x:-1,y:-1},{x:0,y:-1},{x:0,y:0},{x:0,y:-2},{x:1,y:-2}],
-        "acorn":
-        [{x:-3,y:1},{x:-2,y:1},{x:-2,y:3},{x:0,y:2},{x:1,y:1},{x:2,y:1},{x:3,y:1}],
-        "horGliderL":
-        [{x:-1,y:2},{x:-2,y:1},{x:-2,y:0},{x:-2,y:-1},{x:-1,y:-1},{x:0,y:-1},{x:1,y:-1},{x:2,y:0},{x:2,y:2}],
-        "horGliderR":
-        [{x:1,y:2},{x:2,y:1},{x:2,y:0},{x:2,y:-1},{x:1,y:-1},{x:0,y:-1},{x:-1,y:-1},{x:-2,y:0},{x:-2,y:2}],
-        "15cycle":
-        [{x:-5,y:1},{x:-4,y:1},{x:-3,y:2},{x:-3,y:0},{x:-2,y:1},{x:-1,y:1},{x:1,y:1},{x:0,y:1},{x:2,y:2},{x:2,y:0},{x:3,y:1},{x:4,y:1}],
-        "queenbeeshuttle": 
-        [{x:-6,y:1},{x:-6,y:2},{x:-5,y:2},{x:-5,y:1},{x:-1,y:2},{x:0,y:1},{x:0,y:3},{x:1,y:4},{x:1,y:0},{x:2,y:1},
-        {x:2,y:2},{x:2,y:3},{x:3,y:4},{x:3,y:5},{x:3,y:0},{x:3,y:-1},{x:12,y:0},{x:12,y:-1},{x:13,y:0},{x:14,y:-1},{x:14,y:-2},{x:14,y:-3},{x:15,y:-3}],
-        "glidertrain": 
-        [{x:10,y:-20},{x:11,y:-19},{x:5,y:-18},{x:11,y:-18},{x:6,y:-17},{x:7,y:-17},{x:8,y:-17},{x:9,y:-17},{x:10,y:-17},
-        {x:17,y:-17},{x:18,y:-17},{x:19,y:-17},{x:20,y:-17},{x:21,y:-17},{x:16,y:-14},{x:21,y:-14},{x:18,y:-13},{x:19,y:-13},
-        {x:17,y:-11},{x:16,y:-10},{x:15,y:-9},{x:16,y:-9},{x:20,y:-9},{x:21,y:-9},{x:15,y:-8},{x:17,y:-8},{x:16,y:-7},
-        {x:20,y:-7},{x:21,y:-7},{x:20,y:-6},{x:20,y:-4},{x:16,y:-3},{x:15,y:-2},{x:17,y:-2},{x:15,y:-1},{x:16,y:-1},
-        {x:20,y:-1},{x:21,y:-1},{x:16,y:0},{x:17,y:1},{x:18,y:3},{x:19,y:3},{x:-17,y:4},{x:-16,y:4},{x:16,y:4},{x:6,y:7},
-        {x:7,y:7},{x:8,y:7},{x:9,y:7},{x:10,y:7},{x:17,y:7},{x:18,y:7},{x:19,y:7},{x:20,y:7},{x:21,y:7},{x:5,y:8},{x:11,y:8},
-        {x:11,y:9},{x:10,y:10},{x:11,y:-17},{x:11,y:7},{x:22,y:-15},{x:22,y:-16},{x:22,y:-17},{x:16,y:-16},{x:21,y:4},{x:22,y:5},
-        {x:22,y:7},{x:22,y:6},{x:16,y:6},{x:21,y:-8},{x:22,y:-8},{x:20,y:-3},{x:21,y:-3},{x:21,y:-2},{x:22,y:-2},{x:-16,y:7},
-        {x:-15,y:6},{x:-15,y:5},{x:-19,y:4},{x:-20,y:5},{x:-18,y:4},{x:-15,y:4},{x:-16,y:-17},{x:-15,y:-16},{x:-15,y:-15},
-        {x:-15,y:-14},{x:-17,y:-14},{x:-16,y:-14},{x:-18,y:-14},{x:-19,y:-14},{x:-20,y:-15}],
-"spaceship1R":
-        [{x:-3,y:-3},{x:-3,y:-2},{x:-2,y:-2},{x:-1,y:-2},{x:0,y:-2},{x:1,y:-2},{x:2,y:-2},{x:3,y:-2},{x:-3,y:0},
-        {x:-3,y:1},{x:-2,y:0},{x:-1,y:0},{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:4,y:1},{x:5,y:1},{x:5,y:2},
-        {x:6,y:2},{x:4,y:-3},{x:5,y:-3},{x:5,y:-4},{x:6,y:-4},{x:7,y:3},{x:7,y:-5},{x:3,y:2},{x:2,y:2},{x:1,y:2},
-        {x:1,y:3},{x:2,y:3},{x:1,y:4},{x:2,y:4},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:6,y:4},{x:5,y:5},{x:4,y:5},{x:1,y:5},
-        {x:2,y:5},{x:2,y:6},{x:2,y:7},{x:2,y:8},{x:1,y:9},{x:-3,y:9},{x:0,y:6},{x:0,y:5},{x:-1,y:6},{x:-3,y:7},{x:-2,y:9},
-        {x:3,y:-4},{x:2,y:-4},{x:1,y:-4},{x:1,y:-5},{x:2,y:-5},{x:2,y:-6},{x:1,y:-6},{x:3,y:-6},{x:4,y:-6},{x:5,y:-6},
-        {x:6,y:-6},{x:5,y:-7},{x:4,y:-7},{x:1,y:-7},{x:2,y:-7},{x:2,y:-8},{x:2,y:-9},{x:2,y:-10},{x:1,y:-11},{x:-2,y:-11},{x:-3,y:-11},{x:-3,y:-9},{x:0,y:-7},{x:0,y:-8},{x:-1,y:-8}],
-"spaceship1L": 
-[{x:7,y:1},{x:7,y:0},{x:6,y:0},{x:5,y:0},{x:4,y:0},{x:3,y:0},{x:2,y:0},{x:1,y:0},{x:7,y:-2},{x:7,y:-3},{x:6,y:-2},{x:5,y:-2},
-{x:4,y:-2},{x:3,y:-2},{x:2,y:-2},{x:1,y:-2},{x:0,y:-3},{x:-1,y:-3},{x:-1,y:-4},{x:-2,y:-4},{x:0,y:1},{x:-1,y:1},{x:-1,y:2},
-{x:-2,y:2},{x:-3,y:-5},{x:-3,y:3},{x:1,y:-4},{x:2,y:-4},{x:3,y:-4},{x:3,y:-5},{x:2,y:-5},{x:3,y:-6},{x:2,y:-6},{x:1,y:-6},
-{x:0,y:-6},{x:-1,y:-6},{x:-2,y:-6},{x:-1,y:-7},{x:0,y:-7},{x:3,y:-7},{x:2,y:-7},{x:2,y:-8},{x:2,y:-9},{x:2,y:-10},{x:3,y:-11},
-{x:7,y:-11},{x:4,y:-8},{x:4,y:-7},{x:5,y:-8},{x:7,y:-9},{x:6,y:-11},{x:1,y:2},{x:2,y:2},{x:3,y:2},{x:3,y:3},{x:2,y:3},{x:2,y:4},
-{x:3,y:4},{x:1,y:4},{x:0,y:4},{x:-1,y:4},{x:-2,y:4},{x:-1,y:5},{x:0,y:5},{x:3,y:5},{x:2,y:5},{x:2,y:6},{x:2,y:7},{x:2,y:8},
-{x:3,y:9},{x:6,y:9},{x:7,y:9},{x:7,y:7},{x:4,y:5},{x:4,y:6},{x:5,y:6}],
-"spaceship1S": 
-[{x:0,y:7},{x:1,y:7},{x:1,y:6},{x:1,y:5},{x:1,y:4},{x:1,y:3},{x:1,y:2},{x:1,y:1},{x:3,y:7},{x:4,y:7},{x:3,y:6},{x:3,y:5},
-{x:3,y:4},{x:3,y:3},{x:3,y:2},{x:3,y:1},{x:4,y:0},{x:4,y:-1},{x:5,y:-1},{x:5,y:-2},{x:0,y:0},{x:0,y:-1},{x:-1,y:-1},{x:-1,y:-2},
-{x:6,y:-3},{x:-2,y:-3},{x:5,y:1},{x:5,y:2},{x:5,y:3},{x:6,y:3},{x:6,y:2},{x:7,y:3},{x:7,y:2},{x:7,y:1},{x:7,y:0},{x:7,y:-1},
-{x:7,y:-2},{x:8,y:-1},{x:8,y:0},{x:8,y:3},{x:8,y:2},{x:9,y:2},{x:10,y:2},{x:11,y:2},{x:12,y:3},{x:12,y:7},{x:9,y:4},{x:8,y:4},
-{x:9,y:5},{x:10,y:7},{x:12,y:6},{x:-1,y:1},{x:-1,y:2},{x:-1,y:3},{x:-2,y:3},{x:-2,y:2},{x:-3,y:2},{x:-3,y:3},{x:-3,y:1},
-{x:-3,y:0},{x:-3,y:-1},{x:-3,y:-2},{x:-4,y:-1},{x:-4,y:0},{x:-4,y:3},{x:-4,y:2},{x:-5,y:2},{x:-6,y:2},{x:-7,y:2},{x:-8,y:3},
-{x:-8,y:6},{x:-8,y:7},{x:-6,y:7},{x:-4,y:4},{x:-5,y:4},{x:-5,y:5}],
-"spaceship1N":
-[{x:2,y:-3},{x:1,y:-3},{x:1,y:-2},{x:1,y:-1},{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:1,y:3},{x:-1,y:-3},{x:-2,y:-3},{x:-1,y:-2},{x:-1,y:-1},
-{x:-1,y:0},{x:-1,y:1},{x:-1,y:2},{x:-1,y:3},{x:-2,y:4},{x:-2,y:5},{x:-3,y:5},{x:-3,y:6},{x:2,y:4},{x:2,y:5},{x:3,y:5},{x:3,y:6},
-{x:-4,y:7},{x:4,y:7},{x:-3,y:3},{x:-3,y:2},{x:-3,y:1},{x:-4,y:1},{x:-4,y:2},{x:-5,y:1},{x:-5,y:2},{x:-5,y:3},{x:-5,y:4},
-{x:-5,y:5},{x:-5,y:6},{x:-6,y:5},{x:-6,y:4},{x:-6,y:1},{x:-6,y:2},{x:-7,y:2},{x:-8,y:2},{x:-9,y:2},{x:-10,y:1},
-{x:-10,y:-3},{x:-7,y:0},{x:-6,y:0},{x:-7,y:-1},{x:-8,y:-3},{x:-10,y:-2},{x:3,y:3},{x:3,y:2},{x:3,y:1},
-{x:4,y:1},{x:4,y:2},{x:5,y:2},{x:5,y:1},{x:5,y:3},{x:5,y:4},{x:5,y:5},{x:5,y:6},{x:6,y:5},
-{x:6,y:4},{x:6,y:1},{x:6,y:2},{x:7,y:2},{x:8,y:2},{x:9,y:2},{x:10,y:1},{x:10,y:-2},
-{x:10,y:-3},{x:8,y:-3},{x:6,y:0},{x:7,y:0},{x:7,y:-1}],
-          "spaceship3N": 
-         [{x:-5,y:0},{x:-5,y:1},{x:-4,y:1},{x:-4,y:0},{x:-4,y:2},{x:-2,y:2},{x:0,y:2},{x:0,y:1},{x:0,y:0},
-          {x:2,y:2},{x:4,y:1},{x:5,y:1},{x:5,y:2},{x:6,y:1},{x:7,y:0},{x:7,y:-1},{x:7,y:-3},{x:7,y:-4},
-         {x:5,y:-1},{x:5,y:-2},{x:4,y:-3},{x:3,y:-2},{x:-3,y:4},{x:-2,y:4},{x:-2,y:5},{x:-1,y:5},{x:-1,y:6},{x:0,y:5},{x:0,y:4},{x:1,y:4}],
-        "diagship":  // 295P5H1V1
-        [{x:-21,y:15},{x:-21,y:16},{x:-20,y:16},{x:-20,y:15},{x:-20,y:17},{x:-19,y:17},{x:-19,y:18},{x:-18,y:18},{x:-18,y:19},
-        {x:-17,y:19},{x:-17,y:20},{x:-16,y:20},{x:-16,y:19},{x:-18,y:15},{x:-18,y:14},{x:-16,y:17},{x:-15,y:17},{x:-14,y:16},
-        {x:-14,y:15},{x:-14,y:14},{x:-13,y:14},{x:-13,y:15},{x:-12,y:15},{x:-11,y:15},{x:-17,y:13},{x:-16,y:13},{x:-15,y:13},
-        {x:-15,y:12},{x:-16,y:12},{x:-16,y:11},{x:-16,y:10},{x:-10,y:14},{x:-10,y:13},{x:-10,y:12},{x:-10,y:11},{x:-10,y:10},
-        {x:-11,y:12},{x:-15,y:9},{x:-14,y:9},{x:-13,y:9},{x:-12,y:9},{x:-11,y:9},{x:-13,y:10},{x:-11,y:17},{x:-10,y:18},
-        {x:-11,y:18},{x:-11,y:19},{x:-11,y:20},{x:-10,y:20},{x:-10,y:19},{x:-9,y:19},{x:-8,y:19},{x:-8,y:20},{x:-8,y:21},
-        {x:-9,y:21},{x:-8,y:17},{x:-9,y:14},{x:-8,y:13},{x:-7,y:14},{x:-7,y:12},{x:-6,y:16},{x:-5,y:17},{x:-4,y:18},{x:-6,y:20},
-        {x:-3,y:16},{x:-2,y:16},{x:-15,y:8},{x:-14,y:7},{x:-13,y:6},{x:-15,y:6},{x:-18,y:10},{x:-19,y:10},{x:-20,y:10},{x:-21,y:10},
-        {x:-19,y:9},{x:-21,y:9},{x:-20,y:9},{x:-20,y:8},{x:-20,y:7},{x:-21,y:7},{x:-22,y:7},{x:-22,y:8},{x:-18,y:7},{x:-21,y:5},
-        {x:-17,y:5},{x:-18,y:4},{x:-19,y:3},{x:-17,y:2},{x:-17,y:1},{x:-8,y:9},{x:-7,y:9},{x:-6,y:9},{x:-6,y:10},{x:-5,y:9},
-        {x:-4,y:9},{x:-3,y:9},{x:-2,y:9},{x:-1,y:8},{x:0,y:8},{x:0,y:9},{x:-4,y:8},{x:-4,y:7},{x:-3,y:7},{x:-2,y:7},{x:-2,y:6},
-        {x:-1,y:6},{x:-1,y:5},{x:0,y:5},{x:0,y:4},{x:1,y:4},{x:-1,y:4},{x:-1,y:3},{x:-2,y:2},{x:-3,y:1},{x:0,y:2},{x:0,y:0},
-        {x:-1,y:-1},{x:-3,y:-1},{x:-4,y:0},{x:-5,y:0},{x:-5,y:-1},{x:-5,y:-2},{x:-6,y:-1},{x:-6,y:0},{x:-7,y:0},{x:-7,y:1},
-        {x:-8,y:1},{x:-8,y:2},{x:-8,y:3},{x:-9,y:3},{x:-10,y:3},{x:-10,y:2},{x:-10,y:1},{x:-9,y:0},{x:-9,y:-1},{x:-10,y:-1},
-        {x:-10,y:4},{x:-10,y:5},{x:-10,y:6},{x:-10,y:7},{x:-11,y:5},{x:2,y:1},{x:3,y:-1},{x:2,y:-2},{x:1,y:-3},{x:0,y:-4},
-        {x:-2,y:-3},{x:-6,y:-4},{x:-5,y:-4},{x:-4,y:-5},{x:-5,y:-6},{x:-6,y:-6},{x:-5,y:-7},{x:-5,y:-8},{x:3,y:5},{x:3,y:4},
-        {x:4,y:3},{x:5,y:4},{x:5,y:5},{x:6,y:4},{x:7,y:4},{x:3,y:-4},{x:5,y:-2},{x:5,y:-1},{x:6,y:-1},{x:6,y:0},{x:6,y:-2},
-        {x:7,y:-2},{x:7,y:-1},{x:0,y:-6},{x:1,y:-6},{x:1,y:-7},{x:1,y:-8},{x:0,y:-8},{x:0,y:-7},{x:-1,y:-7},{x:2,y:-9},
-        {x:2,y:-10},{x:8,y:-3},{x:9,y:-3},{x:-1,y:-10},{x:9,y:0},{x:4,y:-11},{x:5,y:-11},{x:6,y:-11},{x:7,y:-11},{x:8,y:-12},
-        {x:9,y:-12},{x:11,y:-10},{x:11,y:-9},{x:10,y:-8},{x:10,y:-7},{x:10,y:-6},{x:10,y:-5},{x:11,y:-2},{x:12,y:-2},
-        {x:13,y:-2},{x:1,y:-12},{x:1,y:-13},{x:1,y:-14},{x:3,y:-16},{x:3,y:-15},{x:4,y:-15},{x:6,y:-15},{x:6,y:-13},
-        {x:8,y:-15},{x:8,y:-16},{x:8,y:-17},{x:7,y:-17},{x:6,y:-17},{x:7,y:-18},{x:14,y:-5},{x:14,y:-4},{x:15,y:-4},
-        {x:12,y:-7},{x:14,y:-7},{x:14,y:-9},{x:15,y:-9},{x:16,y:-9},{x:16,y:-8},{x:16,y:-7},{x:17,y:-8},{x:16,y:-12},
-        {x:16,y:-11},{x:17,y:-11},{x:17,y:-12},{x:10,y:-18},{x:10,y:-17},{x:11,y:-17},{x:11,y:-18},{x:17,y:-14},
-        {x:16,y:-15},{x:13,y:-18},{x:14,y:-17},{x:12,y:-20},{x:19,y:-13},{x:11,y:-22},{x:10,y:-22},{x:9,y:-21},{x:14,y:-20},
-        {x:15,y:-20},{x:15,y:-19},{x:15,y:-21},{x:16,y:-19},{x:17,y:-20},{x:18,y:-20},{x:19,y:-21},{x:20,y:-20},{x:19,y:-19},
-        {x:19,y:-18},{x:18,y:-17},{x:18,y:-16},{x:19,y:-16},{x:19,y:-15},{x:20,y:-16},{x:21,y:-12},{x:21,y:-11},{x:20,y:-10},
-        {x:22,y:-17},{x:23,y:-18},{x:23,y:-19},{x:24,y:-20},{x:23,y:-20},{x:24,y:-17},{x:25,y:-17},{x:26,y:-18},{x:16,y:-23},
-        {x:17,y:-24},{x:18,y:-24},{x:19,y:-24},{x:19,y:-25},{x:16,y:-25},{x:16,y:-26},{x:17,y:-27},{x:24,y:-23},{x:25,y:-23},
-        {x:25,y:-22},{x:24,y:-22},{x:24,y:-24},{x:23,y:-24},{x:23,y:-25},{x:22,y:-26},{x:22,y:-25},{x:21,y:-25},{x:21,y:-26},
-        {x:27,y:-21},{x:28,y:-20},{x:29,y:-21},{x:29,y:-22},{x:27,y:-24},{x:23,y:-28},{x:20,y:-28},{x:19,y:-29},{x:20,y:-30},{x:21,y:-30}],
-        "2engcordership":
-        [{x:4,y:-24},{x:5,y:-24},{x:4,y:-23},{x:5,y:-23},{x:5,y:-22},{x:3,y:-23},{x:2,y:-23},{x:2,y:-22},{x:3,y:-22},{x:4,y:-20},
-        {x:5,y:-19},{x:4,y:-19},{x:4,y:-18},{x:5,y:-18},{x:3,y:-18},{x:3,y:-17},{x:-9,y:-16},{x:-9,y:-15},{x:-10,y:-15},
-        {x:-10,y:-16},{x:-10,y:-6},{x:-11,y:-7},{x:-12,y:-7},{x:-12,y:-8},{x:-11,y:-5},{x:-12,y:-5},{x:-14,y:-6},{x:-15,y:-5},
-        {x:-16,y:-4},{x:-15,y:-3},{x:-14,y:-2},{x:-13,y:-3},{x:-14,y:-1},{x:-14,y:0},{x:-14,y:1},{x:-15,y:1},{x:-15,y:0},
-        {x:-13,y:5},{x:-12,y:6},{x:-12,y:7},{x:-13,y:7},{x:-14,y:8},{x:-15,y:9},{x:-15,y:10},{x:-14,y:10},{x:-14,y:9},
-        {x:-13,y:10},{x:-13,y:9},{x:-2,y:7},{x:-2,y:6},{x:-1,y:5},{x:0,y:5},{x:0,y:4},{x:-1,y:8},{x:0,y:8},{x:0,y:7},{x:1,y:7},
-        {x:2,y:7},{x:2,y:6},{x:2,y:5},{x:8,y:5},{x:9,y:5},{x:10,y:5},{x:11,y:5},{x:12,y:5},{x:11,y:4},{x:13,y:6},{x:12,y:7},
-        {x:11,y:7},{x:11,y:8},{x:10,y:8},{x:9,y:9},{x:23,y:9},{x:23,y:10},{x:24,y:10},{x:24,y:9},{x:15,y:17},{x:15,y:18},
-        {x:16,y:18},{x:16,y:17},{x:0,y:20},{x:1,y:19},{x:2,y:18},{x:3,y:18},{x:4,y:19},{x:5,y:19},{x:0,y:21},{x:1,y:22},{x:2,y:22},
-        {x:2,y:23},{x:3,y:23},{x:4,y:23},{x:-4,y:20},{x:-4,y:21},{x:-3,y:22},{x:-5,y:22},{x:-4,y:23},{x:-4,y:24},{x:5,y:22},{x:6,y:21}]
-    };
-
-    
+    if (!lexloaded) {
+        alert("Lexicon file not found");
+        return;
+    }
+    let offsett = (id === "sword") ? -50 : 0;
     if (Object.prototype.hasOwnProperty.call(patterns, id)) {
-        startingArray = patterns[id].map(p => ({x: p.x, y: p.y}));
+        startingArray = patterns[id].map(p => ({x: p.x, y: p.y+offsett}));
         resetState();
         saveCurrent();
         document.getElementById('lexicon').style.display = 'none';
@@ -481,7 +338,7 @@ function loadLexi(id) {
     }
 }
 
-loadLexi('blank');
+setTimeout(function(){loadLexi('blank')},200);
 
 // New isLive function
 function isLive(pixel) {
@@ -498,72 +355,56 @@ function drawPixel(pixel, hsla) {
         zoom, zoom
     );
 }
-
+// Highly optimized tick function for Conway's Game of Life
 function tick() {
     if (draggingSelection) return; // Don't run simulation if dragging selection
 
-    let toRemove = []; // Array to keep track of cells that need to be removed (die)
-    let toAdd = [];    // Array to keep track of cells that need to be added (come alive)
+    // Use Maps and Sets for efficient constant time lookups
+    const liveSet = new Set(pixels.map(p => `${p.x},${p.y}`));
+    const neighborDeltas = [
+        [ 0,  1], [ 1,  1], [ 1,  0], [ 1, -1],
+        [ 0, -1], [-1, -1], [-1,  0], [-1,  1]
+    ];
+    const deadNeighborCounts = new Map();
+    const survivors = [];
 
-    let deadNeighborCounts = {};
-
-    // Loop through all live cells to process them
+    // Phase 1: For each live cell, track neighbors and dying cells
     for (let i = 0; i < pixels.length; i++) {
-        // Will accumulate all the LIVE neighbors of this cell
-        let thisLiveNeighs = [];
-
-        let neighbors = [ // neighbor locations
-            {x: pixels[i].x,     y: pixels[i].y + 1}, // Up (N)
-            {x: pixels[i].x + 1, y: pixels[i].y + 1}, // Up-Right (NE)
-            {x: pixels[i].x + 1, y: pixels[i].y    }, // Right (E)
-            {x: pixels[i].x + 1, y: pixels[i].y - 1}, // Down-Right (SE)
-            {x: pixels[i].x,     y: pixels[i].y - 1}, // Down (S)
-            {x: pixels[i].x - 1, y: pixels[i].y - 1}, // Down-Left (SW)
-            {x: pixels[i].x - 1, y: pixels[i].y    }, // Left (W)
-            {x: pixels[i].x - 1, y: pixels[i].y + 1}, // Up-Left (NW)
-        ];
-
-        // Check each neighbor of this live cell. Optimize by only checking touching cells
-        for (let n = 0; n < neighbors.length; n++) {
-            let nx = neighbors[n].x, ny = neighbors[n].y;
-            if (isLive({x: nx, y: ny})) {
-                thisLiveNeighs.push({x: nx, y: ny});
+        const {x, y} = pixels[i];
+        let liveNeighborCount = 0;
+        for (let d = 0; d < 8; d++) {
+            const nx = x + neighborDeltas[d][0];
+            const ny = y + neighborDeltas[d][1];
+            const nkey = `${nx},${ny}`;
+            if (liveSet.has(nkey)) {
+                liveNeighborCount++;
             } else {
-                let key = nx + "," + ny;
-                if (!deadNeighborCounts[key]) {
-                    deadNeighborCounts[key] = 0;
-                }
-                deadNeighborCounts[key]++;
+                // Dead neighbor: count this live neighbor for revival rule
+                deadNeighborCounts.set(nkey, (deadNeighborCounts.get(nkey) || 0) + 1);
             }
         }
-
-        // Game of Life rules for live cells
-        if (thisLiveNeighs.length < 2 || thisLiveNeighs.length > 3) {
-            toRemove.push(i);
+        // Game of Life: survives if 2 or 3 neighbors
+        if (liveNeighborCount === 2 || liveNeighborCount === 3) {
+            survivors.push(pixels[i]);
         }
     }
 
-    // Check dead cells that might become alive
-    for (let key in deadNeighborCounts) {
-        if (deadNeighborCounts[key] === 3) {
-            let parts = key.split(",");
-            let x = parseInt(parts[0]), y = parseInt(parts[1]);
-            if (!isLive({x: x, y: y})) {
-                toAdd.push({x: x, y: y});
-            }
+    // Phase 2: Any dead cell with exactly 3 live neighbors comes to life
+    const births = [];
+    for (const [nkey, count] of deadNeighborCounts.entries()) {
+        if (count === 3) {
+            const [xStr, yStr] = nkey.split(',');
+            births.push({ x: +xStr, y: +yStr });
         }
     }
-    if (toAdd.length + toRemove.length > 0) {
+
+    // If any births or deaths, increment tick number
+    if (births.length > 0 || survivors.length !== pixels.length) {
         tickn++;
     }
-    // add new live pixels
-    for (let i  = 0; i < toAdd.length; i++) {
-        pixels.push(toAdd[i]);
-    }
-    // remove dead pixels
-    for (let i = toRemove.length - 1; i >= 0; i--) {
-        pixels.splice(toRemove[i], 1);
-    }
+
+    // Overwrite pixel array with survivors, then append new births
+    pixels = survivors.concat(births);
 }
 
 // Generic rotate point function, angle in multiples of 90 deg (dir in {0,1,2,3})
@@ -761,10 +602,32 @@ function draw() {
     // Draw the hovered pixel
     drawPixel({x: hoverX, y: hoverY}, "hsla(0,0%,50%,0.5)")
 
-    if (keysPressed["="]) {
-        zoom *= 1.05
+    // Zoom in centered on the mouse pointer
+    if (keysPressed["="] || keysPressed["+"]) {
+        // Find (mouseX,mouseY) in world coordinates before zoom
+        let xBefore = ((mouseX - canvas.width / 2) / zoom) + camx;
+        let yBefore = (-(mouseY - canvas.height / 2) / zoom) + camy;
+        let prevZoom = zoom;
+        zoom *= 1.05;
+        // Find (mouseX,mouseY) in world coordinates after zoom
+        let xAfter = ((mouseX - canvas.width / 2) / zoom) + camx;
+        let yAfter = (-(mouseY - canvas.height / 2) / zoom) + camy;
+        // Adjust camx/camy so that xBefore == xAfter, yBefore == yAfter
+        camx += (xBefore - xAfter);
+        camy += (yBefore - yAfter);
     } else if (keysPressed["-"]) {
-        zoom /= 1.05 
+        // Zoom out, also centered on the mouse pointer (i.e. zoom out away from pointer)
+        // Save old world coords of mouse pointer
+        let xBefore = ((mouseX - canvas.width / 2) / zoom) + camx;
+        let yBefore = (-(mouseY - canvas.height / 2) / zoom) + camy;
+        let prevZoom = zoom;
+        zoom /= 1.05;
+        // Calculate new world coords of mouse pointer
+        let xAfter = ((mouseX - canvas.width / 2) / zoom) + camx;
+        let yAfter = (-(mouseY - canvas.height / 2) / zoom) + camy;
+        // Move camx/camy so that the point under the mouse stays under the mouse after zoom out
+        camx += (xBefore - xAfter);
+        camy += (yBefore - yAfter);
     }
 
     if (keysPressed["a"]) {
@@ -786,6 +649,38 @@ function draw() {
 }
 
 draw();
+
+// ------ Scroll to zoom: zoom in and out using mouse wheel ------
+canvas.addEventListener('wheel', function(e) {
+    // Control amount of zoom per event and clamp zoom range
+    let zoomFactor = (e.deltaY < 0 ? 1.15 : 1 / 1.15); // up-scroll in, down-scroll out
+    let prevZoom = zoom;
+    // Find (mouseX,mouseY) in world coordinates before zoom
+    let rect = canvas.getBoundingClientRect();
+    // mouseX/mouseY are already global pixel coordinates; use e.clientX for wheel event in case mouse isn't moved first
+    let mx = e.clientX - rect.left;
+    let my = e.clientY - rect.top;
+    // (fall back to current mouseX/mouseY for keyboard users)
+    if (typeof mx !== "number" || isNaN(mx)) mx = mouseX;
+    if (typeof my !== "number" || isNaN(my)) my = mouseY;
+
+    let xBefore = ((mx - canvas.width / 2) / zoom) + camx;
+    let yBefore = (-(my - canvas.height / 2) / zoom) + camy;
+    // Set new zoom (limit range)
+    zoom *= zoomFactor;
+    zoom = Math.max(2, Math.min(zoom, 120)); // Limit to [2,120] (change as you like)
+
+    // Find world coordinates after zoom
+    let xAfter = ((mx - canvas.width / 2) / zoom) + camx;
+    let yAfter = (-(my - canvas.height / 2) / zoom) + camy;
+    // Adjust cam to preserve world focus under mouse
+    camx += (xBefore - xAfter);
+    camy += (yBefore - yAfter);
+
+    // Prevent page from scrolling
+    e.preventDefault();
+}, { passive: false });
+// ------ End scroll to zoom ------
 
 function resizeCanvas() {
   canvas.width = (window.innerWidth) - 25;
@@ -827,8 +722,8 @@ function importlist() {
 }
 
 function exportlist() {
-    const str = '[' + pixels.map(p => `{x:${p.x},y:${p.y}}`).join(',') + ']';
-    console.log(`${str}`)
+    // const str = '[' + pixels.map(p => `{x:${p.x},y:${p.y}}`).join(',') + ']';
+    console.log("copy('[' + pixels.map(p => `{x:${p.x},y:${p.y}}`).join(',') + ']')");
     exportbtn.blur();
 }
 
@@ -894,6 +789,61 @@ window.addEventListener("keydown", (e) => {
     if (cmdPressed && e.key.toLowerCase() === "e") {
         if (selectedLivePixels.length > 0 && !draggingSelection) {
             rotateSelection180();
+        }
+        e.preventDefault();
+        return;
+    }
+
+    // Ctrl+.: Flip selection across the Y axis (horizontal flip)
+    if (cmdPressed && e.key.toLowerCase() === ".") {
+        if (selectedLivePixels.length > 0 && !draggingSelection) {
+            // Find vertical center (across Y axis, so flip x)
+            let minX = Math.min(...selectedLivePixels.map(p => p.x));
+            let maxX = Math.max(...selectedLivePixels.map(p => p.x));
+            let centerX = minX + (maxX - minX) / 2;
+            
+            // Set of selected pixels for fast lookup
+            const selSet = new Set(selectedLivePixels.map(p => `${p.x},${p.y}`));
+            // Flip each selected pixel across the Y axis (mirror X)
+            selectedLivePixels = selectedLivePixels.map(p => {
+                return {x: Math.round(2 * centerX - p.x), y: p.y};
+            });
+
+            // Remove old positions from pixels
+            pixels = pixels.filter(p => !selSet.has(`${p.x},${p.y}`));
+            // Add new flipped positions
+            pixels = pixels.concat(selectedLivePixels);
+
+            loadedMsg.textContent = `Flipped selection Y axis`;
+            loadedOpac = 100; animateLoad();
+        }
+        e.preventDefault();
+        return;
+    }
+
+    // Ctrl+,: Flip selection across the X axis (vertical flip)
+    if (cmdPressed && e.key.toLowerCase() === ",") {
+
+        if (selectedLivePixels.length > 0 && !draggingSelection) {
+            // Find horizontal center (across X axis, so flip y)
+            let minY = Math.min(...selectedLivePixels.map(p => p.y));
+            let maxY = Math.max(...selectedLivePixels.map(p => p.y));
+            let centerY = minY + (maxY - minY) / 2;
+
+            // Set of selected pixels for fast lookup
+            const selSet = new Set(selectedLivePixels.map(p => `${p.x},${p.y}`));
+            // Flip each selected pixel across the X axis (mirror Y)
+            selectedLivePixels = selectedLivePixels.map(p => {
+                return {x: p.x, y: Math.round(2 * centerY - p.y)};
+            });
+
+            // Remove old positions from pixels
+            pixels = pixels.filter(p => !selSet.has(`${p.x},${p.y}`));
+            // Add new flipped positions
+            pixels = pixels.concat(selectedLivePixels);
+
+            loadedMsg.textContent = `Flipped selection X axis`;
+            loadedOpac = 100; animateLoad();
         }
         e.preventDefault();
         return;
@@ -976,6 +926,56 @@ window.addEventListener("keyup", (e) => {
         // Clear highlight selection corners
         hiliteCorner1 = {x: -1, y: 1};
         hiliteCorner2 = {x: 1, y: -1};
+    }
+
+    // Handle 'i' key for adding a pixel with X+/Y+ prompts relative to the mouse position
+    if (e.key.toLowerCase() === "i") {
+        // Prompt user for X+ and Y+ values
+        let xplus = prompt("X+ (right from mouse):", "0");
+        let yplus = prompt("Y+ (up from mouse):", "0");
+        if (xplus !== null && yplus !== null) {
+            let dx = parseInt(xplus, 10);
+            let dy = parseInt(yplus, 10);
+            if (!isNaN(dx) && !isNaN(dy)) {
+                // Y+ is up so subtract from hoverY
+                let nx = hoverX + dx;
+                let ny = hoverY + dy;
+                // Prevent adding duplicate pixel
+                if (!pixels.some(p => p.x === nx && p.y === ny)) {
+                    pixels.push({x: nx, y: ny});
+                    //  Optionally update selection or display feedback
+                    // selectedLivePixels = [{x: nx, y: ny}];
+                    loadedMsg.textContent = `Placed 1 cell at (${nx},${ny})`;
+                    loadedOpac = 100;
+                    animateLoad();
+                } else {
+                    loadedMsg.textContent = "Cell already exists at destination";
+                    loadedOpac = 100;
+                    animateLoad();
+                }
+            }
+        }
+        e.preventDefault();
+        return;
+    }
+    // Handle 'Delete' key to remove all selectedLivePixels from pixels array
+    if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedLivePixels.length > 0) {
+            // Remove all pixels that are in selectedLivePixels
+            pixels = pixels.filter(
+                p => !selectedLivePixels.some(sel => sel.x === p.x && sel.y === p.y)
+            );
+            loadedMsg.textContent = `Deleted ${selectedLivePixels.length} selected cell(s)`;
+            loadedOpac = 100;
+            animateLoad();
+            selectedLivePixels = [];
+        } else {
+            loadedMsg.textContent = "No cells selected to delete";
+            loadedOpac = 100;
+            animateLoad();
+        }
+        e.preventDefault();
+        return;
     }
 });
 
@@ -1078,6 +1078,7 @@ canvas.addEventListener("mouseup", (e) => {
     }
 })
 
+
+
 </script>
 </html>
-
