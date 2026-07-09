@@ -81,22 +81,24 @@
       return allowed[Math.floor(Math.random() * allowed.length)];
     }
 
-    // Check if an emoji is "broken" (rendered as multiple separate glyphs/boxes)
+    // Check if an emoji is "broken" based on common rendering errors, but don't penalize multi-codepoint emojis.
     function isBrokenEmoji(node, emoji) {
-      // Typical heuristics:
-      // - emoji rendered as 2+ visible grapheme clusters (often split into multiple characters or boxes)
-      // - or length of .innerText differs greatly from emoji code units
-      // - or offsetWidth/offsetHeight is very tiny or zero 
-      // 
-      // We'll use a simple approach: if innerText length > 2 or it contains visible space, or contains the "�", or rendered width < half its font size.
+      // Heuristics:
+      // - Contains the replacement character "�"
+      // - Contains visible whitespace
+      // - Rendered much too small (e.g. as zero-width or <0.55x font size)
+      // - Offset width/height is almost zero
       const text = node.innerText || node.textContent || '';
       if (!text) return true;
-      if (text.length > 2) return true;
       if (/\uFFFD/.test(text)) return true; // replacement character
       if (/\s/.test(text)) return true;
-      // A naive width check (rendered too narrow means probably not an emoji)
+      // Check if size too small for emoji
       const fontSize = parseFloat(window.getComputedStyle(node).fontSize) || 16;
-      if (node.offsetWidth < fontSize * 0.6) return true;
+      if (node.offsetWidth < fontSize * 0.55) return true;
+      if (node.offsetHeight < fontSize * 0.55) return true;
+      // Optionally: if the emoji renders as multiple fully separated "glyphs" spaced wide apart, 
+      // they're often boxes or flag fallbacks, but this is less reliable
+      // We avoid checking .length for text!
       return false;
     }
 
