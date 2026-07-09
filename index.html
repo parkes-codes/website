@@ -280,6 +280,7 @@
         <a href="dino.html" target="_blank" class="linkbutton"><button class="button text">Open Dino Game</button></a>
         <a href="emojirain.html" target="_blank" class="linkbutton"><button class="button text">Open Emoji Rain</button></a>
         <a href="leftright.html" target="_blank" class="linkbutton"><button class="button text">Open MP3 Combiner</button></a>
+        <a href="blobs.html" target="_blank" class="linkbutton"><button class="button text">Open Blobs</button></a>
       </div>
     </div>
     <p class="text" style="left: 0%; text-align: center; opacity: 50%;">Warning: These links are desinged for 60fps computer devices!</p>
@@ -326,11 +327,11 @@
           const maxY = (window.innerHeight || document.documentElement.clientHeight) + scrollY - h - 10;
           let bounced = false;
 
-          // Move step
+
           x += dx;
           y += dy;
 
-          // X bounce
+
           if (x >= maxX) {
             dx = -Math.abs(dx);
             obj.hue += 37;
@@ -343,7 +344,7 @@
             bounced = true;
             x = scrollX;
           }
-          // Y bounce
+
           if (y >= maxY) {
             dy = -Math.abs(dy);
             obj.hue += 59;
@@ -357,13 +358,12 @@
             y = scrollY;
           }
 
-          // Set new state
+
           obj.x = x;
           obj.y = y;
           obj.dx = dx;
           obj.dy = dy;
 
-          // Animate element (now safe to force position/left/top/margin)
           el.style.position = window.innerWidth > 700 ? "absolute" : "fixed";
           el.style.left = `${x}px`;
           el.style.top = `${y}px`;
@@ -391,7 +391,7 @@
       const velkomm = document.getElementById("velkomm");
       let funclicked = false;
 
-      // --- Random rotation on hover for .button ---
+
       const buttonOriginalTransformMap = new WeakMap();
 
       function getBaseTransform(el) {
@@ -406,10 +406,9 @@
       }
 
       function randomRotate() {
-        return Math.random() * 10 - 5; // -5 to 5 degrees
+        return Math.random() * 10 - 5; 
       }
 
-      // Button listeners after DOMContentLoaded
       document.addEventListener('DOMContentLoaded', function() {
         const buttons = document.querySelectorAll('.button');
         buttons.forEach(function(btn) {
@@ -434,12 +433,9 @@
             btn.style.transform = base;
           });
         });
-
-        // Do NOT mess with profilepic-link margin on page load!
       });
 
       function randomDxDy() {
-        // Generate random dx, dy between -5 and 5, but not too small
         let dx = 0, dy = 0;
         while (Math.abs(dx) < 1.5) {
           dx = Math.random() * 10 - 5;
@@ -457,15 +453,13 @@
             obj.dx = dx;
             obj.dy = dy;
           });
-          // Start animating the DVD images on first click
           if (profileLinks.length > 0 && !dvdAnimating) {
-            // Set initial position and margin for all .profilepic-link images now, not before
             profileLinks.forEach(obj => {
               const el = obj.el;
               el.style.position = window.innerWidth > 700 ? 'absolute' : 'fixed';
               el.style.left = `${obj.x}px`;
               el.style.top = `${obj.y}px`;
-              el.style.margin = "0"; // Only now!
+              el.style.margin = "0"; 
               el.style.zIndex = 14;
             });
             dvdAnimating = true;
