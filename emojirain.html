@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Emoji Rain</title>
+  <link rel="icon" type="image/x-icon" href="icon.ico" />
   <style>
     body {
       margin: 0;
@@ -63,76 +64,117 @@
 </body>
 <script src="emojis.js"></script>
 <script>
-
     const plinkSrc = "plinkk.gif";
     const emojis = 2;
 
-function randomEmoji() {
-  return emojiList[Math.floor(Math.random() * emojiList.length)];
-}
+    // Maintain blacklist for emoji that fail to render
+    const emojiBlacklist = new Set();
 
-
-function spawnEmoji() {
-
-  const wrapper = document.createElement("div");
-  wrapper.className = "emoji-wrapper";
-
-  // Set starting horizontal position and animation duration
-  const left = Math.random() * (window.innerWidth - 48); // Subtract a bit for edge overflow
-  const duration = 2 + Math.random() * 2.5; // seconds
-
-  wrapper.style.left = `${left}px`;
-  wrapper.style.top = `-50px`;
-  wrapper.style.animationDuration = `${duration}s`;
-
-  // 1 in 200 chance to show plink image instead of emoji
-  const isPlink = Math.floor(Math.random() * 200*emojis) === 0;
-
-  let emojiNode;
-  if (isPlink) {
-    emojiNode = document.createElement("img");
-    emojiNode.src = plinkSrc;
-    emojiNode.alt = "plink";
-    emojiNode.className = "emoji";
-    emojiNode.style.borderRadius = "10px";
-
-    const size = 24 + Math.random() * 30; // px
-    emojiNode.style.width = `${size}px`;
-    emojiNode.style.height = "auto";
-  } else {
-    emojiNode = document.createElement("span");
-    emojiNode.className = "emoji";
-    emojiNode.textContent = randomEmoji();
-    // Font size and initial rotation
-    const size = 1.1 + Math.random() * 2; // em
-    emojiNode.style.fontSize = `${size}em`;
-  }
-
-  // Rotation for both emoji and plink
-  const startRotation = Math.floor(Math.random() * 360);
-  emojiNode.style.setProperty('--emoji-start-rotation', `${startRotation}deg`);
-  emojiNode.style.animationDuration = `${duration}s`;
-
-  // Add emoji or plink to wrapper, wrapper to display
-  wrapper.appendChild(emojiNode);
-  document.getElementById("display").appendChild(wrapper);
-
-  // Now, the animation moves the emoji/image beyond the bottom of the viewport.
-  // Cleanup: remove the emoji/image after it has fully moved offscreen
-  // (distance from -50px to (window.innerHeight + 100px))
-  const totalTravel = window.innerHeight + 150; // from -50px to +100px past bottom
-  const timeToDelete = duration * (totalTravel / (window.innerHeight + 50));
-  setTimeout(() => {
-    wrapper.remove();
-  }, timeToDelete * 1000);
-}
-
-setInterval(() => {
-    for (let i = 0; i < emojis; i++) {
-        spawnEmoji();
+    // Enhanced randomEmoji to skip blacklisted ones
+    function randomEmoji() {
+      // Filter emojiList down to non-blacklisted emojis
+      const allowed = emojiList.filter(e => !emojiBlacklist.has(e));
+      if (allowed.length === 0) {
+        // fallback, if everything is blacklisted, use the full list (should never happen)
+        return emojiList[Math.floor(Math.random() * emojiList.length)];
+      }
+      return allowed[Math.floor(Math.random() * allowed.length)];
     }
-}, 0);
 
+    // Check if an emoji is "broken" (rendered as multiple separate glyphs/boxes)
+    function isBrokenEmoji(node, emoji) {
+      // Typical heuristics:
+      // - emoji rendered as 2+ visible grapheme clusters (often split into multiple characters or boxes)
+      // - or length of .innerText differs greatly from emoji code units
+      // - or offsetWidth/offsetHeight is very tiny or zero 
+      // 
+      // We'll use a simple approach: if innerText length > 2 or it contains visible space, or contains the "�", or rendered width < half its font size.
+      const text = node.innerText || node.textContent || '';
+      if (!text) return true;
+      if (text.length > 2) return true;
+      if (/\uFFFD/.test(text)) return true; // replacement character
+      if (/\s/.test(text)) return true;
+      // A naive width check (rendered too narrow means probably not an emoji)
+      const fontSize = parseFloat(window.getComputedStyle(node).fontSize) || 16;
+      if (node.offsetWidth < fontSize * 0.6) return true;
+      return false;
+    }
+
+    function spawnEmoji() {
+      const wrapper = document.createElement("div");
+      wrapper.className = "emoji-wrapper";
+
+      // Set starting horizontal position and animation duration
+      const left = Math.random() * (window.innerWidth - 48); // Subtract a bit for edge overflow
+      const duration = 2 + Math.random() * 2.5; // seconds
+
+      wrapper.style.left = `${left}px`;
+      wrapper.style.top = `-50px`;
+      wrapper.style.animationDuration = `${duration}s`;
+
+      // 1 in 200 chance to show plink image instead of emoji
+      const isPlink = Math.floor(Math.random() * 200 * emojis) === 0;
+
+      let emojiNode, theEmoji;
+      if (isPlink) {
+        emojiNode = document.createElement("img");
+        emojiNode.src = plinkSrc;
+        emojiNode.alt = "plink";
+        emojiNode.className = "emoji";
+        emojiNode.style.borderRadius = "10px";
+
+        const size = 24 + Math.random() * 30; // px
+        emojiNode.style.width = `${size}px`;
+        emojiNode.style.height = "auto";
+      } else {
+        emojiNode = document.createElement("span");
+        emojiNode.className = "emoji";
+
+        // Try up to 5 times to find a non-blacklisted, likely renderable emoji
+        let tries = 0;
+        do {
+          theEmoji = randomEmoji();
+          tries++;
+        } while (emojiBlacklist.has(theEmoji) && tries < 5);
+
+        emojiNode.textContent = theEmoji;
+        // Font size and initial rotation
+        const size = 1.1 + Math.random() * 2; // em
+        emojiNode.style.fontSize = `${size}em`;
+      }
+
+      // Rotation for both emoji and plink
+      const startRotation = Math.floor(Math.random() * 360);
+      emojiNode.style.setProperty('--emoji-start-rotation', `${startRotation}deg`);
+      emojiNode.style.animationDuration = `${duration}s`;
+
+      // Add emoji or plink to wrapper, wrapper to display
+      wrapper.appendChild(emojiNode);
+      document.getElementById("display").appendChild(wrapper);
+
+      if (!isPlink) {
+        // Delay slightly to allow rendering
+        setTimeout(() => {
+          if (isBrokenEmoji(emojiNode, theEmoji)) {
+            emojiBlacklist.add(theEmoji);
+
+            wrapper.remove();
+          }
+        }, 100);
+      }
+
+      const totalTravel = window.innerHeight + 150; // from -50px to +100px past bottom
+      const timeToDelete = duration * (totalTravel / (window.innerHeight + 50));
+      setTimeout(() => {
+        wrapper.remove();
+      }, timeToDelete * 1000);
+    }
+
+    setInterval(() => {
+      for (let i = 0; i < emojis; i++) {
+        spawnEmoji();
+      }
+    }, 0);
 
 </script>
 </html>
