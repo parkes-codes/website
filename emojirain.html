@@ -85,7 +85,7 @@
 <script src="emojis.js"></script>
 <script>
     const plinkSrc = "plinkk.gif";
-    const emojis = 2;
+     emojis = 0;
 
     function randomEmoji() {
       // Just pick from emojiList! No blacklist
@@ -153,10 +153,12 @@
     }
 
     setInterval(() => {
+        emojis = Math.ceil(Math.pow(window.innerWidth,1.5)/5000);
+        console.log(emojis)
       for (let i = 0; i < emojis; i++) {
         spawnEmoji();
       }
-    }, 10/window.innerWidth);
+    }, 10000/window.innerWidth);
 
 </script>
 </html>
