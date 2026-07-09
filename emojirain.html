@@ -81,13 +81,87 @@
       return allowed[Math.floor(Math.random() * allowed.length)];
     }
 
-    // Check if an emoji is "broken" based on common rendering errors, but don't penalize multi-codepoint emojis.
+    // Check if an emoji is "broken" based on visible rendering behavior.
+    // Uses "arrow right" navigation logic: if you set the cursor at the beginning and count how many right-arrow moves it takes to skip all displayed glyphs,
+    // if it's more than 1 (i.e. it takes >1 caret movements to get past all glyphs), then it's probably a multi-glyph fallback or not a proper emoji render.
+    function countRenderedCharacters(node) {
+      // Create a selection and range to measure caret navigation in the DOM
+      const range = document.createRange();
+      range.selectNodeContents(node);
+
+      // We will walk the range "caret position" through all visual grapheme clusters using Selection.modify("move", "right", "character")
+      // IE11 and older don't support Selection.modify, but all modern browsers do.
+      // As a fallback: count .textContent.length, but in our use case all modern browsers are expected.
+
+      // Insert a dummy editable span to use Selection API
+      const marker = document.createElement('span');
+      marker.contentEditable = "true";
+      marker.style.position = "absolute";
+      marker.style.opacity = 0;
+      marker.style.pointerEvents = "none";
+      marker.style.userSelect = "text";
+      marker.textContent = node.textContent || "";
+      document.body.appendChild(marker);
+
+      let count = 0;
+      try {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        // Place caret at start
+        range.selectNodeContents(marker);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        // Step caret until at end, counting movements
+        let lastOffset = 0;
+        while (true) {
+          // Try moving right one character
+          const oldAnchor = sel.anchorOffset;
+          document.execCommand('selectNone'); // some browsers need a reset
+          marker.focus();
+          sel.removeAllRanges();
+          // always collapse to front, some browsers are odd
+          range.setStart(marker.firstChild || marker, 0);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+
+          let moves = count;
+          try {
+            document.execCommand('selectNone');
+          } catch (e) { }
+          // Use Selection.modify to move caret right by one grapheme ("character")
+          try {
+            sel.modify("move", "right", "character");
+          } catch (e) {
+            // If unsupported, fallback
+            break;
+          }
+          if ((sel.anchorOffset <= lastOffset) || (sel.anchorOffset >= (marker.textContent || "").length)) {
+            // Did not move or reached the end
+            break;
+          }
+          lastOffset = sel.anchorOffset;
+          count += 1;
+        }
+        // Always add 1 for first move
+        count += 1;
+      } catch (e) {
+        // Fallback: treat as length 1 (never broken)
+        count = 1;
+      }
+      marker.remove();
+      return count;
+    }
+
     function isBrokenEmoji(node, emoji) {
       // Heuristics:
       // - Contains the replacement character "�"
       // - Contains visible whitespace
       // - Rendered much too small (e.g. as zero-width or <0.55x font size)
       // - Offset width/height is almost zero
+      // - More than one rendered "character" (as per browser right-arrow navigation)
       const text = node.innerText || node.textContent || '';
       if (!text) return true;
       if (/\uFFFD/.test(text)) return true; // replacement character
@@ -96,9 +170,11 @@
       const fontSize = parseFloat(window.getComputedStyle(node).fontSize) || 16;
       if (node.offsetWidth < fontSize * 0.55) return true;
       if (node.offsetHeight < fontSize * 0.55) return true;
-      // Optionally: if the emoji renders as multiple fully separated "glyphs" spaced wide apart, 
-      // they're often boxes or flag fallbacks, but this is less reliable
-      // We avoid checking .length for text!
+
+      // Check rendered character count
+      const visualCharCount = countRenderedCharacters(node);
+      if (visualCharCount > 1) return true;
+
       return false;
     }
 
