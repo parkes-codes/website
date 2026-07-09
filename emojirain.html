@@ -77,15 +77,33 @@
         transform: rotate(calc(var(--emoji-start-rotation, 0deg) + 360deg));
       }
     }
+    #speedinput {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        width: 100px;
+        z-index: 10000;
+    }
+    #display2 {
+        position: absolute;
+        top: -10px;
+        left: 115px;
+        width: fit-content;
+        z-index: 10000;
+    }
   </style>
 </head>
 <body>
-  <div id="display"></div>
+    <div id="display"></div>
+  <input id="speedinput" type="range" min="75" max="100" step="0.01">
+  <p id="display2"></p>
 </body>
 <script src="emojis.js"></script>
 <script>
     const plinkSrc = "plinkk.gif";
-     emojis = 0;
+    const speedinput = document.getElementById("speedinput");
+    let speed = 50;
+    let emojis = 0;
 
     function randomEmoji() {
       // Just pick from emojiList! No blacklist
@@ -152,13 +170,42 @@
       }, timeToDelete * 1000);
     }
 
-    setInterval(() => {
-        emojis = Math.ceil(Math.pow(window.innerWidth,1.5)/5000);
-        console.log(emojis)
+    // --- Interval logic: Changeable interval ---
+    let intervalId = null;
+    let interval = 0;
+
+    function getCurrentInterval() {
+      const winW = window.innerWidth || 1;
+      const speedValue = speedinput.value ? speedinput.value : 50;
+       interval = ((100 - speedValue) * 3000) / winW;
+      return Math.max(interval, 10); // clamp to at least 10ms to avoid weird rapid firing
+    }
+
+    function runRain() {
+      emojis = Math.ceil(Math.pow(window.innerWidth, 1.5) / 5000);
+
+      speed = 5000 / (Number(100-speedinput.value) - 33.333);
+ 
+       document.getElementById("display2").textContent = `${(1-(interval/150)).toFixed(4)}`
       for (let i = 0; i < emojis; i++) {
         spawnEmoji();
       }
-    }, 13500/window.innerWidth);
+    }
+
+    function resetInterval() {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+      }
+      const interval = getCurrentInterval();
+      intervalId = setInterval(runRain, interval);
+    }
+
+    // Re-calculate interval on speed change or window resize
+    speedinput.addEventListener('input', resetInterval);       // range changes
+    window.addEventListener('resize', resetInterval);          // screen size changes
+
+    // Start rain
+    resetInterval();
 
 </script>
 </html>
