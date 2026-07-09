@@ -96,12 +96,17 @@
       const wrapper = document.createElement("div");
       wrapper.className = "emoji-wrapper";
 
-      // Set starting horizontal position and animation duration
+      // Allow spawn Y *above* AND *below* the visible area (offscreen "above" == negative top)
+      // -150px above screen to 60px into screen
+      const minTop = -150;
+      const maxTop = 60;
+      const top = -100;
       const left = Math.random() * (window.innerWidth - 48); // Subtract a bit for edge overflow
+
       const duration = 2 + Math.random() * 2.5; // seconds
 
       wrapper.style.left = `${left}px`;
-      wrapper.style.top = `-50px`;
+      wrapper.style.top = `${top}px`;
       wrapper.style.animationDuration = `${duration}s`;
 
       // 1 in 200 chance to show plink image instead of emoji
@@ -139,7 +144,8 @@
       wrapper.appendChild(emojiNode);
       document.getElementById("display").appendChild(wrapper);
 
-      const totalTravel = window.innerHeight + 150; // from -50px to +100px past bottom
+      // Travel distance: from that .top offscreen position to way past the bottom of window
+      const totalTravel = window.innerHeight + 150 - top;
       const timeToDelete = duration * (totalTravel / (window.innerHeight + 50));
       setTimeout(() => {
         wrapper.remove();
@@ -150,7 +156,7 @@
       for (let i = 0; i < emojis; i++) {
         spawnEmoji();
       }
-    }, 0);
+    }, 10/window.innerWidth);
 
 </script>
 </html>
