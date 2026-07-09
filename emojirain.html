@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Emoji Rain</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+      background: #111;
+      color: #fff
+    }
+    #display {
+      position: absolute;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .emoji-wrapper {
+      position: absolute;
+      will-change: transform;
+      pointer-events: none;
+      user-select: none;
+      animation: fall-wrapper linear;
+    }
+    .emoji {
+      display: inline-block;
+      will-change: transform;
+      pointer-events: none;
+      user-select: none;
+      /* Animation: rotate emoji as it falls */
+      animation: spin-emoji linear;
+    }
+
+    @keyframes fall-wrapper {
+      0% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      80% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(calc(100vh + 100px));
+      }
+    }
+
+    @keyframes spin-emoji {
+      0% {
+        transform: rotate(var(--emoji-start-rotation, 0deg));
+      }
+      100% {
+        transform: rotate(calc(var(--emoji-start-rotation, 0deg) + 360deg));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="display"></div>
+</body>
+<script src="emojis.js"></script>
+<script>
+
+    const plinkSrc = "plinkk.gif";
+    const emojis = 2;
+
+function randomEmoji() {
+  return emojiList[Math.floor(Math.random() * emojiList.length)];
+}
+
+
+function spawnEmoji() {
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "emoji-wrapper";
+
+  // Set starting horizontal position and animation duration
+  const left = Math.random() * (window.innerWidth - 48); // Subtract a bit for edge overflow
+  const duration = 2 + Math.random() * 2.5; // seconds
+
+  wrapper.style.left = `${left}px`;
+  wrapper.style.top = `-50px`;
+  wrapper.style.animationDuration = `${duration}s`;
+
+  // 1 in 200 chance to show plink image instead of emoji
+  const isPlink = Math.floor(Math.random() * 200*emojis) === 0;
+
+  let emojiNode;
+  if (isPlink) {
+    emojiNode = document.createElement("img");
+    emojiNode.src = plinkSrc;
+    emojiNode.alt = "plink";
+    emojiNode.className = "emoji";
+    emojiNode.style.borderRadius = "10px";
+
+    const size = 24 + Math.random() * 30; // px
+    emojiNode.style.width = `${size}px`;
+    emojiNode.style.height = "auto";
+  } else {
+    emojiNode = document.createElement("span");
+    emojiNode.className = "emoji";
+    emojiNode.textContent = randomEmoji();
+    // Font size and initial rotation
+    const size = 1.1 + Math.random() * 2; // em
+    emojiNode.style.fontSize = `${size}em`;
+  }
+
+  // Rotation for both emoji and plink
+  const startRotation = Math.floor(Math.random() * 360);
+  emojiNode.style.setProperty('--emoji-start-rotation', `${startRotation}deg`);
+  emojiNode.style.animationDuration = `${duration}s`;
+
+  // Add emoji or plink to wrapper, wrapper to display
+  wrapper.appendChild(emojiNode);
+  document.getElementById("display").appendChild(wrapper);
+
+  // Now, the animation moves the emoji/image beyond the bottom of the viewport.
+  // Cleanup: remove the emoji/image after it has fully moved offscreen
+  // (distance from -50px to (window.innerHeight + 100px))
+  const totalTravel = window.innerHeight + 150; // from -50px to +100px past bottom
+  const timeToDelete = duration * (totalTravel / (window.innerHeight + 50));
+  setTimeout(() => {
+    wrapper.remove();
+  }, timeToDelete * 1000);
+}
+
+setInterval(() => {
+    for (let i = 0; i < emojis; i++) {
+        spawnEmoji();
+    }
+}, 0);
+
+
+</script>
+</html>
