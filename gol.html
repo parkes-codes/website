@@ -3,10 +3,13 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Conways Game Of Life</title>
+    <title>Conway's Game Of Life</title>
     <link rel="icon" type="image/x-icon" href="icon.ico" />
 </head>
 <style>
+    html, body, * {
+        cursor: none !important;
+    }
     body {
         background-color: #000;
         overflow: hidden;
@@ -49,27 +52,15 @@
     .buttons:hover {
         background: #ccc;
     }
-    #confirm{
-        position: fixed;
-        right: 4px;
-        top: 6px;
-        width: 50px;
-        height: 20px;
-        font-size: 15px;
-        opacity: 0%;
-        cursor: default;
-        z-index:  2;
-    }
     #loaded{
         position: fixed;
         right: 10px;
-        top: 25px; 
+        top: 5px; 
         width: 120px;  
         height: 25px;
         font-size: 13px;
         color: #fff;
         opacity: 100%;
-        cursor: default;
         z-index:  4;
         text-align: right;
     }
@@ -125,17 +116,26 @@
         color: #fff;
         background: none;
         border: none;
-        cursor: pointer;
         z-index: 2010;
         opacity: 0.7;
     }
     #close-lexicon:hover, #close-controls:hover { opacity: 1; }
+
+    #canvCursor {
+        z-index: 100000;
+        width: 10px;
+        height: 10px;
+        position: absolute;
+    }
+    .link:hover {
+        color: #338;
+    }
 </style>
 
 <body>
  <canvas id="gamecanvas"></canvas>
+ <image src="cursor.png" id="canvCursor"></image>
  <p id="display">cam: (0,0) hover: (0,0)</p>
- <div id="confirm">Saved</div>
  <div id="loaded"></div>
  <div id="btnrow">
    <button id="import" class="buttons" onclick="importlist()">Import</button>
@@ -210,6 +210,17 @@
     <p>
         ◉ DeleteKey: Delete selected cells
     </p>
+    <h3>Editing Hotkeys</h3>
+    <p>
+        ◉ F key to place a colored marker at location
+    </p>
+    <p>
+        ◉ Command G key to delete all markers placed
+    </p>
+    <p>
+        ◉ N key to switch between marker colors
+    </p>
+    
   </div>
 </div>
 
@@ -219,87 +230,97 @@
     <h2 style="margin-top: -10px">Lexicon</h2>
     <p> List of a ton of starting sequences </p>
     <p>1: Glider 
-        <a href="#" onclick="loadLexi('gliderNE')">NE</a> 
-        <a href="#" onclick="loadLexi('gliderSE')">SE</a> 
-        <a href="#" onclick="loadLexi('gliderSW')">SW</a> 
-        <a href="#" onclick="loadLexi('gliderNW')">NW</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('gliderNE')">NE</a> 
+        <a class="link" class="link" href="#" onclick="loadLexi('gliderSE')">SE</a> 
+        <a class="link" class="link" href="#" onclick="loadLexi('gliderSW')">SW</a> 
+        <a class="link" class="link" href="#" onclick="loadLexi('gliderNW')">NW</a>
     </p>
     <p>2: 4 Glider Creator
-        <a href="#" onclick="loadLexi('4gc')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('4gc')">Spawn</a>
     </p>
     <p>3: Glider Gun
-        <a href="#" onclick="loadLexi('gliderGun1')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('gliderGun1')">Spawn</a>
     </p>
     <p>4: R Pentomino
-        <a href="#" onclick="loadLexi('rpent')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('rpent')">Spawn</a>
     </p>
     <p>5: Acorn
-        <a href="#" onclick="loadLexi('acorn')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('acorn')">Spawn</a>
     </p>
     <p>6: Lightweight Spaceship (LWSS)
-        <a href="#" onclick="loadLexi('horGliderL')">Left</a>
-        <a href="#" onclick="loadLexi('horGliderR')">Right</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('horGliderL')">Left</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('horGliderR')">Right</a>
     </p>
     <p>7: 15-Cycle
-        <a href="#" onclick="loadLexi('15cycle')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('15cycle')">Spawn</a>
     </p>
     <p>8: Queen Bee Shuttle
-        <a href="#" onclick="loadLexi('queenbeeshuttle')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('queenbeeshuttle')">Spawn</a>
     </p>
     <p>9: Glider Train
-        <a href="#" onclick="loadLexi('glidertrain')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('glidertrain')">Spawn</a>
     </p>
     <p>10: Spaceship1
-        <a href="#" onclick="loadLexi('spaceship1N')">N</a>
-        <a href="#" onclick="loadLexi('spaceship1R')">E</a>
-        <a href="#" onclick="loadLexi('spaceship1S')">S</a>
-        <a href="#" onclick="loadLexi('spaceship1L')">W</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('spaceship1N')">N</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('spaceship1R')">E</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('spaceship1S')">S</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('spaceship1L')">W</a>
     </p>
-    <p>11: Spaceship2
-        <a href="#" onclick="loadLexi('diagship')">Spawn</a>
+    <p>11: Spaceship2 (large)
+        <a class="link" class="link" href="#" onclick="loadLexi('diagship')">Spawn</a>
     </p>
     <p>12: Spaceship3
-        <a href="#" onclick="loadLexi('spaceship3N')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('spaceship3N')">Spawn</a>
     </p>
     <p>13: Spaceship4
-        <a href="#" onclick="loadLexi('c/3spaceship')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('c/3spaceship')">Spawn</a>
     </p>
     <p>14: Spaceship5
-        <a href="#" onclick="loadLexi('spaceship5')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('spaceship5')">Spawn</a>
     </p>
     <p>15: Spaceship6
-        <a href="#" onclick="loadLexi('spaceship6')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('spaceship6')">Spawn</a>
     </p>
     <p>16: 2-engine cordership
-        <a href="#" onclick="loadLexi('2engcordership')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('2engcordership')">Spawn</a>
     </p>
     <p>17: Infection
-        <a href="#" onclick="loadLexi('infection')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('infection')">Spawn</a>
     </p>
     <p>18: Decaying Sword
-        <a href="#" onclick="loadLexi('sword')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('sword')">Spawn</a>
     </p>
     <p>19: Antstretcher
-        <a href="#" onclick="loadLexi('antstretcher')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('antstretcher')">Spawn</a>
     </p>
     <p>20: LWSS Factory
-        <a href="#" onclick="loadLexi('p58lwssGun')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('p58lwssGun')">Spawn</a>
     </p>
     <p>21: Period 69 Spiral
-        <a href="#" onclick="loadLexi('p69spiral')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('p69spiral')">Spawn</a>
     </p>
     <p>22: Period 60 Spiral
-        <a href="#" onclick="loadLexi('p60spiral')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('p60spiral')">Spawn</a>
     </p>
     <p>23: Glider Eater
-        <a href="#" onclick="loadLexi('glidereater')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('glidereater')">Spawn</a>
     </p>
     <p>24: Achims Period 144
-        <a href="#" onclick="loadLexi('achimsp144')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('achimsp144')">Spawn</a>
     </p>
     <p>25: Cordership
-        <a href="#" onclick="loadLexi('cordership')">Spawn</a>
+        <a class="link" class="link" href="#" onclick="loadLexi('cordership')">Spawn</a>
     </p>
+    <p>26: Kok's Galaxy
+        <a class="link" class="link" href="#" onclick="loadLexi('KoksGalaxy')">Spawn</a>
+    </p>
+    <p>27: Lightspeed Bubble
+        <a class="link" class="link" href="#" onclick="loadLexi('LightspeedBubble')">Spawn</a>
+    </p>
+    <p>28: Lone Dot Agar
+        <a class="link" class="link" href="#" onclick="loadLexi('loneDotAgar')">Spawn</a>
+    </p>
+
   </div>
 </div>
 </body>
@@ -352,6 +373,7 @@ let glColorLoc = null;
 let glResolutionLoc = null;
 let glCamLoc = null;
 let glZoomLoc = null;
+
 
 let ctx = document.getElementById("gamecanvas").getContext("2d");
 
@@ -467,7 +489,6 @@ document.getElementById('controlsMenu').addEventListener('click', function() {
 
 const display = document.getElementById("display");
 const importbtn = document.getElementById("import");
-const confirmMsg = document.getElementById("confirm");
 const loadedMsg = document.getElementById("loaded");
 const exportbtn = document.getElementById("export");
 const tpsInput = document.getElementById("tpsInput");
@@ -485,6 +506,7 @@ setTimeout(function() {
 
 let startingArray = [];
 let pixels = [];
+let markers = [];
 let camx = 0;
 let camy = 0;
 let zoom = 10;
@@ -503,6 +525,17 @@ let shiftpressed = false;
 let hiliteCorner1 = {x: -1, y: 1};
 let hiliteCorner2 = {x: 1, y: -1};
 let t2 = 0;
+
+let markerColors = [
+    "faa",
+    "afa",
+    "aaf",
+    "ffa",
+    "aff",
+    "faf"
+]
+
+let colorIndex = 0;
 
 // Array to hold selected/highlighted live pixels after shift released
 let selectedLivePixels = [];
@@ -533,16 +566,10 @@ function resetState() {
 let confOpac = 0;
 function saveCurrent() {
     startingArray = pixels.map(p => ({x: p.x, y: p.y}));
-    confOpac = 100;
-    animateConf();
+    loadedMsg.textContent = "Saved"
+    loadedOpac = 100; animateLoad();
 }
-function animateConf() {
-    confirmMsg.style.opacity = `${confOpac}%`
-    if (confOpac > 0) {
-        confOpac--;
-        requestAnimationFrame(animateConf)
-    }
-}
+
 let loadedOpac = 100;
 function animateLoad() {
     loadedMsg.style.opacity = `${loadedOpac}%`
@@ -629,8 +656,8 @@ function drawPixelGL(x, y, color) {
 
 function draw() {
     // Find hover locations before anything
-    hoverX = Math.floor(((mouseX - canvas.width / 2) / zoom + camx) - 12 / zoom);
-    hoverY = 1 + Math.floor(((- (mouseY - canvas.height / 2) / zoom) + camy) + 12 / zoom);
+    hoverX = Math.floor(((mouseX - canvas.width / 2) / zoom + camx) -  14/ zoom);
+    hoverY = 1 + Math.floor(((- (mouseY - canvas.height / 2) / zoom) + camy) + 14 / zoom);
     t2++;
 
     // Draw background/clear
@@ -697,7 +724,6 @@ function draw() {
             }
         }
 
-
         // Draw dragged preview and overlays using 2D context for flexibility
         // Dragging (preview selection in blue)
         if(draggingSelection&&selectionOriginal.length>0) {
@@ -757,6 +783,22 @@ function draw() {
             zoom,zoom
         );
         ctx.globalAlpha=1;
+
+        // ---- Draw markers using ctx (2D context) ----
+        if (typeof markers !== "undefined" && Array.isArray(markers)) {
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = markers[i].color;
+            for (let i = 0; i < markers.length; i++) {
+                let m = markers[i];
+                // Draw as filled rect at marker cell location
+                ctx.fillRect(
+                    (m.x-camx)*zoom+canvas.width/2,
+                    canvas.height/2-(m.y-camy)*zoom,
+                    zoom,zoom
+                );
+            }
+            ctx.globalAlpha = 1;
+        }
 
     } else {
 
@@ -853,6 +895,24 @@ function draw() {
             zoom,zoom
         );
         ctx.globalAlpha=1;
+
+        // Draw markers at 60% opacity
+        if (Array.isArray(markers)) {
+            ctx.save();
+            ctx.globalAlpha = 0.6;
+            for (let i = 0; i < markers.length; i++) {
+                let m = markers[i];
+                ctx.fillStyle = m.color || "#0ff";
+                ctx.fillRect(
+                    (m.x - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (m.y - camy) * zoom,
+                    zoom, zoom
+                );
+            }
+            ctx.restore();
+        }
+   
+
     }
 
     // UI text/logic
@@ -924,12 +984,15 @@ tickLoop();
 
 // ------ Scroll to zoom (stepped over 10 timeouts) ------
 
-
-canvas.addEventListener('wheel', function(e) {
+function handleWheelZoom(e) {
     let rect = canvas.getBoundingClientRect();
     let mx = e.clientX - rect.left, my = e.clientY - rect.top;
     if (isNaN(mx)) mx = mouseX;
     if (isNaN(my)) my = mouseY;
+
+    // Heuristic: Trackpads fire many small deltaY events, wheels larger discrete ones.
+    // If abs(deltaY) < 8, it's probably a trackpad; otherwise a wheel.
+    const isTrackpad = Math.abs(e.deltaY) < 8;
 
     // Compute world coordinates before zoom
     let beforeX = ((mx - canvas.width / 2) / zoom) + camx;
@@ -939,6 +1002,9 @@ canvas.addEventListener('wheel', function(e) {
     let steps = 10;
     let interval = 0.1666 * fps; // ms per step
 
+    // Make zoom less aggressive on trackpads
+    let zoomStep = isTrackpad ? 1.01 : 1.02;
+
     let performStep = function(step) {
         if (step > steps) return;
 
@@ -947,9 +1013,9 @@ canvas.addEventListener('wheel', function(e) {
         let worldYBefore = (-(my - canvas.height / 2) / zoom) + camy;
 
         if (op > 0) {
-            zoom *= 1.02;
+            zoom *= zoomStep;
         } else {
-            zoom /= 1.02;
+            zoom /= zoomStep;
         }
         // Clamp zoom
         zoom = Math.max(2, Math.min(zoom, 120));
@@ -971,7 +1037,10 @@ canvas.addEventListener('wheel', function(e) {
     performStep(1);
 
     e.preventDefault();
-}, {passive:false});
+}
+
+canvas.addEventListener('wheel', handleWheelZoom, {passive: false});
+canvCursor.addEventListener('wheel', handleWheelZoom, {passive: false});
 
 function resizeCanvas() {
     canvas.width = (window.innerWidth) - 25;
@@ -1054,10 +1123,34 @@ function exportlist() {
     exportbtn.blur();
 }
 
-// --- Rest of event handling as before (unchanged) ---
+tpsInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        tpsInput.blur();
+    }
+});
+
+
 window.addEventListener("keydown", (e) => {
     cmdPressed = e.metaKey || e.ctrlKey;
     keysPressed[e.key.toLowerCase()] = true;
+
+    if (e.key === "f") {
+        markers.push({x:hoverX,y:hoverY,color: `#${markerColors[colorIndex]}`})
+        loadedMsg.textContent = `${markerColors[colorIndex]}`;
+        loadedOpac = 100; animateLoad();
+        
+    }
+
+    if (e.key === "n") {
+        colorIndex = (colorIndex+1)%markerColors.length;
+    }
+
+    if (cmdPressed && e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        markers = [];
+        loadedMsg.textContent = "All markers cleared";
+        loadedOpac = 100; animateLoad();
+    }
 
     if (cmdPressed && e.key.toLowerCase() === "c") {
         if (selectedLivePixels.length > 0) {
@@ -1091,6 +1184,7 @@ window.addEventListener("keydown", (e) => {
         e.preventDefault(); return;
     }
     if (cmdPressed && e.key.toLowerCase() === "d" && e.shiftKey) {
+    keysPressed['d'] = false;
         if (selectedLivePixels.length > 0 && !draggingSelection) rotateSelection90CCW();
         e.preventDefault(); return;
     }
@@ -1140,9 +1234,12 @@ window.addEventListener("keydown", (e) => {
         e.preventDefault(); saveCurrent();
     } else if (e.key === "t" && paused) tick();
 });
+
 window.addEventListener("keyup", (e) => {
     keysPressed[e.key.toLowerCase()] = false;
+    if (cmdPressed) {keysPressed = []} // prevents keys being stuck down if pressed alongside cmd
     cmdPressed = e.metaKey || e.ctrlKey;
+
     // Paste on V up
     if (e.key.toLowerCase() === "v" && pastePreviewActive) {
         if (copiedPixels.length > 0) {
@@ -1218,6 +1315,8 @@ window.addEventListener("keyup", (e) => {
 window.addEventListener("mousemove", (e) => {
     mouseX = e.clientX;
     mouseY = e.clientY;
+    document.getElementById("canvCursor").style.left = `${mouseX-10}px`;
+    document.getElementById("canvCursor").style.top = `${mouseY-10}px`;
     if (shiftpressed && (hiliteCorner1 && hiliteCorner1.x !== -1))
         hiliteCorner2 = { x: hoverX, y: hoverY };
     if (draggingSelection && dragStart != null) {
@@ -1340,10 +1439,13 @@ function rotateSelection90CW(){rotateSelection(1);}
 function rotateSelection180(){rotateSelection(2);}
 function rotateSelection90CCW(){rotateSelection(3);}
 
+
+
 window.addEventListener('beforeunload', function (event) {
     event.preventDefault(); // Standard for most browsers
     event.returnValue = 'You have unsaved changes. Are you sure you want to leave?'; // For older browsers
 });
+
 
 </script>
 </html>
