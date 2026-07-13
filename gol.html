@@ -25,7 +25,7 @@
         display: block;
         background: none;
     }
-    #display {
+    #display, #display2 {
         position: fixed;
         left: 10px;
         bottom: 0px;
@@ -36,6 +36,9 @@
         min-width: 50%;
         z-index: 99999;
         text-shadow: 0 0 3px #000;
+    }
+    #display2 {
+        bottom: 12px;
     }
     .buttons {
         width: fit-content;
@@ -144,12 +147,28 @@
         right: 10px;
         bottom: 10px
     }
+    #settingsbtn {
+       background-color: #111;
+       color: #ddd;
+       border-radius: 50px;
+       font-size: 15px;
+       position: absolute;
+       left: 10px;
+       bottom: 36px;
+       width: 15px;
+       height: 15px;
+       z-index: 10;
+    }
 
 </style>
 
 <body>
  <canvas id="gamecanvas"></canvas>
- <p id="display">cam: (0,0) hover: (0,0)</p>
+ <p id="display"></p>
+ <p id="display2"></p>
+ <button id="settingsbtn" onclick="settingsPrompt()">
+    <span style="position: absolute; bottom: -3px; left: 2px">⚙</span>
+ </button>
  <div id="alerttext"></div>
  <button id="import" class="buttons" onclick="importlist()">Import</button>
  <button id="export" class="buttons" onclick="exportlist()">Export</button>
@@ -350,8 +369,17 @@
     <p>Hans Leo Hassler (p156)
         <a class="link" href="#" onclick="loadLexi('hansLeoHassler')">Spawn</a>
     </p>
-    <p>Lightspeed Oscillator
+    <p>Lightspeed Oscillator Extended
         <a class="link" href="#" onclick="loadLexi('lightspOsc')">Spawn</a>
+    </p>
+    <p>Billiard Table Oscillators
+        <a class="link" href="#" onclick="loadLexi('billiardTables')">Spawn</a>
+    </p>
+    <p>High Period Glider Crystal
+        <a class="link" href="#" onclick="loadLexi('crystal')">Spawn</a>
+    </p>
+    <p>Glider Loop (p63)
+        <a class="link" href="#" onclick="loadLexi('gliderloop')">Spawn</a>
     </p>
 
 
@@ -381,6 +409,15 @@
     <p>Spaceship8 (c/6)
         <a class="link" href="#" onclick="loadLexi('c/6ship')">Spawn</a>
     </p>
+    <p>Snail (c/5)
+        <a class="link" href="#" onclick="loadLexi('snail')">Spawn</a>
+    </p>
+    <p>Barge (extended)
+        <a class="link" href="#" onclick="loadLexi('bargeExt')">Spawn</a>
+    </p>
+    <p>Barge 2 (extended)
+        <a class="link" href="#" onclick="loadLexi('barge2ext')">Spawn</a>
+    </p>
     <p>Weekender (2c/7)
         <a class="link" href="#" onclick="loadLexi('weekender')">Spawn</a>
     </p>
@@ -395,6 +432,9 @@
     </p>
     <p>Blinker Spaceship (Infinitely Growing)
         <a class="link" href="#" onclick="loadLexi('blinkership')">Spawn</a>
+    </p>
+    <p>c/3 Greyship
+        <a class="link" href="#" onclick="loadLexi('c3greyship')">Spawn</a>
     </p>
     <p>c/4 Greyship
         <a class="link" href="#" onclick="loadLexi('c/4greyship')">Spawn</a>
@@ -440,10 +480,13 @@
     <p>Pony Express
         <a class="link" href="#" onclick="loadLexi('ponyexpress')">Spawn</a>
     </p>
+    <p>Bobsled Run Revised <!-- Also known as bobsled2 -->
+        <a class="link" href="#" onclick="loadLexi('bobsled')">Spawn</a>
+    </p>
     <p>Glider Eater
         <a class="link" href="#" onclick="loadLexi('glidereater')">Spawn</a>
     </p> 
-    <p>Tiniest Infinite
+    <p>Tiniest Infinite (Block Laying Switch Engine Synth)
         <a class="link" href="#" onclick="loadLexi('corderShip2')">Spawn</a>
     </p>
     <p>Lightspeed Bubble
@@ -461,11 +504,20 @@
     <p>Back Rake
         <a class="link" href="#" onclick="loadLexi('back-rake')">Spawn</a>
     </p>
+    <p>Paul's Cordership Rake
+        <a class="link" href="#" onclick="loadLexi('paulcordrake')">Spawn</a>
+    </p>
+    <p>MWSS Forward Rake
+        <a class="link" href="#" onclick="loadLexi('forwardMWSSrake')">Spawn</a>
+    </p>
     <p>Blinker Puffer
         <a class="link" href="#" onclick="loadLexi('blinkerpuffer')">Spawn</a>
     </p>
     <p>Bi-Block Puffer
         <a class="link" href="#" onclick="loadLexi('bi-block-puffer')">Spawn</a>
+    </p>
+    <p>c/3 Puffer
+        <a class="link" href="#" onclick="loadLexi('puff3')">Spawn</a>
     </p>
     <p>Slow Puffer 1
         <a class="link" href="#" onclick="loadLexi('slowpuffer1')">Spawn</a>
@@ -473,8 +525,17 @@
     <p>Slow Puffer 2
         <a class="link" href="#" onclick="loadLexi('slowpuffer2')">Spawn</a>
     </p>
+    <p>Diagonal Puffer
+        <a class="link" href="#" onclick="loadLexi('diagPuff')">Spawn</a>
+    </p>
+    <p>Birthday Puffer (Looks like a cake)
+        <a class="link" href="#" onclick="loadLexi('bdaypuff')">Spawn</a>
+    </p>
     <p>Wickstretcher
         <a class="link" href="#" onclick="loadLexi('wickstretcher')">Spawn</a>
+    </p>
+    <p>c/2 Wickstretcher
+        <a class="link" href="#" onclick="loadLexi('c2wick')">Spawn</a>
     </p>
     <p>Diagonal Wickstretcher
         <a class="link" href="#" onclick="loadLexi('diagWickstr')">Spawn</a> 
@@ -494,6 +555,10 @@
     <p>Pinwheel Synth
         <a class="link" href="#" onclick="loadLexi('pinwheelsynth')">Spawn</a>
     </p>
+    <p>Glider advancer (pushes by 60ticks)
+        <a class="link" href="#" onclick="loadLexi('advancer')">Spawn</a>
+    </p>
+
 
 
     <h3 class="header3">Very Large Patterns</h3>
@@ -507,6 +572,9 @@
     <p>6-engine Cordership Gun
         <a class="link" href="#" onclick="loadLexi('6engcordgun')">Spawn</a>
     </p>
+    <p>7-engine Cordership V gun
+        <a class="link" href="#" onclick="loadLexi('7engCSgun')">Spawn</a>
+    </p>
     <p>Pseudo p14 Glider Gun
         <a class="link" href="#" onclick="loadLexi('pseudo14GG')">Spawn</a>
     </p>
@@ -515,6 +583,33 @@
     </p>
     <p>Single Channel Spiral Growth
         <a class="link" href="#" onclick="loadLexi('spiralGrowth1')">Spawn</a>
+    </p>
+    <p>Slide Breeder (infinite line of glider gun 1's)
+        <a class="link" href="#" onclick="loadLexi('slide-breeder')">Spawn</a>
+    </p>
+    <p>LWSS Breeder (infinite line of LWSS guns)
+        <a class="link" href="#" onclick="loadLexi('lwssBreed')">Spawn</a>
+    </p>
+    <p>Dart Gun
+        <a class="link" href="#" onclick="loadLexi('dartgun')">Spawn</a>
+    </p>
+    <p>Blockstacker
+        <a class="link" href="#" onclick="loadLexi('blockstacker')">Spawn</a>
+    </p>
+    <p>All Oscillators up to year 2000 (60k px)
+        <a class="link" href="#" onclick="loadLexi('allOscillators')">Spawn</a>
+    </p>
+    <p>Glider Tripwire
+        <a class="link" href="#" onclick="loadLexi('gliderDetecter')">Spawn</a>
+    </p>
+    <p>Cordership-LWSS freeze tag
+        <a class="link" href="#" onclick="loadLexi('cs-lwss-fr')">Spawn</a>
+    </p>
+    <p>Lineship
+        <a class="link" href="#" onclick="loadLexi('lineshipExt')">Spawn</a>
+    </p>
+    <p>
+        <a class="link" href="#" onclick="loadLexi('email')">Spawn</a>
     </p>
 
 
@@ -683,12 +778,13 @@ document.getElementById('controlsMenu').addEventListener('click', function() {
 // --- everything else unchanged below ---
 
 const display = document.getElementById("display");
+const display2 = document.getElementById("display2")
 const importbtn = document.getElementById("import");
 const import2btn = document.getElementById("import2")
 const alertMsg = document.getElementById("alerttext");
 const exportbtn = document.getElementById("export");
 const tpsInput = document.getElementById("tpsInput");
-const tptInput = document.getElementById("tptInput")
+const tptInput = document.getElementById("tptInput");
 
 
 
@@ -717,11 +813,15 @@ let hoverX = 0;
 let hoverY = 0;
 let tickn = 0;
 let livePx = 0;
+let maxPx = 0;
 let cmdPressed = false;
 let shiftpressed = false;
 let hiliteCorner1 = {x: -1, y: 1};
 let hiliteCorner2 = {x: 1, y: -1};
 let t2 = 0;
+
+let livePxHist = [];
+let maxPxLen = 50;
 
 let markerColors = [
     "faa",
@@ -756,6 +856,7 @@ function resetState() {
     dragStart = null;
     selectionOriginal = [];
     pastePreviewActive = false;
+    livePxHist = []
 }
 
 let confOpac = 0;
@@ -863,6 +964,7 @@ function loadLexi(id) {
         } else if (Array.isArray(patternData)) {
             // Normal pixels list
             startingArray = patternData.map(p => ({x: p.x, y: p.y + offsett}));
+            livePxHist = []
         } else {
             alert("Pattern format not recognized.");
             return;
@@ -872,6 +974,7 @@ function loadLexi(id) {
         saveCurrent();
         document.getElementById('lexicon').style.display = 'none';
         document.body.style.overflow = '';
+        camx = 0; camy = 0;
         alertMsg.textContent = `Loaded ${id}`;
         alertOpac = 100;
         animateLoad();
@@ -886,14 +989,23 @@ function isLive(pixel) {
     return pixels.some(p => p.x === pixel.x && p.y === pixel.y);
 }
 
+function settingsPrompt() {
+    maxPxLen = prompt("Length of max pixel's history?")
+    document.getElementById("settingsbtn").blur()
+    if (!maxPxLen) {maxPxLen = 50}
+}
+
 // ========== OPTIMIZED TICK (CPU) ==========
 // Use one uint32 key per cell for super-fast hash table; batch neighbor count update with Int32Array
 
 function tick() {
     if (draggingSelection) return;
-
-
-
+    livePx = pixels.length;
+    livePxHist.unshift(livePx);
+    if (livePxHist.length > maxPxLen) {
+        livePxHist.splice(maxPxLen, 1);
+    }
+    maxPx = livePxHist.length > 0 ? Math.max(...livePxHist) : 0;
 
     // Step 1: Build neighbor counts in Map, keyed as "x,y"
     const neighborCounts = new Map();
@@ -1225,7 +1337,9 @@ function draw() {
     if (shiftpressed) {
         hiliteCorner2 = { x: hoverX, y: hoverY };
     }
-    display.textContent = `cam: (${camx.toFixed(2)},${camy.toFixed(2)}) hover: (${hoverX},${hoverY}) tick: ${tickn} livepx: ${livePx} zoom: ${zoom.toFixed(3)}`;
+
+    display.textContent = `cam: (${camx.toFixed(2)},${camy.toFixed(2)}) hover: (${hoverX},${hoverY}) zoom: ${zoom.toFixed(3)}`;
+    display2.textContent = `livepx: ${livePx} maxpx: ${maxPx} tick: ${tickn}`
 
     // Fast draw/erase
     if (mousedown && !draggingSelection) {
@@ -1262,7 +1376,6 @@ function draw() {
     if (keysPressed["w"] || (keysPressed["arrowup"] && !inputFocus)) camy += (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
     if ((keysPressed["s"] && !cmdPressed) || (keysPressed["arrowdown"] && !inputFocus)) camy -= (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
 
-    livePx = pixels.length;
     requestAnimationFrame(draw);
 }
 
