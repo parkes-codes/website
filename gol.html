@@ -32,12 +32,16 @@
         text-align: left;
         z-index: 1;
         font-size: 10px;
+        max-width: 50%;
+        min-width: 50%;
+        z-index: 99999;
+        text-shadow: 0 0 3px #000;
     }
     .buttons {
-        width: 50px;
+        width: fit-content;
         height: 20px;
         border-radius: 5px;
-        z-index: 2;
+        z-index: 20;
         font-size: 12px;
         background: #fff;
         border-color: #0ff;
@@ -65,18 +69,26 @@
         display: flex;
         flex-direction: row-reverse;
         position: absolute;
-        right: 10px;
+        right: 65px;
         bottom: 10px;
+    }
+    #btnrow2 {
+        display: flex;
+        flex-direction: row-reverse;
+        position: absolute;
+        right: 65px;
+        bottom: 34px;
     }
     #tpsInput, #tptInput {
         position: absolute;
-        bottom: 35px;
-        right: 10px;
+        bottom: 59px;
+        right: 65px;
         height: 15px;
         width: 40px;
     }
     #tptInput {
-        bottom: 60px;
+        right: 10px;
+        width: 42px
     }
     #lex {
         width: 60px
@@ -106,20 +118,8 @@
         box-shadow: 0 0 16px rgba(0,0,0,0.23);
         padding: 32px;
         color: #000;
+        font-size: 12px;
     }
-    #close-lexicon,
-    #close-controls {
-        position: fixed;
-        right: 20px;
-        top: calc(3vh * 1%);
-        font-size: 28px;
-        color: #fff;
-        background: none;
-        border: none;
-        z-index: 2010;
-        opacity: 0.7;
-    }
-    #close-lexicon:hover, #close-controls:hover { opacity: 1; }
 
     .link {
         transition: color 0.2s;
@@ -130,6 +130,20 @@
     .link:hover {
         color: #acc;
     }
+    
+    .header3 {
+        color: rgb(0, 164, 164)
+    }
+    #import {
+        position: absolute;
+        right: 10px;
+        bottom: 34px
+    }
+    #export {
+        position: absolute;
+        right: 10px;
+        bottom: 10px
+    }
 
 </style>
 
@@ -137,23 +151,26 @@
  <canvas id="gamecanvas"></canvas>
  <p id="display">cam: (0,0) hover: (0,0)</p>
  <div id="alerttext"></div>
+ <button id="import" class="buttons" onclick="importlist()">Import</button>
+ <button id="export" class="buttons" onclick="exportlist()">Export</button>
  <div id="btnrow">
-   <button id="import" class="buttons" onclick="importlist()">Import</button>
-   <button id="export" class="buttons" onclick="exportlist()">Export</button>
-   <button id="lex" class="buttons">Lexicon</button>
-   <button id="controls" class="buttons">Controls</button>
+   <button id="import2" class="buttons" onclick="importRLE()">Import RLE</button>
+   <button id="export2" class="buttons" onclick="exportRLE()">Export RLE</button>
+</div>
+<div id="btnrow2">
+    <button id="lex" class="buttons">Lexicon</button>
+    <button id="controls" class="buttons">Controls</button>
 </div>
 
 <input type="number" placeholder="tps" value="60" id="tpsInput" class="buttons">
 <input type="number" placeholder="tpt" value="1" id="tptInput" class="buttons">
 
 <div id="controlsMenu" class="bigmenu">
-  <button id="close-controls" aria-label="Close overlay">&times;</button>
   <div id="controlsMenu-inner" class="bigmenu-inner">
     <h2 style="margin-top: -10px">Controls</h2>
     <h3>Basic Controls:</h3>
     <p>
-        ◉ Click on a cell to flip its value. <br><br> Sorry If the Hovered location is not where your mouse is, I tried my best to make a formula for it.
+        ◉ Click on a cell to flip its value. 
     </p>
     <p>
         ◉ You can hold click and draw across the screen.
@@ -172,7 +189,7 @@
     </p>
     <h3>Basic Hotkeys</h3>
     <p>
-        ◉ When paused, use the "t" key to advance 1 tick.
+        ◉ When paused, use the "t" key to advance 1 tick; Use Y to advance TPT ticks.
     </p>
     <p>
         ◉ Command+S to save the current state.
@@ -223,16 +240,10 @@
 </div>
 
 <div id="lexicon" class="bigmenu">
-  <button id="close-lexicon" aria-label="Close overlay">&times;</button>
   <div id="lexicon-inner" class="bigmenu-inner">
     <h2 style="margin-top: -10px">Lexicon</h2>
     <p> List of a ton of starting sequences </p>
-    <p>4 Glider Creator
-        <a class="link" href="#" onclick="loadLexi('4gc')">Spawn</a>
-    </p>
-    <p>12 Glider Creator
-        <a class="link" href="#" onclick="loadLexi('12spawn')">Spawn</a>
-    </p>
+    <h3 class="header3">Guns</h3>
     <p>Glider Gun (p30)
         <a class="link" href="#" onclick="loadLexi('gliderGun1')">Spawn</a>
     </p>
@@ -254,50 +265,162 @@
     <p>Glider Gun 4 (p22)
         <a class="link" href="#" onclick="loadLexi('p22gun')">Spawn</a>
     </p>
-    <p>4 Direction Glider Gun
+    <p>Glider Gun 5 (p20)
+        <a class="link" href="#" onclick="loadLexi('p20GG')">Spawn</a>
+    </p>
+    <p>4 Direction Glider Gun (p256)
         <a class="link" href="#" onclick="loadLexi('omnigun')">Spawn</a>
     </p>
-    <p>R Pentomino
-        <a class="link" href="#" onclick="loadLexi('rpent')">Spawn</a>
+    <p>Slowest Glider Gun (p103079214841)
+        <a class="link" href="#" onclick="loadLexi('wrGlider')">Spawn</a>
     </p>
-    <p>Acorn
-        <a class="link" href="#" onclick="loadLexi('acorn')">Spawn</a>
+    <p>LWSS Gun (p30)
+        <a class="link" href="#" onclick="loadLexi('lwssGun')">Spawn</a>
     </p>
+    <p>MWSS Gun 1 (p46)
+        <a class="link" href="#" onclick="loadLexi('p58mwssGun')">Spawn</a>
+    </p>
+    <p>MWSS Gun 2 (p44)
+        <a class="link" href="#" onclick="loadLexi('p44MWSSgun')">Spawn</a>
+    </p>
+    <p>Side-By-Side Glider Gun (aka vacuum)
+        <a class="link" href="#" onclick="loadLexi('vacuumGun')">Spawn</a>
+    </p>
+    <p>Slide Gun
+        <a class="link" href="#" onclick="loadLexi('slideGun')">Spawn</a>
+    </p>
+    <p>Sidecar Gun
+        <a class="link" href="#" onclick="loadLexi('sideCarGun')">Spawn</a>
+    </p>
+    <p>Space Rake Gun
+        <a class="link" href="#" onclick="loadLexi('spaceRakeGun')">Spawn</a>
+    </p>
+    <p>3-engine Cordership Gun
+        <a class="link" href="#" onclick="loadLexi('3engCorder_gun')">Spawn</a>
+    </p>
+    <h3 class="header3">Oscillators</h3>
     <p>15-Cycle
         <a class="link" href="#" onclick="loadLexi('15cycle')">Spawn</a>
     </p>
-    <p>Queen Bee Shuttle
-        <a class="link" href="#" onclick="loadLexi('queenbeeshuttle')">Spawn</a>
+    <p>112p15 
+        <a class="link" href="#" onclick="loadLexi('p15_1')">Spawn</a>
     </p>
-    <p>Glider Train
-        <a class="link" href="#" onclick="loadLexi('glidertrain')">Spawn</a>
+    <p>p69 Spiral 
+        <a class="link" href="#" onclick="loadLexi('p69spiral')">Spawn</a>
     </p>
-    <p>Spaceship1
+    <p>p60 spiral 
+        <a class="link" href="#" onclick="loadLexi('p60spiral')">Spawn</a>
+    </p>
+    <p>p32 spiral
+        <a class="link" href="#" onclick="loadLexi('spiral3')">Spawn</a>
+    </p>
+    <p>Achims Period 144 
+        <a class="link" href="#" onclick="loadLexi('achimsp144')">Spawn</a>
+    </p>
+    <p>Kok's Galaxy 
+        <a class="link" href="#" onclick="loadLexi('KoksGalaxy')">Spawn</a>
+    </p>
+    <p>Lone Dot Agar 
+        <a class="link" href="#" onclick="loadLexi('loneDotAgar')">Spawn</a>
+    </p>
+    <p>Centinal 
+        <a class="link" href="#" onclick="loadLexi('centinal')">Spawn</a>
+    </p>
+    <p>Diuresis 
+        <a class="link" href="#" onclick="loadLexi('diuresis')">Spawn</a>
+    </p>
+    <p>Beluchenkos p51 
+        <a class="link" href="#" onclick="loadLexi('beluchenkos_p51')">Spawn</a>
+    </p>
+    <p>Twirling T-Tetsons II 
+        <a class="link" href="#" onclick="loadLexi('twirlingt')">Spawn</a>
+    </p>
+    <p>Ring of Fire 
+        <a class="link" href="#" onclick="loadLexi('ringof_fire')">Spawn</a>
+    </p>
+    <p>Period 177 
+        <a class="link" href="#" onclick="loadLexi('104p177')">Spawn</a>
+    </p>
+    <p>Period 135 Glider 
+        <a class="link" href="#" onclick="loadLexi('p135g')">Spawn</a>
+    </p>
+    <p>352p51
+        <a class="link" href="#" onclick="loadLexi('p51extend')">Spawn</a>
+    </p>
+    <p>Hans Leo Hassler (p156)
+        <a class="link" href="#" onclick="loadLexi('hansLeoHassler')">Spawn</a>
+    </p>
+    <p>Lightspeed Oscillator
+        <a class="link" href="#" onclick="loadLexi('lightspOsc')">Spawn</a>
+    </p>
+
+
+    <h3 class="header3">Ships</h3>
+
+    <p>Spaceship1 (2c/5)
         <a class="link" href="#" onclick="loadLexi('spaceship1N')">Spawn</a>
     </p>
-    <p>Spaceship2 (large)
+    <p>Spaceship2 (c/5) (large)
         <a class="link" href="#" onclick="loadLexi('diagship')">Spawn</a>
     </p>
-    <p>Spaceship3
+    <p>Spaceship3 (2c/5)
         <a class="link" href="#" onclick="loadLexi('spaceship3N')">Spawn</a>
     </p>
-    <p>Spaceship4
+    <p>Spaceship4 (c/3)
         <a class="link" href="#" onclick="loadLexi('c/3spaceship')">Spawn</a>
     </p>
-    <p>Spaceship5
+    <p>Spaceship5 (2c/5)
         <a class="link" href="#" onclick="loadLexi('spaceship5')">Spawn</a>
     </p>
-    <p>Spaceship6
+    <p>Spaceship6 (c/5)
         <a class="link" href="#" onclick="loadLexi('spaceship6')">Spawn</a>
     </p>
     <p>Spaceship7 (c/10)
         <a class="link" href="#" onclick="loadLexi('copperhead')">Spawn</a>
     </p>
-    <p>Weekender (inchworm spaceship)
+    <p>Spaceship8 (c/6)
+        <a class="link" href="#" onclick="loadLexi('c/6ship')">Spawn</a>
+    </p>
+    <p>Weekender (2c/7)
         <a class="link" href="#" onclick="loadLexi('weekender')">Spawn</a>
     </p>
-    <p>2-engine cordership
+    <p>2-engine cordership (8c/96)
         <a class="link" href="#" onclick="loadLexi('2engcordership')">Spawn</a>
+    </p>
+    <p>13-engine Cordership (8c/96)
+        <a class="link" href="#" onclick="loadLexi('13engcorder')">Spawn</a>
+    </p>
+    <p>Cordership (8c/96)
+        <a class="link" href="#" onclick="loadLexi('cordership')">Spawn</a>
+    </p>
+    <p>Blinker Spaceship (Infinitely Growing)
+        <a class="link" href="#" onclick="loadLexi('blinkership')">Spawn</a>
+    </p>
+    <p>c/4 Greyship
+        <a class="link" href="#" onclick="loadLexi('c/4greyship')">Spawn</a>
+    </p>
+    <p>c/5 Greyship
+        <a class="link" href="#" onclick="loadLexi('c/5greyship')">Spawn</a>
+    </p>
+    <p>Sawtooth 3
+        <a class="link" href="#" onclick="loadLexi('sawtooth3')">Spawn</a>
+    </p>
+
+    <h3 class="header3">Misc</h3>
+    <p>Acorn
+        <a class="link" href="#" onclick="loadLexi('acorn')">Spawn</a>
+    </p>
+    <p>Queen Bee Shuttle
+        <a class="link" href="#" onclick="loadLexi('queenbeeshuttle')">Spawn</a>
+    </p>
+    <p>4 Glider Creator
+        <a class="link" href="#" onclick="loadLexi('4gc')">Spawn</a>
+    </p>
+    <p>12 Glider Creator
+        <a class="link" href="#" onclick="loadLexi('12spawn')">Spawn</a>
+    </p>
+    <p>Glider Train
+        <a class="link" href="#" onclick="loadLexi('glidertrain')">Spawn</a>
     </p>
     <p>Infection
         <a class="link" href="#" onclick="loadLexi('infection')">Spawn</a>
@@ -311,47 +434,20 @@
     <p>Antstretcher
         <a class="link" href="#" onclick="loadLexi('antstretcher')">Spawn</a>
     </p>
-    <p>LWSS Gun (p30)
-        <a class="link" href="#" onclick="loadLexi('lwssGun')">Spawn</a>
+    <p>c/5 Tubstretcher
+        <a class="link" href="#" onclick="loadLexi('c/5tubstretcher')">Spawn</a>
     </p>
-    <p>MWSS Gun 1 (p46)
-        <a class="link" href="#" onclick="loadLexi('p58mwssGun')">Spawn</a>
-    </p>
-    <p>MWSS Gun 2 (p44)
-        <a class="link" href="#" onclick="loadLexi('p44MWSSgun')">Spawn</a>
-    </p>
-    <p>Period 69 Spiral
-        <a class="link" href="#" onclick="loadLexi('p69spiral')">Spawn</a>
-    </p>
-    <p>Period 60 Spiral
-        <a class="link" href="#" onclick="loadLexi('p60spiral')">Spawn</a>
+    <p>Pony Express
+        <a class="link" href="#" onclick="loadLexi('ponyexpress')">Spawn</a>
     </p>
     <p>Glider Eater
         <a class="link" href="#" onclick="loadLexi('glidereater')">Spawn</a>
-    </p>
-    <p>Achims Period 144
-        <a class="link" href="#" onclick="loadLexi('achimsp144')">Spawn</a>
-    </p>
-    <p>Cordership
-        <a class="link" href="#" onclick="loadLexi('cordership')">Spawn</a>
-    </p>
+    </p> 
     <p>Tiniest Infinite
         <a class="link" href="#" onclick="loadLexi('corderShip2')">Spawn</a>
     </p>
-    <p>Kok's Galaxy
-        <a class="link" href="#" onclick="loadLexi('KoksGalaxy')">Spawn</a>
-    </p>
     <p>Lightspeed Bubble
         <a class="link" href="#" onclick="loadLexi('LightspeedBubble')">Spawn</a>
-    </p>
-    <p>Lone Dot Agar
-        <a class="link" href="#" onclick="loadLexi('loneDotAgar')">Spawn</a>
-    </p>
-    <p>Centinal
-        <a class="link" href="#" onclick="loadLexi('centinal')">Spawn</a>
-    </p>
-    <p>Diuresis
-        <a class="link" href="#" onclick="loadLexi('diuresis')">Spawn</a>
     </p>
     <p>Space Non-filler
         <a class="link" href="#" onclick="loadLexi('spaceNonfiller')">Spawn</a>
@@ -365,33 +461,63 @@
     <p>Back Rake
         <a class="link" href="#" onclick="loadLexi('back-rake')">Spawn</a>
     </p>
-    <p>Beluchenkos p51
-        <a class="link" href="#" onclick="loadLexi('beluchenkos_p51')">Spawn</a>
-    </p>
     <p>Blinker Puffer
         <a class="link" href="#" onclick="loadLexi('blinkerpuffer')">Spawn</a>
-    </p>
-    <p>Blinker Spaceship
-        <a class="link" href="#" onclick="loadLexi('blinkership')">Spawn</a>
     </p>
     <p>Bi-Block Puffer
         <a class="link" href="#" onclick="loadLexi('bi-block-puffer')">Spawn</a>
     </p>
+    <p>Slow Puffer 1
+        <a class="link" href="#" onclick="loadLexi('slowpuffer1')">Spawn</a>
+    </p>
+    <p>Slow Puffer 2
+        <a class="link" href="#" onclick="loadLexi('slowpuffer2')">Spawn</a>
+    </p>
     <p>Wickstretcher
         <a class="link" href="#" onclick="loadLexi('wickstretcher')">Spawn</a>
+    </p>
+    <p>Diagonal Wickstretcher
+        <a class="link" href="#" onclick="loadLexi('diagWickstr')">Spawn</a> 
     </p>
     <p>Trombone Slide
         <a class="link" href="#" onclick="loadLexi('tromboneSlide')">Spawn</a>
     </p>
-    <p>Twirling T-Tetsons II
-        <a class="link" href="#" onclick="loadLexi('twirlingt')">Spawn</a>
-    </p>
-    <p>Ring of Fire
-        <a class="link" href="#" onclick="loadLexi('ringof_fire')">Spawn</a>
-    </p>
     <p>Fly-by deletion
         <a class="link" href="#" onclick="loadLexi('flyby')">Spawn</a>
     </p>
+    <p>Puffer Train
+        <a class="link" href="#" onclick="loadLexi('puffertrain')">Spawn</a>
+    </p>
+    <p>Pufferfish Breeder (3500px)
+        <a class="link" href="#" onclick="loadLexi('puffBreeder')">Spawn</a>
+    </p>
+    <p>Pinwheel Synth
+        <a class="link" href="#" onclick="loadLexi('pinwheelsynth')">Spawn</a>
+    </p>
+
+
+    <h3 class="header3">Very Large Patterns</h3>
+
+    <p>Zigzag Wickstretch
+        <a class="link" href="#" onclick="loadLexi('zigzag-wickstretch')">Spawn</a>
+    </p>
+    <p>Spaceship1 Gun (p690)
+        <a class="link" href="#" onclick="loadLexi('spaceshipgun1')">Spawn</a>
+    </p>
+    <p>6-engine Cordership Gun
+        <a class="link" href="#" onclick="loadLexi('6engcordgun')">Spawn</a>
+    </p>
+    <p>Pseudo p14 Glider Gun
+        <a class="link" href="#" onclick="loadLexi('pseudo14GG')">Spawn</a>
+    </p>
+    <p>Smaller Spaceship1 Gun (p690)
+        <a class="link" href="#" onclick="loadLexi('shipgunidk')">Spawn</a>
+    </p>
+    <p>Single Channel Spiral Growth
+        <a class="link" href="#" onclick="loadLexi('spiralGrowth1')">Spawn</a>
+    </p>
+
+
 
   </div>
 </div>
@@ -535,10 +661,7 @@ document.getElementById('lex').addEventListener('click', function() {
     document.body.style.overflow = 'hidden';
 });
 
-document.getElementById('close-lexicon').addEventListener('click', function() {
-    document.getElementById('lexicon').style.display = 'none';
-    document.body.style.overflow = '';
-});
+
 
 document.getElementById('lexicon').addEventListener('click', function() {
     document.getElementById('lexicon').style.display = 'none';
@@ -550,10 +673,7 @@ document.getElementById('controls').addEventListener('click', function() {
     document.body.style.overflow = 'hidden';
 });
 
-document.getElementById('close-controls').addEventListener('click', function() {
-    document.getElementById('controlsMenu').style.display = 'none';
-    document.body.style.overflow = '';
-});
+
 
 document.getElementById('controlsMenu').addEventListener('click', function() {
     document.getElementById('controlsMenu').style.display = 'none';
@@ -564,6 +684,7 @@ document.getElementById('controlsMenu').addEventListener('click', function() {
 
 const display = document.getElementById("display");
 const importbtn = document.getElementById("import");
+const import2btn = document.getElementById("import2")
 const alertMsg = document.getElementById("alerttext");
 const exportbtn = document.getElementById("export");
 const tpsInput = document.getElementById("tpsInput");
@@ -652,20 +773,107 @@ function animateLoad() {
         requestAnimationFrame(animateLoad)
     }
 }
+
+
 function loadLexi(id) {
     if (!lexloaded) {
         alert("Lexicon file not found");
         return;
     }
+
     let offsett = (id === "sword") ? -50 : 0;
+
     if (Object.prototype.hasOwnProperty.call(patterns, id)) {
-        startingArray = patterns[id].map(p => ({x: p.x, y: p.y+offsett}));
+        let patternData = patterns[id];
+
+        // Detect if it's RLE: a string containing header + RLE data
+        if (typeof patternData === "string") {
+            // Borrow importRLE logic, but work directly with string, not user prompt
+            let rleString = patternData;
+
+            // Parse header for x/y offset (optional)
+            let lines = rleString.split(/\r?\n/);
+            let header = "";
+            let i = 0;
+            for (; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (line.startsWith("#") || line == "") continue;
+                header = line;
+                break;
+            }
+
+            let xOff = 0, yOff = 0;
+            let match = header.match(/x\s*=\s*(\d+)\s*,\s*y\s*=\s*(\d+)/i);
+            if (match) {
+                // Could parse x/y, but keeping for extensibility
+                i++; // Move to RLE body
+            } else {
+                i = 0; // No header
+            }
+
+            // Read RLE data (all non-comment, non-header lines, concatenated)
+            let rleBody = lines.slice(i).filter(l => !l.trim().startsWith("#")).join("");
+            // Strip off anything after "!" (and include up to "!")
+            let exclIdx = rleBody.indexOf("!");
+            if (exclIdx !== -1) rleBody = rleBody.slice(0, exclIdx + 1);
+
+            // Parse width and height from header if present
+            let width = 0, height = 0;
+            let headerMatch = header.match(/x\s*=\s*(\d+)\s*,\s*y\s*=\s*(\d+)/i);
+            if (headerMatch) {
+                width = parseInt(headerMatch[1], 10);
+                height = parseInt(headerMatch[2], 10);
+            }
+
+            let pixelsList = [];
+            let x = 0, y = 0;
+            let numBuffer = '';
+            for (let idx = 0; idx < rleBody.length; idx++) {
+                let ch = rleBody[idx];
+                if (/\d/.test(ch)) {
+                    numBuffer += ch;
+                } else if (ch === "b" || ch === "o") {
+                    let count = numBuffer ? parseInt(numBuffer, 10) : 1;
+                    for (let n = 0; n < count; n++) {
+                        if (ch === "o") {
+                            // Center the pattern so the midpoint is at 0,0 (with offsett as needed)
+                            let centeredX = x - Math.floor(width / 2);
+                            let centeredY = (0 - y + offsett) + Math.floor(height / 2);
+                            pixelsList.push({ x: centeredX, y: centeredY });
+                        }
+                        x++;
+                    }
+                    numBuffer = '';
+                } else if (ch === "$") {
+                    let count = numBuffer ? parseInt(numBuffer, 10) : 1;
+                    y += count;
+                    x = 0;
+                    numBuffer = '';
+                } else if (ch === "!") {
+                    break;
+                }
+                // ignore whitespace, commas
+            }
+       
+            if (pixelsList.length === 0) {
+                alert("No live cells found in RLE or invalid format.");
+                return;
+            }
+            startingArray = pixelsList.slice();
+        } else if (Array.isArray(patternData)) {
+            // Normal pixels list
+            startingArray = patternData.map(p => ({x: p.x, y: p.y + offsett}));
+        } else {
+            alert("Pattern format not recognized.");
+            return;
+        }
+
         resetState();
         saveCurrent();
         document.getElementById('lexicon').style.display = 'none';
         document.body.style.overflow = '';
-        alertMsg.textContent = `Loaded ${id}`
-        alertOpac = 100
+        alertMsg.textContent = `Loaded ${id}`;
+        alertOpac = 100;
         animateLoad();
     }
     else {
@@ -683,6 +891,9 @@ function isLive(pixel) {
 
 function tick() {
     if (draggingSelection) return;
+
+
+
 
     // Step 1: Build neighbor counts in Map, keyed as "x,y"
     const neighborCounts = new Map();
@@ -915,13 +1126,27 @@ function draw() {
             );
         }
 
-
+        // draw 0,0 cell whiter
+        // Draw 0,0 as rect at normal zoom, but as a circle if zoomed out far enough
         ctx.fillStyle = "#fff1";
-        ctx.fillRect(
-            (0-camx)*zoom+canvas.width/2,
-            canvas.height/2-(0-camy)*zoom,
-            zoom,zoom
-        );
+        if (zoom >= 4) {
+            ctx.fillRect(
+                (0-camx)*zoom+canvas.width/2,
+                canvas.height/2-(0-camy)*zoom,
+                zoom,zoom
+            );
+        } else {
+            // Diameter = 1% of the smaller canvas dimension (help user find center)
+            const diameter = Math.min(canvas.width, canvas.height) * 0.01;
+            ctx.beginPath();
+            ctx.arc(
+                (0-camx)*zoom+canvas.width/2,
+                canvas.height/2-(0-camy)*zoom,
+                diameter/2, 0, 2 * Math.PI
+            );
+            ctx.fill();
+        }
+   
 
         if(draggingSelection&&selectionOriginal.length>0) {
             for(let i=0; i<selectionOriginal.length;i++) {
@@ -1032,10 +1257,10 @@ function draw() {
         camx += (xBefore - xAfter); camy += (yBefore - yAfter);
     }
 
-    if (keysPressed["a"] || keysPressed["arrowleft"]) camx -= (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
-    if ((keysPressed["d"] && !cmdPressed) || keysPressed["arrowright"]) camx += (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
-    if (keysPressed["w"] || keysPressed["arrowup"]) camy += (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
-    if ((keysPressed["s"] && !cmdPressed) || keysPressed["arrowdown"]) camy -= (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
+    if (keysPressed["a"] || (keysPressed["arrowleft"] && !inputFocus)) camx -= (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
+    if ((keysPressed["d"] && !cmdPressed) || (keysPressed["arrowright"] && !inputFocus)) camx += (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
+    if (keysPressed["w"] || (keysPressed["arrowup"] && !inputFocus)) camy += (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
+    if ((keysPressed["s"] && !cmdPressed) || (keysPressed["arrowdown"] && !inputFocus)) camy -= (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
 
     livePx = pixels.length;
     requestAnimationFrame(draw);
@@ -1145,6 +1370,186 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
+function exportRLE() {
+    if (!pixels || pixels.length === 0) {
+        alert("No live cells to export.");
+        return;
+    }
+    // Find bounds
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of pixels) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+    }
+    // Build 2D array of size width x height
+    let width = maxX - minX + 1;
+    let height = maxY - minY + 1;
+    // Because many implementations flip Y, and input format uses Y increasing down,
+    // we will use y = 0 as the top, +y down
+    let grid = [];
+    for (let y = 0; y < height; y++) {
+        grid[y] = [];
+        for (let x = 0; x < width; x++) {
+            grid[y][x] = "b";
+        }
+    }
+    for (const p of pixels) {
+        // Flip Y to match RLE convention (Y=0 is top, increases down)
+        let relX = p.x - minX;
+        let relY = (maxY - p.y); // Invert: highest y (top on screen) -> y=0 in RLE
+        if (relY < 0 || relY >= height) continue;
+        if (relX < 0 || relX >= width) continue;
+        grid[relY][relX] = "o";
+    }
+    // Build RLE
+    let rleRows = [];
+    for (let y = 0; y < height; y++) {
+        let row = grid[y];
+        let res = "";
+        let cnt = 1;
+        for (let x = 0; x < width; x++) {
+            let curr = row[x];
+            let next = (x + 1 < width) ? row[x + 1] : null;
+            if (next && next === curr) {
+                cnt++;
+            } else {
+                if (cnt > 1) res += cnt + curr;
+                else res += curr;
+                cnt = 1;
+            }
+        }
+        rleRows.push(res);
+    }
+    // Combine rows with "$" (end-of-row), add "!" at end
+    let body = rleRows.join("$") + "!";
+    // Prepend header
+    let header = `x = ${width}, y = ${height}, rule = B3/S23\n`;
+    let rleString = header + body;
+
+    // Copy to clipboard
+    // Try navigator clipboard, fallback to textarea
+    function copyToClipboard(txt) {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(txt).then(function() {
+                alert("RLE copied to clipboard!");
+            }, function() {
+                fallbackCopy(txt);
+            });
+        } else {
+            fallbackCopy(txt);
+        }
+        function fallbackCopy(txt) {
+            let textarea = document.createElement("textarea");
+            textarea.value = txt;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand("copy");
+                alert("RLE copied to clipboard!");
+            } catch (e) {
+                alert("Could not copy RLE.");
+            }
+            document.body.removeChild(textarea);
+        }
+    }
+    copyToClipboard(rleString);
+}
+
+
+function importRLE() {
+    paused = true;
+    let rleString = prompt(
+        'Enter the RLE string to import.\nExample:\nx = 3, y = 3, rule = B3/S23\nbo$2bo$3o!'
+    );
+
+    if (!rleString || rleString.trim() === "") {
+        import2btn.blur();
+        return;
+    }
+
+    // Parse header for width/height (x/y)
+    let lines = rleString.split(/\r?\n/);
+    let header = "";
+    let i = 0;
+    for (; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (line.startsWith("#") || line == "") continue;
+        header = line;
+        break;
+    }
+
+    let width = 0, height = 0;
+    let match = header.match(/x\s*=\s*(\d+)\s*,\s*y\s*=\s*(\d+)/i);
+    if (match) {
+        width = parseInt(match[1], 10);
+        height = parseInt(match[2], 10);
+        i++; // Move to RLE body
+    } else {
+        i = 0; // No header
+    }
+
+    // Centering offsets
+    let xCenter = width ? Math.floor(width / 2) : 0;
+    let yCenter = height ? Math.floor(height / 2) : 0;
+
+    // Read RLE data (all non-comment, non-header lines, concatenated)
+    let rleBody = lines.slice(i).filter(l => !l.trim().startsWith("#")).join("");
+    // Strip off anything after "!" (and include up to "!")
+    let exclIdx = rleBody.indexOf("!");
+    if (exclIdx !== -1) rleBody = rleBody.slice(0, exclIdx + 1);
+
+    let pixelsList = [];
+    let x = 0, y = 0;
+    let numBuffer = '';
+    for (let idx = 0; idx < rleBody.length; idx++) {
+        let ch = rleBody[idx];
+        if (/\d/.test(ch)) {
+            numBuffer += ch;
+        } else if (ch === "b" || ch === "o") {
+            let count = numBuffer ? parseInt(numBuffer, 10) : 1;
+            for (let n = 0; n < count; n++) {
+                if (ch === "o") {
+                    // Center the pattern so that it is at (0,0)
+                    pixelsList.push({
+                        x: x,
+                        y: 0 - (y)
+                    });
+                }
+                x++;
+            }
+            numBuffer = '';
+        } else if (ch === "$") {
+            let count = numBuffer ? parseInt(numBuffer, 10) : 1;
+            y += count;
+            x = 0;
+            numBuffer = '';
+        } else if (ch === "!") {
+            break;
+        }
+        // ignore whitespace and commas
+    }
+
+    if (pixelsList.length === 0) {
+        alert('No live cells found in RLE or invalid format.');
+        import2btn.blur();
+        return;
+    }
+
+    startingArray = pixelsList.map(p => ({
+        x: p.x - xCenter,
+        y: p.y + yCenter
+    }));
+
+
+
+    import2btn.blur();
+    resetState();
+}
+
+
+
 function importlist() {
     paused = true;
     let pixelListStr = prompt(
@@ -1175,7 +1580,12 @@ function importlist() {
     importbtn.blur();
     resetState();
 }
+
 function exportlist() {
+    if (pixels.length == 0) {
+        alert("No live pixels to export.")
+        return
+    }
     if (pixels.length < Infinity) {
      const str = '[' + pixels.map(p => `{x:${p.x},y:${p.y}}`).join(',') + ']';
 
@@ -1219,15 +1629,37 @@ function exportlist() {
     exportbtn.blur();
 }
 
+let inputFocus = false;
+
+tptInput.addEventListener("focus", () => {
+    inputFocus = true;
+});
+tpsInput.addEventListener("focus", () => {
+    inputFocus = true;
+});
+tptInput.addEventListener("blur", () => {
+    inputFocus = false;
+});
+tpsInput.addEventListener("blur", () => {
+    inputFocus = false;
+});
+
 tpsInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         tpsInput.blur();
+        inputFocus = false;
     }
 });
 
 tptInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         tptInput.blur();
+    } else if (e.key === "ArrowUp") {
+        tptInput.value++
+        e.preventDefault();
+    } else if (e.key === "ArrowDown") {
+        tptInput.value=Math.max(1,Number(tptInput.value)-1);
+        e.preventDefault();
     }
 });
 
@@ -1248,6 +1680,7 @@ window.addEventListener("keydown", (e) => {
     if (e.key === "n") {
         colorIndex = (colorIndex+1)%markerColors.length;
     }
+
 
     if (cmdPressed && e.key.toLowerCase() === "g") {
         e.preventDefault();
@@ -1338,7 +1771,13 @@ window.addEventListener("keydown", (e) => {
         else resetState();
     } else if (e.key.toLowerCase() === "s" && cmdPressed ) {
         e.preventDefault(); saveCurrent();
-    } else if (e.key === "t" && paused) tick();
+    } else if (e.key === "t" && paused) {
+        tick()
+    } else if (e.key === "y" && paused) {
+        for ( let i = 0; i<tptInput.value; i++) {
+            tick();
+        }
+    } 
 });
 
 window.addEventListener("keyup", (e) => {
