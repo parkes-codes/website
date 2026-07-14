@@ -1,0 +1,543 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fractal Explorer</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico" />
+</head>
+<style>
+    body {
+        background-color: #000;
+    }
+    #gamecanvas {
+        border: #fff 5px solid;
+        border-radius: 10px;
+        width: calc(100vw - 11px);
+        height: calc(100vh - 11px);
+        margin-left: -8px;
+        margin-top: -8px;
+        position: relative;
+        z-index: 1;
+        display: block;
+        background: none;
+    }
+    #info {
+        position: absolute;
+        left: 6px;
+        top: 5px;
+        color: #fff;
+        font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+        font-size: 10px;
+        z-index: 2;
+    }
+    #resinput, #iterinput, #juliaslidera, #juliasliderb, #fractalslider, #fractallabel {
+        position: absolute;
+        top: 6px;
+        height: 13px;
+        font-size: 10px;
+        z-index: 2;
+    }
+    /* Adjust these right values for correct layout spacing */
+    #resinput {
+        right: 8px;
+        width: 40px;
+    }
+    #iterinput {
+        right: 60px;
+        width: 40px;
+    }
+    #juliaslidera {
+        right: 112px;
+        width: 40px;
+    }
+    #juliasliderb {
+        right: 164px;
+        width: 40px;
+    }
+    #julialabel {
+        position: absolute;
+        right: 216px;
+        top: 9px;
+        color: #fff;
+        font-size: 10px;
+        font-family: 'Lucida Sans', Verdana, sans-serif;
+        z-index: 2;
+        background: rgba(0,0,0,0.5);
+        padding:0 3px 0 3px;
+        border-radius: 2px;
+        height: 17px;
+    }
+    #fractalslider {
+        right: 360px;
+        width: 120px;
+        top: 10px;
+        height: 17px;
+        background: transparent;
+    }
+    #fractallabel {
+        right: 490px;
+        width: 120px;
+        top: 9px;
+        color: #fff;
+        font-size: 10px;
+        font-family: 'Lucida Sans', Verdana, sans-serif;
+        z-index: 2;
+        background: rgba(0,0,0,0.5);
+        padding:0 3px 0 3px;
+        border-radius: 2px;
+        height: 17px;
+    }
+    /* Hide the old #modebtn */
+    #modebtn {
+        display: none;
+    }
+</style>
+<body>
+ <canvas id="gamecanvas"></canvas>
+ <div id="info"></div>
+ <label id="fractallabel" for="fractalslider">Fractal:</label>
+ <input id="fractalslider" type="range" min="0" max="3" step="1" value="0" title="Select Fractal Set">
+ <label id="julialabel" for="juliaslidera">c = </label>
+ <input id="juliaslidera" type="number" value="-0.7" min="-2" max="2" step="0.01" placeholder="Re(c)">
+ <input id="juliasliderb" type="number" value="0.27015" min="-2" max="2" step="0.01" placeholder="Im(c)">
+ <input id="iterinput" value="50" min="1" max="100" step="2" placeholder="iter" type="number">
+ <input id="resinput" value="1" min="0.5" max="5" step=0.1 placeholder="res" type="number">
+ <!-- Keep modebtn for legacy layout, just hide it -->
+ <button id="modebtn" title="Toggle Fractal Set" style="display: none;">Fractal</button>
+</body>
+<script>
+const canvas = document.getElementById("gamecanvas");
+const ctx = canvas.getContext('2d', { alpha: false });
+const infoDiv = document.getElementById("info");
+const resInput = document.getElementById("resinput");
+const iterInput = document.getElementById("iterinput");
+const juliaReInput = document.getElementById("juliaslidera");
+const juliaImInput = document.getElementById("juliasliderb");
+const juliaLabel = document.getElementById("julialabel");
+const fractalSlider = document.getElementById("fractalslider");
+const fractalLabel = document.getElementById("fractallabel");
+
+// Add Newton's Fractal to the names
+const FRACTAL_NAMES = ["Mandelbrot", "Julia", "Burning Ship", "Newton"];
+let fractalMode = parseInt(fractalSlider.value,10); // 0 = Mandelbrot, 1 = Julia, 2 = Burning Ship, 3 = Newton
+
+let keysPressed = [];
+let iterations = 50;
+let res = 1.5;
+// Julia constant c = a + bi
+let juliaRe = parseFloat(juliaReInput.value);
+let juliaIm = parseFloat(juliaImInput.value);
+
+let centerX = 0.0;  // complex-plane center (real)
+let centerY = 0.0;  // complex-plane center (imag)
+let scale = 2.71828;    // view "diameter" in complex plane
+let pseudoZoom = 1;
+let leftX = 0;
+let rightX = 0;
+let pixelsDrawn = 0;
+
+let mousePos = { x: canvas.width/2, y: canvas.height/2 };
+
+// --- Move Camera via ASWD ---
+let cameraMoveAnimationFrame = null;
+let lastFrameTime = null;
+function moveCamera(deltaTime) {
+    // Speed is 1/8 the view window per second
+    const speed = (scale / 8) * (deltaTime / 1000);
+    // Left/right is real axis, up/down is imag axis
+    let moved = false;
+    if (keysPressed["a"]) { centerX -= speed; moved = true; }
+    if (keysPressed["d"]) { centerX += speed; moved = true; }
+    if (keysPressed["w"]) { centerY -= speed; moved = true; }
+    if (keysPressed["s"]) { centerY += speed; moved = true; }
+    if (moved) {
+        // Update leftX and rightX for UI info
+        const viewSize = Math.min(canvas.width, canvas.height);
+        const centerY_px = Math.floor(canvas.height / 2);
+        const l = pixelToComplex(0, centerY_px);
+        const r = pixelToComplex(canvas.width - 1, centerY_px);
+        function complexToString(z) {
+          return `(${z.re.toFixed(6)}${z.im >= 0 ? "+" : ""}${z.im.toFixed(6)}i)`;
+        }
+        leftX = complexToString(l);
+        rightX = complexToString(r);
+        draw();
+    }
+}
+function cameraMoveLoop(ts) {
+    if (!lastFrameTime) lastFrameTime = ts;
+    const dt = ts - lastFrameTime;
+    lastFrameTime = ts;
+    moveCamera(dt);
+    cameraMoveAnimationFrame = requestAnimationFrame(cameraMoveLoop);
+}
+window.addEventListener("keydown", (e) => {
+    const key = e.key.toLowerCase();
+    // Only allow aswd for movement and not when in input/number box
+    if(["a","s","w","d"].includes(key) && !(document.activeElement.tagName === "INPUT" && document.activeElement.type === "number")) {
+        if (!keysPressed[key]) {
+            keysPressed[key] = true;
+        }
+        // Start camera loop if not running
+        if (cameraMoveAnimationFrame === null) {
+            lastFrameTime = null;
+            cameraMoveAnimationFrame = requestAnimationFrame(cameraMoveLoop);
+        }
+    } else {
+        keysPressed[key] = true;
+    }
+
+    if (e.key === "=" || e.key === "+") {
+        applyZoom(0.7, mousePos);
+        draw();
+    }
+    if (e.key === "-") {
+        applyZoom(1/0.7, mousePos);
+        draw();
+    }
+    // Shift+M toggles Mandelbrot/Julia, Shift+B for Burning Ship, Shift+N for Newton
+    if ((e.key === 'm' || e.key === 'M') && e.shiftKey) {
+        if (fractalMode === 1) fractalMode = 0;
+        else fractalMode = 1;
+        fractalSlider.value = fractalMode;
+        updateFractalUI();
+        draw();
+    }
+    if ((e.key === 'b' || e.key === 'B') && e.shiftKey) {
+        fractalMode = 2;
+        fractalSlider.value = 2;
+        updateFractalUI();
+        draw();
+    }
+    if ((e.key === 'n' || e.key === 'N') && e.shiftKey) {
+        fractalMode = 3;
+        fractalSlider.value = 3;
+        updateFractalUI();
+        draw();
+    }    
+});
+window.addEventListener("keyup", (e) => {
+    const key = e.key.toLowerCase();
+    keysPressed[key] = false;
+    // Stop camera loop if no movement keys are pressed
+    if (!keysPressed["a"] && !keysPressed["s"] && !keysPressed["w"] && !keysPressed["d"]) {
+        if (cameraMoveAnimationFrame !== null) {
+            cancelAnimationFrame(cameraMoveAnimationFrame);
+            cameraMoveAnimationFrame = null;
+            lastFrameTime = null;
+        }
+    }
+});
+
+// --- FRACTAL MODE MANAGEMENT ---
+function updateFractalUI() {
+    // Set label according to mode
+    fractalLabel.textContent = "Fractal: " + FRACTAL_NAMES[fractalMode];
+    // Show julia c controls ONLY for Julia
+    if(fractalMode === 1) {
+        juliaReInput.style.display = '';
+        juliaImInput.style.display = '';
+        juliaLabel.style.display = '';
+    } else {
+        juliaReInput.style.display = 'none';
+        juliaImInput.style.display = 'none';
+        juliaLabel.style.display = 'none';
+    }
+}
+// --- END FRACTAL MODE MANAGEMENT ---
+
+canvas.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  mousePos.x = e.clientX - rect.left;
+  mousePos.y = e.clientY - rect.top;
+});
+
+function pixel(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h);
+  pixelsDrawn+=w*h
+}
+// pixel-to-complex mapping
+function pixelToComplex(px, py) {
+  const viewSize = Math.min(canvas.width, canvas.height);
+  const scalePerPixel = scale / viewSize;
+  return {
+    re: centerX + (px - canvas.width * 0.5) * scalePerPixel,
+    im: centerY + (py - canvas.height * 0.5) * scalePerPixel
+  };
+}
+
+// Unified fractal set color calculation
+function fractalColor(px, py) {
+    const viewSize = Math.min(canvas.width, canvas.height);
+    const scalePerPixel = scale / viewSize;
+    let a = juliaRe;
+    let b = juliaIm;
+    let zx, zy;
+    let mode = fractalMode; // 0=mandelbrot, 1=julia, 2=burning ship, 3=newton
+    if (mode === 1) { // Julia
+      zx = centerX + (px - canvas.width * 0.5) * scalePerPixel;
+      zy = centerY + (py - canvas.height * 0.5) * scalePerPixel;
+    } else if (mode === 2) { // Burning Ship
+      zx = 0;
+      zy = 0;
+      a = centerX + (px - canvas.width * 0.5) * scalePerPixel;
+      b = centerY + (py - canvas.height * 0.5) * scalePerPixel;
+    } else if (mode === 3) { // Newton
+      zx = centerX + (px - canvas.width * 0.5) * scalePerPixel;
+      zy = centerY + (py - canvas.height * 0.5) * scalePerPixel;
+    } else { // Mandelbrot
+      zx = 0;
+      zy = 0;
+      a = centerX + (px - canvas.width * 0.5) * scalePerPixel;
+      b = centerY + (py - canvas.height * 0.5) * scalePerPixel;
+    }
+
+    if (mode !== 3) {
+        let n = 0;
+        for (; n < iterations; n++) {
+            let zx2 = zx * zx, zy2 = zy * zy;
+            if (zx2 + zy2 > 4.0) break;
+            let xtemp;
+            if (mode === 2) { // Burning Ship: z = (|Re(z)| + i|Im(z)|)^2 + c
+                xtemp = zx2 - zy2 + a;
+                zy = Math.abs(2 * zx * zy) + b;
+                zx = Math.abs(xtemp);
+            } else { // Mandelbrot/Julia: z = z^2 + c
+                xtemp = zx2 - zy2 + a;
+                zy = 2 * zx * zy + b;
+                zx = xtemp;
+            }
+        }
+        // Coloring
+        let hue;
+        if (n === iterations) {
+            hue = 0;
+        } else {
+            // Continuous hue for smooth coloring
+            let modulus = Math.sqrt(zx*zx + zy*zy);
+            let nu = Math.log(Math.log(modulus + 1e-8)/Math.LN2)/Math.LN2;
+            hue = ((n + 1 - nu) * 360 / iterations) % 360;
+            if (mode === 2) {
+                // Burning Ship: optional modify hue for variety
+                hue = (hue + 200) % 360;
+            }
+            if (hue < 0) hue += 360;
+        }
+        return {
+            color: `hsl(${hue},80%,${n === iterations ? "0%" : "50%"})`,
+            isBlack: n === iterations
+        };
+    } else {
+        // NEWTON FRACTAL: find root of f(z) = z^3 - 1 using Newton's method
+        let z = { re: zx, im: zy };
+        let root;
+        const roots = [
+            { re: 1, im: 0 },
+            { re: -0.5, im: Math.sqrt(3)/2 },
+            { re: -0.5, im: -Math.sqrt(3)/2 }
+        ];
+        let threshold = 1e-5;
+        let converged = false;
+        let n;
+        for (n = 0; n < iterations; n++) {
+            // f(z) = z^3 - 1
+            // f'(z) = 3 z^2
+            // Newton's: z = z - f(z)/f'(z)
+            let r = z.re, i = z.im;
+            // Compute z^3
+            let r2 = r*r, i2 = i*i;
+            let z3re = r2*r - 3*r*i2;
+            let z3im = 3*r2*i - i2*i;
+            // Compute z^2
+            let z2re = r2 - i2;
+            let z2im = 2*r*i;
+            // f(z) = z^3 - 1
+            let fre = z3re - 1;
+            let fim = z3im;
+            // f'(z) = 3z^2
+            let f1re = 3*z2re;
+            let f1im = 3*z2im;
+            // f(z)/f'(z), complex division
+            let denom = f1re*f1re + f1im*f1im + 1e-30;
+            let qre = (fre*f1re + fim*f1im) / denom;
+            let qim = (fim*f1re - fre*f1im) / denom;
+            // z - f(z)/f'(z)
+            z = { re: r - qre, im: i - qim };
+            // Check if close to a root
+            for (let j=0; j<3; ++j) {
+                let dr = z.re - roots[j].re, di = z.im - roots[j].im;
+                if (dr*dr + di*di < threshold*threshold) {
+                    root = j;
+                    converged = true;
+                    break;
+                }
+            }
+            if (converged) break;
+        }
+        // Assign a color for the root landed
+        let hues = [0, 120, 240];
+        let saturation = 90;
+        let lightness = converged ? 65 - (n / iterations) * 50 : 0;
+        let hue = root !== undefined ? hues[root] : 0;
+        return {
+            color: `hsl(${hue},${saturation}%,${lightness}%)`,
+            isBlack: !converged
+        };
+    }
+}
+
+async function draw() {
+    if (!window.__brotDrawToken__) window.__brotDrawToken__ = { value: 1 };
+    const myDrawToken = ++window.__brotDrawToken__.value;
+    const stillMyDraw = () => window.__brotDrawToken__ && window.__brotDrawToken__.value === myDrawToken;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // ensure re and im are parsed as floats in case the user enters weird input
+    juliaRe = parseFloat(juliaReInput.value);
+    juliaIm = parseFloat(juliaImInput.value);
+
+    // Update julia constant display label
+    if (fractalMode === 1) {
+      juliaLabel.textContent = `c = ${juliaRe >= 0 ? "+" : ""}${juliaRe.toFixed(5)} ${juliaIm >= 0 ? "+" : "-"} ${Math.abs(juliaIm).toFixed(5)}i`;
+    }
+
+    const resval = resInput.value;
+    res = resval ? resval : 2;
+    const blocksize = Math.max(0.5, res);
+    let fillPercent = 0;
+    pixelsDrawn = 0;
+    const width = canvas.width;
+    const height = canvas.height;
+    const r2 = blocksize;
+    const totalBlocksX = Math.ceil(width / blocksize);
+    const totalBlocksY = Math.ceil(height / blocksize);
+    const batchSize = 512;
+
+    // Info Label
+    let setName = FRACTAL_NAMES[fractalMode];
+    let cText = (fractalMode === 1)
+        ? `c = (${juliaRe.toFixed(5)}${juliaIm >= 0 ? "+" : ""}${juliaIm.toFixed(5)}i)`
+        : "";
+    infoDiv.innerHTML= `
+      ${setName} ${cText}
+      <br>Left: ${leftX}, Right: ${rightX} Zoom ${pseudoZoom.toFixed(2)}x Iter:${iterations}
+      <br>${fillPercent}%</br>
+    `
+
+    let coords = [];
+    for (let by = 0; by < totalBlocksY; ++by) {
+        for (let bx = 0; bx < totalBlocksX; ++bx) {
+            coords.push({x: bx * blocksize, y: by * blocksize});
+        }
+    }
+    for (let i = coords.length - 1; i > 0; --i) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [coords[i], coords[j]] = [coords[j], coords[i]];
+    }
+
+    const totalPixels = width * height;
+
+    for (let i = 0; i < coords.length; i += batchSize) {
+        if (!stillMyDraw()) return;
+        const batch = coords.slice(i, i + batchSize);
+
+        for (const {x: px, y: py} of batch) {
+            // Sample block corner for set fill (uses fractalColor now)
+            let s = fractalColor(px, py);
+            if (s.isBlack && blocksize > 1) {
+                let cornersBlack = true;
+                outer: for (let dy = 0; dy <= blocksize; dy += blocksize) {
+                    for (let dx = 0; dx <= blocksize; dx += blocksize) {
+                        if (px + dx < width && py + dy < height) {
+                            if (!fractalColor(px + dx, py + dy).isBlack) {
+                                cornersBlack = false; break outer;
+                            }
+                        }
+                    }
+                }
+                if (cornersBlack) {
+                    pixel(px, py, blocksize, blocksize, s.color);
+                    continue;
+                }
+            }
+            // Render pixel by pixel, block by block (r2 stride for speed)
+            for (let y2 = py; y2 < py + blocksize && y2 < height; y2 += r2) {
+                for (let x2 = px; x2 < px + blocksize && x2 < width; x2 += r2) {
+                    let c = fractalColor(x2, y2);
+                    pixel(x2, y2, r2, r2, c.color);
+                }
+            }
+        }
+        fillPercent = Math.min(100, ((pixelsDrawn / totalPixels) * 100).toFixed(1));
+        infoDiv.innerHTML= `
+        ${setName} ${cText}
+        <br>Left: ${leftX}, Right: ${rightX} Zoom ${pseudoZoom.toFixed(2)}x Iter:${iterations}
+        <br>${fillPercent.toFixed(2)}%</br>
+        `;
+        await new Promise(r => setTimeout(r, 0));
+    }
+}
+
+function resizeCanvas() {
+  canvas.width = (window.innerWidth) - 25;
+  canvas.height = (window.innerHeight) - 25;
+  draw();
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+// Remove old key handling: replaced above by aswd logic!
+
+function onChangeRedraw() {
+  iterations = Math.max(iterInput.value, Math.floor(iterInput.value * (2.0 / scale)));
+  draw();
+}
+resInput.addEventListener("input", onChangeRedraw);
+iterInput.addEventListener("input", onChangeRedraw);
+juliaReInput.addEventListener("input", onChangeRedraw);
+juliaImInput.addEventListener("input", onChangeRedraw);
+// Fractal type selector
+fractalSlider.addEventListener("input", () => {
+    fractalMode = parseInt(fractalSlider.value, 10);
+    updateFractalUI();
+    draw();
+});
+// Keep legacy button for completeness (hidden)
+document.getElementById("modebtn").addEventListener("click", () => {
+    fractalMode = (fractalMode+1)%4;
+    fractalSlider.value = fractalMode;
+    updateFractalUI();
+    draw();
+});
+
+function applyZoom(factor, mousePoint) {
+  const viewSize = Math.min(canvas.width, canvas.height);
+  pseudoZoom /= factor;
+  let { re: mouseRe, im: mouseIm } = pixelToComplex(mousePoint.x, mousePoint.y);
+  scale *= factor;
+  centerX = mouseRe - (mousePoint.x - canvas.width/2) * (scale / viewSize);
+  centerY = mouseIm - (mousePoint.y - canvas.height/2) * (scale / viewSize);
+  // Properly compute center-left and center-right screen coords in pixels as strings
+  const centerY_px = Math.floor(canvas.height / 2);
+  {
+    const l = pixelToComplex(0, centerY_px);
+    const r = pixelToComplex(canvas.width - 1, centerY_px);
+    function complexToString(z) {
+      return `(${z.re.toFixed(6)}${z.im >= 0 ? "+" : ""}${z.im.toFixed(6)}i)`;
+    }
+    leftX = complexToString(l);
+    rightX = complexToString(r);
+  }
+  iterations = Math.max(iterInput.value, Math.floor(iterInput.value * (2.0 / scale)));
+}
+
+// Initial UI mode
+updateFractalUI();
+
+setTimeout(() => {draw();}, 20);
+</script>
+</html>
