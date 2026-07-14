@@ -250,12 +250,13 @@
       Les presento una colección de scripts que he escrito.
      </p>
      <p style="font-size: 9px; color: #ffffffc0; margin-left: 18px;" class="text">
-     ver jul 12 2026
+     ver jul 14 2026
     </p>
   </div>
     <div id="column">
       <div class="button-list">
         <a href="Amazing_Graphs_2.html" target="_blank" class="linkbutton"><button class="button text" id="ag2text">Open Amazing Graphs 2</button></a>
+        <a href="gol.html" target="_blank" class="linkbutton"><button class="button text" id="golbtn">Open GOL</button></a>
         <a href="clicker.html" target="_blank" class="linkbutton"><button class="button text">Open My Clicker Game</button></a>
         <a href="Listpractice.html" target="_blank" class="linkbutton"><button class="button text">Open List Learning</button></a>
         <a href="Canvaspractice.html" target="_blank" class="linkbutton"><button class="button text">Open Canvasse</button></a>
@@ -283,7 +284,6 @@
           </button>
         </a>
         <a href="screensaver.html" target="_blank" class="linkbutton"><button class="button text">Open Screensaver</button></a>
-        <a href="gol.html" target="_blank" class="linkbutton"><button class="button text" id="golbtn">Open GOL</button></a>
         <a href="blockyblast.html" target="_blank" class="linkbutton"><button class="button text">Open Blocky Blast</button></a>
         <a href="encoding.html" target="_blank" class="linkbutton"><button class="button text">Open Encoders</button></a>
         <a href="loudwav.html" target="_blank" class="linkbutton"><button class="button text">Open LOUD Audio</button></a>
@@ -293,9 +293,10 @@
         <a href="emojirain.html" target="_blank" class="linkbutton"><button class="button text">Open Emoji Rain</button></a>
         <a href="leftright.html" target="_blank" class="linkbutton"><button class="button text">Open MP3 Combiner</button></a>
         <a href="blobs.html" target="_blank" class="linkbutton"><button class="button text">Open Blobs</button></a>
-        <a href="sorting.html" target="_blank" class="linkbutton"><button class="button text">Open Sorting Algos</button></a>
+        <a href="sorting.html" target="_blank" class="linkbutton"><button class="button text" id="algoText">Open Sorting Algos</button></a>
         <a href="Ovogame.html" target="_blank" class="linkbutton"><button class="button text">Open OvO Embed</button></a>
-        <a href="vibrate.html" target="_blank" class="linkbutton"><button class="button text">Open Vibrate </button></a>
+        <a href="vibrate.html" target="_blank" class="linkbutton"><button class="button text">Open Vibrate</button></a>
+        <a hred="brot.html" target="_blank" class="linkbutton"><button class="button text">Open Fractals</button></a>
       </div>
     </div>
     <p class="text" style="left: 0%; text-align: center; opacity: 50%;">Warning: These links are desinged for 60fps computer devices!</p>
@@ -383,6 +384,7 @@
       const funbutton = document.getElementById("funbutton");
       const golbutton = document.getElementById("golbtn");
       const ag2text = document.getElementById("ag2text");
+      const algoText = document.getElementById("algoText");
       const thingy = document.getElementById("thingy");
       const bgOverlay = document.getElementById("backgroundOverlay");
       const velkomm = document.getElementById("velkomm");
@@ -497,6 +499,9 @@
           golbutton.style.color = `hsl(0,0%,${(Math.sin(t)) * 10 + 85}%)`;
         if (ag2text)
           ag2text.style.color = `hsl(200,50%,${(Math.sin(t)) * 8 + 85}%)`;
+        if (algoText) {
+          algoText.style.color = `hsl(${(t*30)%360},50%,90%)`;
+        }
         requestAnimationFrame(tick);
       }
       tick();
