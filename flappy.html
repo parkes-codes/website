@@ -25,19 +25,49 @@
           font-family: Courier New;
         }
         #instr {
-          font-size: 80px;
-          margin-left: 150px;
-          width: 1200px;
+            position: absolute;
+          font-size: 20px;
+          right: 100px;
+          text-align: right;
+          width: fit-content;
+          top: 25px
         }
         #scoreBoard {
           display: block;
-          margin-bottom: 600px;
+          position: absolute;
+          left: 100px;
+          width: fit-content;
+          top: 20px;
+          font-size: 30px;
+          color: #cff;
+          text-align: left;
         }
         #hsBoard {
           display: block;
-          margin-bottom: 515px;
-          font-size: 30px;
-          margin-right: 0px;
+          position: absolute;
+          left: calc(50% - 270px);
+          text-align: left;
+          font-size: 20px;
+          top: 28px;
+        }
+        #dif {
+            position: absolute;
+            top: 30px;
+            width: 200px;
+            height: 25px;
+            left: calc(50% - 100px);
+            z-index: 9999;
+            accent-color: #aff;
+        }
+        #display {
+            position: absolute;
+            top: 15px;
+            width: fit-content;
+            height: 50px;
+            justify-self: center;
+            font-size: 15px;
+            color: #fff;
+            z-index: 9998;
         }
     </style>
 </head>
@@ -46,6 +76,8 @@
     <div id="instr" class="text">Press any key or click to start</div>
     <div id="scoreBoard" class="text"></div>
     <div id="hsBoard" class="text"></div>
+    <input type="range" min="0.2" max="2" id="dif" step="0.1" value="1">
+    <div id="display">Difficulty: 0.5</div>
     
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -68,66 +100,105 @@
         let score = 0;
         let lastPipeHeight = null;
         const heightChangeLimit = 280;
-        const a = localStorage.getItem('hyescore');
-        let highscore;
+        // Highscore per difficulty storage
+        function getCurrentDifficultyStr() {
+          // Quantize to string for localStorage key, round to 2 decimal places for stability
+          return Number(document.getElementById('dif').value).toFixed(2);
+        }
+        function getHighscoresObject() {
+          // Returns the entire mapping of diff->highscore
+          let obj = {};
+          try {
+            obj = JSON.parse(localStorage.getItem('hyescores') || '{}');
+          } catch (e) {
+            obj = {};
+          }
+          return obj;
+        }
+        function saveHighscoresObject(obj) {
+          try {
+            localStorage.setItem('hyescores', JSON.stringify(obj));
+          } catch (e) { }
+        }
+        function getHighscoreForCurrentDiff() {
+          const obj = getHighscoresObject();
+          return obj[getCurrentDifficultyStr()] || 0;
+        }
+        function setHighscoreForCurrentDiff(val) {
+          const obj = getHighscoresObject();
+          obj[getCurrentDifficultyStr()] = val;
+          saveHighscoresObject(obj);
+        }
 
-        // Changed: flap on any key press and any click
-        document.addEventListener('keydown', function(event) {
-          flap();
-        });
-        canvas.addEventListener('mousedown', function(event) {
-          flap();
-        });
+        let highscore = getHighscoreForCurrentDiff();
 
-        if (a === null) {
-          highscore  = 0;
-        } else {
-          highscore = a;
-        }
-        death("floor")
-        if (window.location.href.includes("onecompiler")) {
-          document.body.style.transform = "scale(.4)"
-        } else {
-          document.body.style.transform = "scale(1)"
-        }
-        
-        function setup() {
-            birdY = 150;
-            velocity = 0;
-            fallSpeed = 0
-        }
+let fps = 60; 
+let fps2 = 60;
+let lastTimestamp = performance.now();
+let fpsHist = [];
+let fpsAv = 0;
 
-        function flap(g) {
-              velocity = 0 - jumpHeight;
-        }
+// Changed: flap on any key press and any click
+document.addEventListener('keydown', function(event) {
+  flap();
+});
+canvas.addEventListener('mousedown', function(event) {
+  flap();
+});
+
+// Always update current highscore variable if difficulty changes
+document.getElementById('dif').addEventListener('input', function() {
+  highscore = getHighscoreForCurrentDiff();
+  updateBoard();
+});
+
+death("floor")
+if (window.location.href.includes("onecompiler")) {
+  document.body.style.transform = "scale(.4)"
+} else {
+  document.body.style.transform = "scale(1)"
+}
+
+function setup() {
+    birdY = 150;
+    velocity = 0;
+    fallSpeed = 0;
+    pipes = [];
+    score = 0;
+    frameCounter = 0;
+    lastPipeHeight = null;
+    highscore = getHighscoreForCurrentDiff();
+    updateBoard();
+}
+
+function flap(g) {
+    velocity = 0 - (jumpHeight*(60/fps2));
+}
 function updateBoard() {
   const scor = document.getElementById('scoreBoard');
   const hs = document.getElementById('hsBoard');
-  scor.innerHTML = `
-   <p> Score: ${score} </p>
-  `;
-  hs.innerHTML = `
-   <p> Hi Score: ${highscore} </p>
-  `;
+  scor.textContent = `${score}pts`
+
+  hs.textContent= `hs(${getCurrentDifficultyStr()}): ${highscore}`;
 }
-        
+
 function createPipe() {
     let topPipeHeight;
     updateBoard();
+    let limit = 0;
     do {
         topPipeHeight = Math.random() * ((canvas.height - 50) - pipeGap - 20);
+        limit++;
+        if (limit > 100) break;
     } while (lastPipeHeight !== null && Math.abs(topPipeHeight - lastPipeHeight) > heightChangeLimit);
-    
     pipes.push({
         x: canvas.width,
         top: topPipeHeight,
         bottom: canvas.height - topPipeHeight - pipeGap,
     });
-    
+
     lastPipeHeight = topPipeHeight;
 }
-
-
 
 function drawPipes() {
     ctx.fillStyle = '#0fa';
@@ -137,28 +208,40 @@ function drawPipes() {
     });
 }
 
+// This logic has a bug!
+// pipeFrequency/(60/fps2) can be < 1 (=> giant interval)
+// Instead, maintain a floating frame accumulator:
+let pipeSpawnCounter = 0;
+
 function updatePipes() {
-    if (frameCounter % pipeFrequency === 0) {
+    const effectivePipeInterval = pipeFrequency / (60 / fps2);
+
+    pipeSpawnCounter += 1;
+    if (pipeSpawnCounter >= effectivePipeInterval) {
         createPipe();
+        pipeSpawnCounter = 0;
     }
 
-    pipes.forEach((pipe, index) => {
+    for (let i = pipes.length - 1; i >= 0; i--) {
+        const pipe = pipes[i];
+
         if (pipe.x < 76 + 20 && pipe.x + pipeWidth > 75) {
             if (birdY < pipe.top || birdY > canvas.height - pipe.bottom - 20) {
                 death("pipe");
             }
         }
         if (!dead) {
-        pipe.x -= pipeSpeed;}
+            pipe.x -= pipeSpeed*(60/fps2);
+        }
         if (pipe.x + pipeWidth < 0) {
-            pipes.splice(index, 1);
+            pipes.splice(i, 1);
             score++;
             if (score > highscore) {
-              highscore = score;
-              localStorage.setItem('hyescore', score)
+                highscore = score;
+                setHighscoreForCurrentDiff(score);
             }
         }
-    });
+    }
 }
 
 function death(type) {
@@ -191,12 +274,12 @@ function restartGame (event) {
   document.removeEventListener('keydown', restartGame);
   canvas.removeEventListener('mousedown', restartGame);
 }
-       function gameLoop() {
+function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#000'
     ctx.fillRect(0,0, canvas.width, canvas.height)
     frameCounter++;
-    velocity += gravity;
+    velocity += gravity*(Math.pow(60/fps2,2));
     if (!dead) {
         birdY += velocity;
         document.getElementById('instr').style.display = 'none';
@@ -204,10 +287,11 @@ function restartGame (event) {
     } else {
         fallAnimation();
     }
-        if (!dead) {
-        updatePipes();}
-        drawPipes();
-        ctx.fillStyle = 'yellow';
+    if (!dead) {
+        updatePipes();
+    }
+    drawPipes();
+    ctx.fillStyle = 'yellow';
     ctx.fillRect(75, birdY, 20, 20);
     
     if (birdY > canvas.height - 20) {
@@ -228,15 +312,38 @@ function restartGame (event) {
             fallComplete = false;
         }, 0);
     }
+    document.getElementById("display").textContent = `Difficulty: ${Number(document.getElementById("dif").value).toFixed(2)}`
     requestAnimationFrame(gameLoop);
 }
-        setup();
-        requestAnimationFrame(gameLoop);
-    
-    window.addEventListener('beforeunload', function (event) {
-    event.preventDefault(); // Standard for most browsers
+setup();
+requestAnimationFrame(gameLoop);
+
+window.addEventListener('beforeunload', function (event) {
+    event.preventDefault(); 
     event.returnValue = 'You have unsaved changes. Are you sure you want to leave?'; // For older browsers
 });
+
+
+function sampleFPS() {
+    const now = performance.now();
+    const delta = now - lastTimestamp;
+    // Protect against initial call or zero
+    if (delta > 0 && delta < 1000) {
+        fps = 1000 / delta;
+    }
+    fpsHist.unshift(fps)
+    fpsAv = 0;
+    for (let i = 0; i<fpsHist.length; i++) {
+        fpsAv+=fpsHist[i];
+    }
+    fpsAv/=fpsHist.length
+    if (fpsHist[60]) {fpsHist.splice(60,1)}
+    lastTimestamp = now;
+
+    fps2=fps*(1/(document.getElementById("dif").value))
+    requestAnimationFrame(sampleFPS);
+}
+sampleFPS()
     
     </script>
 </body>
