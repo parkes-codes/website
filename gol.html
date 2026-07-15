@@ -621,38 +621,29 @@
 // Note: For GPU+CPU, we use a hybrid approach below with dynamic switching for tick/draw (WebGL if possible, falls back to CPU).
 
 console.clear();
+let fps = 0; // Default fallback fps
+let lastTimestamp = performance.now();
+let fpsHist = [];
+let fpsAv = 0;
 
-let fps = 60; // Default fallback fps
-let frameTimes = [];
-let fpsSamplingDone = false;
-
-// FPS sampling and setting
 function sampleFPS() {
-    let lastFrame = performance.now();
-    let frames = 0;
-    function frame(now) {
-        if (fpsSamplingDone) return;
-        frames++;
-        frameTimes.push(now - lastFrame);
-        lastFrame = now;
-        if (now - frameTimes[0] >= 1000 || frameTimes.length >= 60) {
-            // Calculate average fps for frames in the last second
-            let startIdx = 0;
-            for (; startIdx < frameTimes.length && (now - frameTimes[startIdx] > 1000); startIdx++) {}
-            let visibleFrames = frameTimes.length - startIdx;
-            let totalTime = now - frameTimes[startIdx];
-            if (visibleFrames > 1 && totalTime > 0) {
-                fps = Math.round(visibleFrames * 1000 / totalTime);
-            }
-            fpsSamplingDone = true;
-            // Optional: display, console.log("Calibrated FPS:", fps);
-        } else {
-            requestAnimationFrame(frame);
-        }
+    const now = performance.now();
+    const delta = now - lastTimestamp;
+    // Protect against initial call or zero
+    if (delta > 0 && delta < 1000) {
+        fps = 1000 / delta;
     }
-    requestAnimationFrame(frame);
+    fpsHist.unshift(fps)
+    fpsAv = 0;
+    for (let i = 0; i<fpsHist.length; i++) {
+        fpsAv+=fpsHist[i];
+    }
+    fpsAv/=fpsHist.length
+    if (fpsHist[60]) {fpsHist.splice(60,1)}
+    lastTimestamp = now;
+    requestAnimationFrame(sampleFPS);
 }
-sampleFPS();
+
 
 
 let webglSupported = false;
@@ -663,6 +654,9 @@ let glColorLoc = null;
 let glResolutionLoc = null;
 let glCamLoc = null;
 let glZoomLoc = null;
+
+
+
 
 const cursor = new Image();
 cursor.src = "cursor.png";
@@ -1336,7 +1330,7 @@ function draw() {
     }
 
     display.textContent = `cam: (${camx.toFixed(2)},${camy.toFixed(2)}) hover: (${hoverX},${hoverY}) zoom: ${zoom.toFixed(3)}`;
-    display2.textContent = `livepx: ${livePx} maxpx: ${maxPx} tick: ${tickn}`
+    display2.textContent = `livepx: ${livePx} maxpx: ${maxPx} tick: ${tickn} fps: ${(Math.ceil(fpsAv*1)/1).toFixed(2)}`
 
     // Fast draw/erase
     if (mousedown && !draggingSelection) {
@@ -1398,6 +1392,7 @@ async function tickLoop() {
 
 draw();
 tickLoop();
+sampleFPS();
 
 function seleToMarkers() {
     // For every selected pixel, add a marker (if not already exists at that (x, y))
@@ -1423,8 +1418,6 @@ function handleWheelZoom(e) {
     if (isNaN(mx)) mx = mouseX;
     if (isNaN(my)) my = mouseY;
 
-    // Heuristic: Trackpads fire many small deltaY events, wheels larger discrete ones.
-    // If abs(deltaY) < 8, it's probably a trackpad; otherwise a wheel.
     const isTrackpad = Math.abs(e.deltaY) < 8;
 
     // Compute world coordinates before zoom
@@ -1433,7 +1426,11 @@ function handleWheelZoom(e) {
 
     let op = (e.deltaY < 0) ? 1 : -1; // 1=zoom in, -1=zoom out
     let steps = 10;
-    let interval = 0.1666 * fps; // ms per step
+    
+    // Use fps value instead of deltatime
+    // Each step should last about 1/fps seconds (so ms: 1000/fps)
+    let interval = 1000 / fps / steps;
+    // (split zoom event evenly over steps in one frame if fps is low)
 
     // Make zoom less aggressive on trackpads
     let zoomStep = isTrackpad ? 1.01 : 1.02;
