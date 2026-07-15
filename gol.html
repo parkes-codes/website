@@ -1536,7 +1536,8 @@ function handleWheelZoom(e) {
     // (split zoom event evenly over steps in one frame if fps is low)
 
     // Make zoom less aggressive on trackpads
-    let zoomStep = isTrackpad ? 1.01 : 1.02;
+    let zoomStep = isTrackpad ? 1.005 : 1.02;
+    zoomStep*= (60/fps) //atempted fix
 
     let performStep = function(step) {
         if (step > steps) return;
