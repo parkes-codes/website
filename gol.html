@@ -840,6 +840,8 @@ const alertMsg = document.getElementById("alerttext");
 const exportbtn = document.getElementById("export");
 const tpsInput = document.getElementById("tpsInput");
 const tptInput = document.getElementById("tptInput");
+const camxin = document.getElementById("camxin");
+const camyin = document.getElementById("camyin");
 
 
 
@@ -1140,8 +1142,8 @@ function drawPixelGL(x, y, color) {
 // ========== OPTIMIZED DRAW: GPU FAST PATH ==========
 
 function draw() {
-    camx+=(Number(document.getElementById("camxin").value)*tps)*tpt*0.005
-    camy+=(Number(document.getElementById("camyin").value)*tps)*tpt*0.005
+    camx+=(Number(camxin.value)*tps)*tpt*0.005
+    camy+=(Number(camyin.value)*tps)*tpt*0.005
 
     hoverX = Math.floor(((mouseX - canvas.width / 2) / zoom + camx) -  14/ zoom);
     hoverY = 1 + Math.floor(((- (mouseY - canvas.height / 2) / zoom) + camy) + 14 / zoom);
@@ -1845,10 +1847,22 @@ tptInput.addEventListener("focus", () => {
 tpsInput.addEventListener("focus", () => {
     inputFocus = true;
 });
+camxin.addEventListener("focus", () => {
+    inputFocus = true;
+});
+camyin.addEventListener("focus", () => {
+    inputFocus = true;
+});
 tptInput.addEventListener("blur", () => {
     inputFocus = false;
 });
 tpsInput.addEventListener("blur", () => {
+    inputFocus = false;
+});
+camxin.addEventListener("blur", () => {
+    inputFocus = false;
+});
+camyin.addEventListener("blur", () => {
     inputFocus = false;
 });
 
@@ -1858,6 +1872,27 @@ tpsInput.addEventListener("keydown", (e) => {
         inputFocus = false;
     }
 });
+
+
+camxin.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        camxin.blur();
+        inputFocus = false;
+    } else if (e.key === "r") {
+        camxin.value = 0;
+    }
+});
+
+camyin.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        camyin.blur();
+        inputFocus = false;
+    } else if (e.key === "r") {
+        camyin.value = 0;
+    }
+});
+
+
 
 tptInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
