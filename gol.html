@@ -135,7 +135,8 @@
     }
     
     .header3 {
-        color: rgb(0, 164, 164)
+        color: rgb(0, 164, 164);
+        font-size: 20px;
     }
     #import {
         position: absolute;
@@ -147,18 +148,41 @@
         right: 10px;
         bottom: 10px
     }
-    #settingsbtn {
+    .button2 {
        background-color: #111;
        color: #ddd;
        border-radius: 50px;
        font-size: 15px;
-       position: absolute;
-       left: 10px;
-       bottom: 36px;
        width: 15px;
        height: 15px;
        z-index: 10;
+       transition: all 100ms;
     }
+    .button2:hover {
+        transform: scale(1.1);
+        filter: brightness(1.1)
+    }
+    #btnrow3 {
+        position: absolute;
+        display: flex;
+        flex-direction: row;
+        left: 10px;
+        bottom: 36px;
+    }
+    #camxin, #camyin {
+        position: absolute;
+        width: 60px;
+        height: 10px;
+        z-index: 5;
+        transform: scale(0.5);
+        margin-left: 5px;
+        bottom: 5px;
+    }
+    #camyin {
+        bottom: -3px;
+    }
+
+    
 
 </style>
 
@@ -166,9 +190,13 @@
  <canvas id="gamecanvas"></canvas>
  <p id="display"></p>
  <p id="display2"></p>
- <button id="settingsbtn" onclick="settingsPrompt()">
-    <span style="position: absolute; bottom: -3px; left: 2px">⚙</span>
+ <div id="btnrow3">
+ <button id="settingsbtn" class="button2" onclick="settingsPrompt()">
+    <span style="margin-left: -4px; position: relative; top: -5px;">⚙</span>
  </button>
+<input type="range" min="-10" max="10" step="0.05" value="0" id="camxin">
+<input type="range" min="-10" max="10" step="0.05" value="0" id="camyin">
+</div>
  <div id="alerttext"></div>
  <button id="import" class="buttons" onclick="importlist()">Import</button>
  <button id="export" class="buttons" onclick="exportlist()">Export</button>
@@ -261,7 +289,13 @@
 <div id="lexicon" class="bigmenu">
   <div id="lexicon-inner" class="bigmenu-inner">
     <h2 style="margin-top: -10px">Lexicon</h2>
-    <p> List of a ton of starting sequences </p>
+    <p> List of my favorite patterns in game of life </p>
+    <p>
+      Credit to 
+      <a href="https://pamblam.github.io/Go-Life/" target="_blank" rel="noopener noreferrer">Pablam</a>
+      and 
+      <a href="https://conwaylife.com/wiki" target="_blank" rel="noopener noreferrer">ConwayLife</a>
+    </p>
     <h3 class="header3">Guns</h3>
     <p>Glider Gun (p30)
         <a class="link" href="#" onclick="loadLexi('gliderGun1')">Spawn</a>
@@ -286,6 +320,12 @@
     </p>
     <p>Glider Gun 5 (p20)
         <a class="link" href="#" onclick="loadLexi('p20GG')">Spawn</a>
+    </p>
+    <p>Glider Gun 6 (p14)
+        <a class="link" href="#" onclick="loadLexi('truep14')">Spawn</a>
+    </p>
+    <p>Gunstar (p216)
+        <a class="link" href="#" onclick="loadLexi('gunstar')">Spawn</a>
     </p>
     <p>4 Direction Glider Gun (p256)
         <a class="link" href="#" onclick="loadLexi('omnigun')">Spawn</a>
@@ -397,6 +437,9 @@
     <p>Spaceship4 (c/3)
         <a class="link" href="#" onclick="loadLexi('c/3spaceship')">Spawn</a>
     </p>
+    <p>Spaceship4 synthesis
+        <a class="link" href="#" onclick="loadLexi('c/3synth')">Spawn</a>
+    </p>
     <p>Spaceship5 (2c/5)
         <a class="link" href="#" onclick="loadLexi('spaceship5')">Spawn</a>
     </p>
@@ -444,6 +487,15 @@
     </p>
     <p>Sawtooth 3
         <a class="link" href="#" onclick="loadLexi('sawtooth3')">Spawn</a>
+    </p>
+    <p>Knightship
+        <a class="link" href="#" onclick="loadLexi('knightship')">Spawn</a>
+    </p>
+    <p>Original Solifuge
+        <a class="link" href="#" onclick="loadLexi('ogsolifuge')">Spawn</a>
+    </p>
+    <p>Solifuge
+        <a class="link" href="#" onclick="loadLexi('solifuge')">Spawn</a>
     </p>
 
     <h3 class="header3">Misc</h3>
@@ -503,6 +555,9 @@
     </p>
     <p>Back Rake
         <a class="link" href="#" onclick="loadLexi('back-rake')">Spawn</a>
+    </p>
+    <p>Tethered rake
+        <a class="link" href="#" onclick="loadLexi('tetheredrake')">Spawn</a>
     </p>
     <p>Paul's Cordership Rake
         <a class="link" href="#" onclick="loadLexi('paulcordrake')">Spawn</a>
@@ -584,6 +639,9 @@
     <p>Single Channel Spiral Growth
         <a class="link" href="#" onclick="loadLexi('spiralGrowth1')">Spawn</a>
     </p>
+    <p>Smaller Spiral Growth
+        <a class="link" href="#" onclick="loadLexi('spiralGrowth2')">Spawn</a>
+    </p>
     <p>Slide Breeder (infinite line of glider gun 1's)
         <a class="link" href="#" onclick="loadLexi('slide-breeder')">Spawn</a>
     </p>
@@ -607,6 +665,12 @@
     </p>
     <p>Lineship
         <a class="link" href="#" onclick="loadLexi('lineshipExt')">Spawn</a>
+    </p>
+    <p>Leaf bug 2a
+        <a class="link" href="#" onclick="loadLexi('leafbug2a')">Spawn</a>
+    </p>
+    <p>Water Strider
+        <a class="link" href="#" onclick="loadLexi('waterstrider')">Spawn</a>
     </p>
 
 
@@ -810,6 +874,8 @@ let shiftpressed = false;
 let hiliteCorner1 = {x: -1, y: 1};
 let hiliteCorner2 = {x: 1, y: -1};
 let t2 = 0;
+let tpt = 0;
+let tps = 0
 
 let livePxHist = [];
 let maxPxLen = 50;
@@ -986,54 +1052,85 @@ function settingsPrompt() {
     if (!maxPxLen) {maxPxLen = 50}
 }
 
+let camChangeX = 0;
+let camChangeY = 0;
+
+
 // ========== OPTIMIZED TICK (CPU) ==========
 // Use one uint32 key per cell for super-fast hash table; batch neighbor count update with Int32Array
 
+// Highly optimized tick function using bitwise hashing and reduced allocations
 function tick() {
     if (draggingSelection) return;
+
+    // Bookkeeping for statistics
     livePx = pixels.length;
     livePxHist.unshift(livePx);
-    if (livePxHist.length > maxPxLen) {
-        livePxHist.splice(maxPxLen, 1);
-    }
-    maxPx = livePxHist.length > 0 ? Math.max(...livePxHist) : 0;
+    if (livePxHist.length > maxPxLen) livePxHist.length = maxPxLen;
+    maxPx = livePxHist.length ? Math.max(...livePxHist) : 0;
 
-    // Step 1: Build neighbor counts in Map, keyed as "x,y"
+    // Allocate fewer objects/sets/maps, use fast integer hashing instead of strings for coordinates
+    // Use Map with integer hash keys as position: (x << 16) | (y & 0xffff)
+    const N = pixels.length;
     const neighborCounts = new Map();
-    let survivors = [];
-    let liveSet = new Set();
-    for (let i = 0; i < pixels.length; ++i) {
-        let p = pixels[i];
-        liveSet.add(p.x+','+p.y);
+    const survivors = [];
+    const liveSet = new Set();
+    let px, py, key;
+
+    // Encode cells as 32-bit int for fast hash, assuming |x|,|y| < 2^15
+    // Fastest is to avoid stringifying coordinate pairs
+
+    // Build liveSet (hash)
+    for (let i = 0; i < N; ++i) {
+        px = pixels[i].x;
+        py = pixels[i].y;
+        key = ((px & 0xffff) << 16) | (py & 0xffff);
+        liveSet.add(key);
     }
-    const neighborDeltas = [
-        [ 0,  1], [ 1,  1], [ 1,  0], [ 1, -1],
-        [ 0, -1], [-1, -1], [-1,  0], [-1,  1]
-    ];
-    for (let i = 0; i < pixels.length; ++i) {
-        let {x, y} = pixels[i];
-        let count = 0;
-        for (let d = 0; d < 8; d++) {
-            let nx = x + neighborDeltas[d][0],
-                ny = y + neighborDeltas[d][1],
-                nkey = nx+","+ny;
-            // For live cell: count its own neighbors
-            if (liveSet.has(nkey)) count++;
-            else neighborCounts.set(nkey, (neighborCounts.get(nkey)||0)+1);
+
+    // Neighbor deltas flattened for loop unrolling
+    const dx = [0, 1, 1, 1, 0, -1, -1, -1];
+    const dy = [1, 1, 0, -1, -1, -1, 0, 1];
+
+    // Step 1: Count neighbors/births + survival in one pass
+    for (let i = 0; i < N; ++i) {
+        px = pixels[i].x;
+        py = pixels[i].y;
+
+        let liveNeighbors = 0;
+
+        for (let d = 0; d < 8; ++d) {
+            const nx = px + dx[d];
+            const ny = py + dy[d];
+            const nkey = ((nx & 0xffff) << 16) | (ny & 0xffff);
+
+            if (liveSet.has(nkey)) {
+                ++liveNeighbors;
+            } else {
+                neighborCounts.set(nkey, (neighborCounts.get(nkey) || 0) + 1);
+            }
         }
-        if (count === 2 || count === 3) survivors.push(pixels[i]);
+
+        // Survival: live cell survives with 2 or 3 neighbors
+        if (liveNeighbors === 2 || liveNeighbors === 3) {
+            survivors.push(pixels[i]);
+        }
     }
+
+    // Step 2: Births (only cells with exactly 3 live neighbors are born)
     const births = [];
-    for (const [nkey, c] of neighborCounts.entries()) {
-        if (c === 3) {
-            let [x,y] = nkey.split(',');
-            births.push({x:+x, y:+y});
+    for (const [nkey, count] of neighborCounts) {
+        if (count === 3) {
+            // Unpack key to x, y (restore sign with signed right shift)
+            let x = (nkey >> 16) << 16 >> 16; // sign-extend 16 bits
+            let y = (nkey & 0xffff) << 16 >> 16;
+            births.push({ x, y });
         }
     }
+
     if (births.length > 0 || survivors.length !== pixels.length) tickn++;
     pixels = survivors.concat(births);
 }
-// ========== END OPTIMIZED TICK ==========
 
 // Draw a single pixel using WebGL fast path if in liveCells and not highlighted, else fallback to CPU drawing
 function drawPixelGL(x, y, color) {
@@ -1043,6 +1140,9 @@ function drawPixelGL(x, y, color) {
 // ========== OPTIMIZED DRAW: GPU FAST PATH ==========
 
 function draw() {
+    camx+=(Number(document.getElementById("camxin").value)*tps)*tpt*0.005
+    camy+=(Number(document.getElementById("camyin").value)*tps)*tpt*0.005
+
     hoverX = Math.floor(((mouseX - canvas.width / 2) / zoom + camx) -  14/ zoom);
     hoverY = 1 + Math.floor(((- (mouseY - canvas.height / 2) / zoom) + camy) + 14 / zoom);
 
@@ -1381,10 +1481,11 @@ async function waitUntil(condition) {
     }
 
 async function tickLoop() {
-    let tps = tpsInput.value ? tpsInput.value : 60;
+     tps = tpsInput.value ? tpsInput.value : 60;
+    tpt = (tptInput.value ? tptInput.value : 1);
     if (tps < fps) {await sleep(600/(tps))}
     if (paused) { await waitUntil(() => !paused); }
-    for (let i = 0; i < (tptInput.value ? tptInput.value : 1); i++) {
+    for (let i = 0; i < (tpt); i++) {
      tick();
     }
     requestAnimationFrame(tickLoop);
