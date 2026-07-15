@@ -1563,6 +1563,8 @@ function ZS2(x, y) {
             function graph137(){zoomSet(0,45); rotatePlane(sine(t)/3); value=mul(tan(X),tan(Y-(t+sine(X))))-mul(tan(Y+(t-sine(X+t))),tan(X))+Y}
 
             function graph138(){zoomSet(0,45); Y/=(Z/20+0.1); value=3*sine(sine(sine(cosine(cosine(cosine((X+t*3)-t*2)+t*1.5)-t)+t/1.5)-t/2)+t/3)-Y}
+
+            function graph139(){zoomSet(0,45); value=sine(div(abs(X),Y+sine(X+t)))-(Z/10)*(abs(X+sine(t+Y))%(0.1*Y))}
             
 const graphFunctions = {
   1: graph1,
@@ -1702,7 +1704,8 @@ const graphFunctions = {
   135: graph135,
   136: graph136,
   137: graph137,
-  138: graph138
+  138: graph138,
+  139: graph139
 };
 
 const advancedList = [
