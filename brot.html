@@ -9,6 +9,7 @@
 <style>
     body {
         background-color: #000;
+        overflow: hidden;
     }
     #gamecanvas {
         border: #fff 5px solid;
@@ -97,7 +98,7 @@
  <canvas id="gamecanvas"></canvas>
  <div id="info"></div>
  <label id="fractallabel" for="fractalslider">Fractal:</label>
- <input id="fractalslider" type="range" min="0" max="3" step="1" value="0" title="Select Fractal Set">
+ <input id="fractalslider" type="range" min="0" max="4" step="1" value="0" title="Select Fractal Set">
  <label id="julialabel" for="juliaslidera">c = </label>
  <input id="juliaslidera" type="number" value="-0.7" min="-2" max="2" step="0.01" placeholder="Re(c)">
  <input id="juliasliderb" type="number" value="0.27015" min="-2" max="2" step="0.01" placeholder="Im(c)">
@@ -118,9 +119,9 @@ const juliaLabel = document.getElementById("julialabel");
 const fractalSlider = document.getElementById("fractalslider");
 const fractalLabel = document.getElementById("fractallabel");
 
-// Add Newton's Fractal to the names
-const FRACTAL_NAMES = ["Mandelbrot", "Julia", "Burning Ship", "Newton"];
-let fractalMode = parseInt(fractalSlider.value,10); // 0 = Mandelbrot, 1 = Julia, 2 = Burning Ship, 3 = Newton
+// Add Tricorn and Newton's Fractal to the names
+const FRACTAL_NAMES = ["Mandelbrot", "Julia", "Burning Ship", "Newton", "Tricorn"];
+let fractalMode = parseInt(fractalSlider.value,10); // 0 = Mandelbrot, 1 = Julia, 2 = Burning Ship, 3 = Newton, 4 = Tricorn
 
 let keysPressed = [];
 let iterations = 50;
@@ -196,7 +197,7 @@ window.addEventListener("keydown", (e) => {
         applyZoom(1/0.7, mousePos);
         draw();
     }
-    // Shift+M toggles Mandelbrot/Julia, Shift+B for Burning Ship, Shift+N for Newton
+    // Shift+M toggles Mandelbrot/Julia, Shift+B for Burning Ship, Shift+N for Newton, Shift+T for Tricorn
     if ((e.key === 'm' || e.key === 'M') && e.shiftKey) {
         if (fractalMode === 1) fractalMode = 0;
         else fractalMode = 1;
@@ -215,7 +216,13 @@ window.addEventListener("keydown", (e) => {
         fractalSlider.value = 3;
         updateFractalUI();
         draw();
-    }    
+    }
+    if ((e.key === 't' || e.key === 'T') && e.shiftKey) {
+        fractalMode = 4;
+        fractalSlider.value = 4;
+        updateFractalUI();
+        draw();
+    }
 });
 window.addEventListener("keyup", (e) => {
     const key = e.key.toLowerCase();
@@ -275,7 +282,7 @@ function fractalColor(px, py) {
     let a = juliaRe;
     let b = juliaIm;
     let zx, zy;
-    let mode = fractalMode; // 0=mandelbrot, 1=julia, 2=burning ship, 3=newton
+    let mode = fractalMode; // 0=mandelbrot, 1=julia, 2=burning ship, 3=newton, 4=tricorn
     if (mode === 1) { // Julia
       zx = centerX + (px - canvas.width * 0.5) * scalePerPixel;
       zy = centerY + (py - canvas.height * 0.5) * scalePerPixel;
@@ -287,6 +294,11 @@ function fractalColor(px, py) {
     } else if (mode === 3) { // Newton
       zx = centerX + (px - canvas.width * 0.5) * scalePerPixel;
       zy = centerY + (py - canvas.height * 0.5) * scalePerPixel;
+    } else if (mode === 4) { // Tricorn
+      zx = 0;
+      zy = 0;
+      a = centerX + (px - canvas.width * 0.5) * scalePerPixel;
+      b = centerY + (py - canvas.height * 0.5) * scalePerPixel;
     } else { // Mandelbrot
       zx = 0;
       zy = 0;
@@ -304,6 +316,12 @@ function fractalColor(px, py) {
                 xtemp = zx2 - zy2 + a;
                 zy = Math.abs(2 * zx * zy) + b;
                 zx = Math.abs(xtemp);
+            } else if (mode === 4) { // Tricorn: z = conjugate(z)^2 + c
+                // z = x + iy -> conjugate(z) = x - iy
+                // (x - iy)^2 = x^2 - 2ixy + (iy)^2 = x^2 - 2ixy - y^2
+                xtemp = zx2 - zy2 + a;
+                zy = -2 * zx * zy + b;
+                zx = xtemp;
             } else { // Mandelbrot/Julia: z = z^2 + c
                 xtemp = zx2 - zy2 + a;
                 zy = 2 * zx * zy + b;
@@ -322,6 +340,10 @@ function fractalColor(px, py) {
             if (mode === 2) {
                 // Burning Ship: optional modify hue for variety
                 hue = (hue + 200) % 360;
+            }
+            if (mode === 4) {
+                // Tricorn: optional modify hue for variety
+                hue = (hue + 60) % 360;
             }
             if (hue < 0) hue += 360;
         }
@@ -508,7 +530,7 @@ fractalSlider.addEventListener("input", () => {
 });
 // Keep legacy button for completeness (hidden)
 document.getElementById("modebtn").addEventListener("click", () => {
-    fractalMode = (fractalMode+1)%4;
+    fractalMode = (fractalMode+1)%5;
     fractalSlider.value = fractalMode;
     updateFractalUI();
     draw();
