@@ -229,19 +229,23 @@
         let fpsHist = [];
         let fpsAv = 0;
 
-        // Add both keyboard and mobile-friendly touch support
+        // --- Patch for mobile: prevent multiple event firings and pipe glitches ---
+
+        // Only allow one flap per animation frame for touch events
+        let lastFlapFrame = -1;
         function addFlapListeners() {
             document.addEventListener('keydown', keyFlap, {passive: false});
+            // Only listen to touchstart on the canvas, not the whole body!
+            // Otherwise every tap anywhere triggers, and can double-fire.
+            // This solves the "pipes shift left" bug after touches.
             canvas.addEventListener('mousedown', pointerFlap, {passive: false});
             canvas.addEventListener('touchstart', pointerFlap, {passive: false});
-            // Whole screen tap for mobile start or play
-            document.body.addEventListener('touchstart', pointerFlap, {passive: false});
+            // --- removed: document.body.addEventListener('touchstart', pointerFlap, {passive: false}); ---
         }
         function removeFlapListeners() {
             document.removeEventListener('keydown', keyFlap);
             canvas.removeEventListener('mousedown', pointerFlap);
             canvas.removeEventListener('touchstart', pointerFlap);
-            document.body.removeEventListener('touchstart', pointerFlap);
         }
         function keyFlap(event) {
             // Filter out modifier keys, but any other key
@@ -254,7 +258,11 @@
             if (event && event.preventDefault) event.preventDefault();
         }
         function pointerFlap(event) {
+            // Ignore subsequent touch events within the same animation frame
+            const nowFrame = performance.now();
+            if (lastFlapFrame == frameCounter) return;
             flap();
+            lastFlapFrame = frameCounter;
             if (event && event.preventDefault) event.preventDefault();
         }
         addFlapListeners();
@@ -374,22 +382,24 @@
             }
         }
 
-        function restartGame() {
+        function restartGame(event) {
             dead = false;
             setup();
             removeRestartListeners();
+            // Prevent glitch on mobile: prevent default and stop propagation
+            if (event && event.preventDefault) event.preventDefault();
+            if (event && event.stopPropagation) event.stopPropagation();
         }
         function addRestartListeners() {
             document.addEventListener('keydown', restartGame, {passive: false});
             canvas.addEventListener('mousedown', restartGame, {passive: false});
             canvas.addEventListener('touchstart', restartGame, {passive: false});
-            document.body.addEventListener('touchstart', restartGame, {passive: false});
+            // --- removed: document.body.addEventListener('touchstart', restartGame, {passive: false}); ---
         }
         function removeRestartListeners() {
             document.removeEventListener('keydown', restartGame);
             canvas.removeEventListener('mousedown', restartGame);
             canvas.removeEventListener('touchstart', restartGame);
-            document.body.removeEventListener('touchstart', restartGame);
         }
 
         function gameLoop() {
