@@ -342,11 +342,17 @@
     <p>MWSS Gun 2 (p44)
         <a class="link" href="#" onclick="loadLexi('p44MWSSgun')">Spawn</a>
     </p>
+    <p>HWSS Gun
+        <a class="link" href="#" onclick="loadLexi('hwssgun')">Spawn</a>
+    </p>
     <p>Side-By-Side Glider Gun (aka vacuum)
         <a class="link" href="#" onclick="loadLexi('vacuumGun')">Spawn</a>
     </p>
     <p>Slide Gun
         <a class="link" href="#" onclick="loadLexi('slideGun')">Spawn</a>
+    </p>
+    <p>Double Slide Gun
+        <a class="link" href="#" onclick="loadLexi('doubleslide')">Spawn</a>
     </p>
     <p>Sidecar Gun
         <a class="link" href="#" onclick="loadLexi('sideCarGun')">Spawn</a>
@@ -452,6 +458,12 @@
     <p>Spaceship8 (c/6)
         <a class="link" href="#" onclick="loadLexi('c/6ship')">Spawn</a>
     </p>
+    <p>Growing 3c/7 spaceship
+        <a class="link" href="#" onclick="loadLexi('3c7grow')">Spawn</a>
+    </p>
+    <p>Growing Wing (flying wing)
+        <a class="link" href="#" onclick="loadLexi('flyingwing')">Spawn</a>
+    </p>
     <p>Snail (c/5)
         <a class="link" href="#" onclick="loadLexi('snail')">Spawn</a>
     </p>
@@ -491,11 +503,17 @@
     <p>Knightship
         <a class="link" href="#" onclick="loadLexi('knightship')">Spawn</a>
     </p>
+    <p>Adjustable Spaceship (p1136 here)
+        <a class="link" href="#" onclick="loadLexi('ajss')">Spawn</a>
+    </p>
     <p>Original Solifuge
         <a class="link" href="#" onclick="loadLexi('ogsolifuge')">Spawn</a>
     </p>
     <p>Solifuge
         <a class="link" href="#" onclick="loadLexi('solifuge')">Spawn</a>
+    </p>
+    <p>Mega Overweight Spaceship Escort
+        <a class="link" href="#" onclick="loadLexi('megaOWSS')">Spawn</a>
     </p>
 
     <h3 class="header3">Misc</h3>
@@ -565,11 +583,23 @@
     <p>MWSS Forward Rake
         <a class="link" href="#" onclick="loadLexi('forwardMWSSrake')">Spawn</a>
     </p>
+    <p>Backwards Cordership Rake
+        <a class="link" href="#" onclick="loadLexi('backwardcr')">Spawn</a>
+    </p>
+    <p>LWSS Cordership Rake
+        <a class="link" href="#" onclick="loadLexi('lwsscr')">Spawn</a>
+    </p>
     <p>Blinker Puffer
         <a class="link" href="#" onclick="loadLexi('blinkerpuffer')">Spawn</a>
     </p>
     <p>Bi-Block Puffer
         <a class="link" href="#" onclick="loadLexi('bi-block-puffer')">Spawn</a>
+    </p>
+    <p>Bigger Bi Block (2 segments; adjustable)
+        <a class="link" href="#" onclick="loadLexi('biggerbiblock')">Spawn</a>
+    </p>
+    <p>BBB Collision (starts and ends at 800 cells)
+        <a class="link" href="#" onclick="loadLexi('bbbcol')">Spawn</a>
     </p>
     <p>c/3 Puffer
         <a class="link" href="#" onclick="loadLexi('puff3')">Spawn</a>
@@ -585,6 +615,9 @@
     </p>
     <p>Birthday Puffer (Looks like a cake)
         <a class="link" href="#" onclick="loadLexi('bdaypuff')">Spawn</a>
+    </p>
+    <p>Beehive Puffer
+        <a class="link" href="#" onclick="loadLexi('bhpuff')">Spawn</a>
     </p>
     <p>Wickstretcher
         <a class="link" href="#" onclick="loadLexi('wickstretcher')">Spawn</a>
@@ -613,7 +646,12 @@
     <p>Glider advancer (pushes by 60ticks)
         <a class="link" href="#" onclick="loadLexi('advancer')">Spawn</a>
     </p>
-
+    <p>Quadratic^2 Gliders (sawtooth177)
+        <a class="link" href="#" onclick="loadLexi('sawtooth177')">Spawn</a>
+    </p>
+    <p>Quadratic Pusher
+        <a class="link" href="#" onclick="loadLexi('quadpush')">Spawn</a>
+    </p>
 
 
     <h3 class="header3">Very Large Patterns</h3>
@@ -666,12 +704,23 @@
     <p>Lineship
         <a class="link" href="#" onclick="loadLexi('lineshipExt')">Spawn</a>
     </p>
+    <p>Linestretcher
+        <a class="link" href="#" onclick="loadLexi('linestretcher')">Spawn</a>
+    </p>
     <p>Leaf bug 2a
         <a class="link" href="#" onclick="loadLexi('leafbug2a')">Spawn</a>
     </p>
     <p>Water Strider
         <a class="link" href="#" onclick="loadLexi('waterstrider')">Spawn</a>
     </p>
+    <p>Growing Pi Waveship (87k)
+        <a class="link" href="#" onclick="loadLexi('growingPiwaveship')">Spawn</a>
+    </p>
+    <p>Slowsilver Demonoid (MASSIVE AND SLOW)
+        <a class="link" href="#" onclick="loadLexi('slowsilver')">Spawn</a>
+    </p>
+
+
 
 
 
@@ -705,6 +754,9 @@ function sampleFPS() {
     fpsAv/=fpsHist.length
     if (fpsHist[60]) {fpsHist.splice(60,1)}
     lastTimestamp = now;
+    display.textContent = `cam: (${camx.toFixed(2)},${camy.toFixed(2)}) hover: (${hoverX},${hoverY}) zoom: ${zoom.toFixed(3)}`;
+    let fpsToShow = Math.min(...fpsHist);
+    display2.textContent = `livepx: ${livePx} maxpx: ${maxPx} tick: ${tickn} fps: ${(Math.ceil(fpsToShow*1)/1)}`
     requestAnimationFrame(sampleFPS);
 }
 
@@ -933,8 +985,6 @@ function animateLoad() {
         requestAnimationFrame(animateLoad)
     }
 }
-
-
 function loadLexi(id) {
     if (!lexloaded) {
         alert("Lexicon file not found");
@@ -943,21 +993,20 @@ function loadLexi(id) {
 
     let offsett = (id === "sword") ? -50 : 0;
 
+    // Demonoid macrocell support removed (not supported).
+
     if (Object.prototype.hasOwnProperty.call(patterns, id)) {
         let patternData = patterns[id];
 
         // Detect if it's RLE: a string containing header + RLE data
         if (typeof patternData === "string") {
-            // Borrow importRLE logic, but work directly with string, not user prompt
             let rleString = patternData;
-
-            // Parse header for x/y offset (optional)
             let lines = rleString.split(/\r?\n/);
             let header = "";
             let i = 0;
             for (; i < lines.length; i++) {
                 let line = lines[i].trim();
-                if (line.startsWith("#") || line == "") continue;
+                if (line.startsWith("#") || line === "") continue;
                 header = line;
                 break;
             }
@@ -965,19 +1014,15 @@ function loadLexi(id) {
             let xOff = 0, yOff = 0;
             let match = header.match(/x\s*=\s*(\d+)\s*,\s*y\s*=\s*(\d+)/i);
             if (match) {
-                // Could parse x/y, but keeping for extensibility
                 i++; // Move to RLE body
             } else {
-                i = 0; // No header
+                i = 0;
             }
 
-            // Read RLE data (all non-comment, non-header lines, concatenated)
             let rleBody = lines.slice(i).filter(l => !l.trim().startsWith("#")).join("");
-            // Strip off anything after "!" (and include up to "!")
             let exclIdx = rleBody.indexOf("!");
             if (exclIdx !== -1) rleBody = rleBody.slice(0, exclIdx + 1);
 
-            // Parse width and height from header if present
             let width = 0, height = 0;
             let headerMatch = header.match(/x\s*=\s*(\d+)\s*,\s*y\s*=\s*(\d+)/i);
             if (headerMatch) {
@@ -996,7 +1041,6 @@ function loadLexi(id) {
                     let count = numBuffer ? parseInt(numBuffer, 10) : 1;
                     for (let n = 0; n < count; n++) {
                         if (ch === "o") {
-                            // Center the pattern so the midpoint is at 0,0 (with offsett as needed)
                             let centeredX = x - Math.floor(width / 2);
                             let centeredY = (0 - y + offsett) + Math.floor(height / 2);
                             pixelsList.push({ x: centeredX, y: centeredY });
@@ -1014,16 +1058,15 @@ function loadLexi(id) {
                 }
                 // ignore whitespace, commas
             }
-       
+
             if (pixelsList.length === 0) {
                 alert("No live cells found in RLE or invalid format.");
                 return;
             }
             startingArray = pixelsList.slice();
         } else if (Array.isArray(patternData)) {
-            // Normal pixels list
             startingArray = patternData.map(p => ({x: p.x, y: p.y + offsett}));
-            livePxHist = []
+            livePxHist = [];
         } else {
             alert("Pattern format not recognized.");
             return;
@@ -1042,6 +1085,7 @@ function loadLexi(id) {
         alert("Unknown pattern: " + id);
     }
 }
+
 setTimeout(function(){loadLexi('blank')},200);
 
 function isLive(pixel) {
@@ -1058,77 +1102,88 @@ let camChangeX = 0;
 let camChangeY = 0;
 
 
-// ========== OPTIMIZED TICK (CPU) ==========
-// Use one uint32 key per cell for super-fast hash table; batch neighbor count update with Int32Array
+/*
+ * Ultra-optimized Game of Life tick -- X/Y packed into 32-bit ints, raw bit-math everywhere.
+ * Main data: pixels: {x, y}[]
+ * Algorithm: NO string objects. Use number keys, avoid object allocs, minimize JS engine overhead.
+ */
 
-// Highly optimized tick function using bitwise hashing and reduced allocations
 function tick() {
     if (draggingSelection) return;
 
-    // Bookkeeping for statistics
+    // Bookkeeping (unchanged)
     livePx = pixels.length;
     livePxHist.unshift(livePx);
     if (livePxHist.length > maxPxLen) livePxHist.length = maxPxLen;
     maxPx = livePxHist.length ? Math.max(...livePxHist) : 0;
 
-    // Allocate fewer objects/sets/maps, use fast integer hashing instead of strings for coordinates
-    // Use Map with integer hash keys as position: (x << 16) | (y & 0xffff)
     const N = pixels.length;
-    const neighborCounts = new Map();
-    const survivors = [];
+
+    // Bit-packed liveSet for fast lookup
     const liveSet = new Set();
-    let px, py, key;
-
-    // Encode cells as 32-bit int for fast hash, assuming |x|,|y| < 2^15
-    // Fastest is to avoid stringifying coordinate pairs
-
-    // Build liveSet (hash)
     for (let i = 0; i < N; ++i) {
-        px = pixels[i].x;
-        py = pixels[i].y;
-        key = ((px & 0xffff) << 16) | (py & 0xffff);
+        const x = pixels[i].x | 0, y = pixels[i].y | 0;
+        const key = ((x & 0xFFFF) << 16) | (y & 0xFFFF);
         liveSet.add(key);
     }
 
-    // Neighbor deltas flattened for loop unrolling
+    // Flat neighbor deltas
     const dx = [0, 1, 1, 1, 0, -1, -1, -1];
     const dy = [1, 1, 0, -1, -1, -1, 0, 1];
 
-    // Step 1: Count neighbors/births + survival in one pass
+    // Use Map<number, {count, isLive}> to store neighbor state
+    const neighborInfo = new Map();
+
+    // Single pass over all live cells and their neighborhoods
     for (let i = 0; i < N; ++i) {
-        px = pixels[i].x;
-        py = pixels[i].y;
+        const px = pixels[i].x | 0, py = pixels[i].y | 0;
+        let selfKey = ((px & 0xFFFF) << 16) | (py & 0xFFFF);
 
-        let liveNeighbors = 0;
+        // Mark this cell as live in neighborInfo if not already present
+        let info = neighborInfo.get(selfKey);
+        if (!info) {
+            neighborInfo.set(selfKey, { count: 0, isLive: true });
+        } else {
+            info.isLive = true;
+        }
 
+        // For each neighbor, increment count (includes dead and live)
         for (let d = 0; d < 8; ++d) {
-            const nx = px + dx[d];
-            const ny = py + dy[d];
-            const nkey = ((nx & 0xffff) << 16) | (ny & 0xffff);
-
-            if (liveSet.has(nkey)) {
-                ++liveNeighbors;
+            const nx = px + dx[d], ny = py + dy[d];
+            const nkey = ((nx & 0xFFFF) << 16) | (ny & 0xFFFF);
+            let ninfo = neighborInfo.get(nkey);
+            if (!ninfo) {
+                neighborInfo.set(nkey, { count: 1, isLive: false });
             } else {
-                neighborCounts.set(nkey, (neighborCounts.get(nkey) || 0) + 1);
+                ninfo.count += 1;
             }
         }
-
-        // Survival: live cell survives with 2 or 3 neighbors
-        if (liveNeighbors === 2 || liveNeighbors === 3) {
-            survivors.push(pixels[i]);
-        }
     }
 
-    // Step 2: Births (only cells with exactly 3 live neighbors are born)
+    const survivors = [];
     const births = [];
-    for (const [nkey, count] of neighborCounts) {
-        if (count === 3) {
-            // Unpack key to x, y (restore sign with signed right shift)
-            let x = (nkey >> 16) << 16 >> 16; // sign-extend 16 bits
-            let y = (nkey & 0xffff) << 16 >> 16;
-            births.push({ x, y });
+
+    // Now process every entry in neighborInfo just once
+    neighborInfo.forEach((val, key) => {
+        const count = val.count;
+        const isAlive = !!val.isLive;
+        if (isAlive) {
+            // Cell survives if 2 or 3 neighbors
+            if (count === 2 || count === 3) {
+                // Unpack x/y
+                let x = (key >> 16); if (x & 0x8000) x |= 0xFFFF0000;
+                let y = (key & 0xFFFF); if (y & 0x8000) y |= 0xFFFF0000;
+                survivors.push({ x, y });
+            }
+        } else {
+            // Dead cell births if exactly 3 neighbors
+            if (count === 3) {
+                let x = (key >> 16); if (x & 0x8000) x |= 0xFFFF0000;
+                let y = (key & 0xFFFF); if (y & 0x8000) y |= 0xFFFF0000;
+                births.push({ x, y });
+            }
         }
-    }
+    });
 
     if (births.length > 0 || survivors.length !== pixels.length) tickn++;
     pixels = survivors.concat(births);
@@ -1142,8 +1197,10 @@ function drawPixelGL(x, y, color) {
 // ========== OPTIMIZED DRAW: GPU FAST PATH ==========
 
 function draw() {
-    camx+=(Number(camxin.value)*tps)*tpt*0.005
-    camy+=(Number(camyin.value)*tps)*tpt*0.005
+    if (!paused) {
+       camx+=(Number(camxin.value)*tps)*tpt*0.005
+       camy+=(Number(camyin.value)*tps)*tpt*0.005
+    }
 
     hoverX = Math.floor(((mouseX - canvas.width / 2) / zoom + camx) -  14/ zoom);
     hoverY = 1 + Math.floor(((- (mouseY - canvas.height / 2) / zoom) + camy) + 14 / zoom);
@@ -1153,6 +1210,9 @@ function draw() {
     } else {
         canvas.style.cursor = 'none';
     }
+
+    // Minimum pixel size for live cells
+    const minCellSize = 1;
 
     // Draw background/clear
     if (webglSupported) {
@@ -1179,22 +1239,35 @@ function draw() {
             ctx.moveTo(0,yPixel); ctx.lineTo(canvas.width,yPixel); ctx.stroke();
         }
 
-        // Draw all pixels as GL points in a single buffer update
-        // Main live cells (white or selected color)
+        // Draw all pixels as GL points in a single buffer update if zoom>=minCellSize, else fallback to larger overlay
         let mainVerts = [];
         let highlights = new Set(selectedLivePixels.map(p=> p.x+","+p.y));
-        for(let i=0; i<pixels.length;i++) {
-            let p = pixels[i], key = p.x+","+p.y;
-            if(draggingSelection && highlights.has(key)) continue; // skip, will draw in drag
-            mainVerts.push(p.x, p.y);
+        if (zoom >= minCellSize) {
+            for(let i=0; i<pixels.length;i++) {
+                let p = pixels[i], key = p.x+","+p.y;
+                if(draggingSelection && highlights.has(key)) continue; // skip, will draw in drag
+                mainVerts.push(p.x, p.y);
+            }
+            gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mainVerts), gl.STREAM_DRAW);
+            gl.uniform2f(glResolutionLoc, canvas.width, canvas.height);
+            gl.uniform2f(glCamLoc, camx, camy);
+            gl.uniform1f(glZoomLoc, zoom);
+            gl.uniform4f(glColorLoc,1,1,1,1);
+            gl.drawArrays(gl.POINTS,0,mainVerts.length/2);
+        } else {
+            // When zoomed out, fallback to canvas rectangles for big dots
+            for(let i=0; i<pixels.length;i++) {
+                let p = pixels[i], key = p.x+","+p.y;
+                if(draggingSelection && highlights.has(key)) continue; // skip, will draw in drag
+                ctx.fillStyle = highlights.has(key) ? `hsla(120,${(Math.sin(t2/10)+1.2)*25}%,80%,1)` : "white";
+                ctx.fillRect(
+                    (p.x-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
+                    canvas.height/2-(p.y-camy)*zoom - (minCellSize-zoom)/2,
+                    minCellSize, minCellSize
+                );
+            }
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mainVerts), gl.STREAM_DRAW);
-        gl.uniform2f(glResolutionLoc, canvas.width, canvas.height);
-        gl.uniform2f(glCamLoc, camx, camy);
-        gl.uniform1f(glZoomLoc, zoom);
-        gl.uniform4f(glColorLoc,1,1,1,1);
-        gl.drawArrays(gl.POINTS,0,mainVerts.length/2);
 
         // Draw selection highlights (in green pulsating)
         if(selectedLivePixels.length>0) {
@@ -1205,7 +1278,7 @@ function draw() {
                     selVerts.push(p.x,p.y);
                 }
             }
-            if(selVerts.length>0) {
+            if(selVerts.length>0 && zoom >= minCellSize) {
                 gl.bindBuffer(gl.ARRAY_BUFFER,glBuffer);
                 gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(selVerts),gl.STREAM_DRAW);
                 gl.uniform2f(glResolutionLoc,canvas.width,canvas.height);
@@ -1215,6 +1288,17 @@ function draw() {
                 let s = (Math.sin(t2 / 10) + 1.2) * 0.25;
                 gl.uniform4f(glColorLoc,0.2,0.7,0.2+s,1);
                 gl.drawArrays(gl.POINTS,0,selVerts.length/2);
+            } else if (selVerts.length > 0 && zoom < minCellSize) {
+                let s = (Math.sin(t2 / 10) + 1.2) * 0.25;
+                ctx.fillStyle = `rgba(44,181,44,${0.7+s})`;
+                for (let k=0;k<selVerts.length;k+=2) {
+                    let x = selVerts[k], y = selVerts[k+1];
+                    ctx.fillRect(
+                        (x-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
+                        canvas.height/2-(y-camy)*zoom - (minCellSize-zoom)/2,
+                        minCellSize, minCellSize
+                    );
+                }
             }
         }
 
@@ -1225,9 +1309,9 @@ function draw() {
                 let nx = selectionOriginal[i].x + dragOffset.x, ny = selectionOriginal[i].y + dragOffset.y;
                 ctx.fillStyle = "rgba(50,180,255,0.5)";
                 ctx.fillRect(
-                    (nx-camx)*zoom+canvas.width/2,
-                    canvas.height/2-(ny-camy)*zoom,
-                    zoom,zoom
+                    (nx-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
+                    canvas.height/2-(ny-camy)*zoom - (minCellSize-zoom)/2,
+                    Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
                 );
             }
         }
@@ -1244,9 +1328,9 @@ function draw() {
                 if(already.has(`${nx},${ny}`)) ctx.fillStyle = "rgba(240,40,40,0.4)";
                 else ctx.fillStyle = "rgba(80,180,255,0.5)";
                 ctx.fillRect(
-                    (nx-camx)*zoom+canvas.width/2,
-                    canvas.height/2-(ny-camy)*zoom,
-                    zoom,zoom
+                    (nx-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
+                    canvas.height/2-(ny-camy)*zoom - (minCellSize-zoom)/2,
+                    Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
                 );
             }
         }
@@ -1261,9 +1345,9 @@ function draw() {
             for(let hx=minX;hx<=maxX;hx++) {
               for(let hy=minY;hy<=maxY;hy++) {
                 ctx.fillRect(
-                    (hx-camx)*zoom+canvas.width/2,
-                    canvas.height/2-(hy-camy)*zoom,
-                    zoom,zoom
+                    (hx-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
+                    canvas.height/2-(hy-camy)*zoom - (minCellSize-zoom)/2,
+                    Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
                 );
               }
             }
@@ -1272,9 +1356,9 @@ function draw() {
         // Draw hovered cell
         ctx.globalAlpha=0.5; ctx.fillStyle="#888";
         ctx.fillRect(
-            (hoverX-camx)*zoom+canvas.width/2,
-            canvas.height/2-(hoverY-camy)*zoom,
-            zoom,zoom
+            (hoverX-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
+            canvas.height/2-(hoverY-camy)*zoom - (minCellSize-zoom)/2,
+            Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
         );
         ctx.globalAlpha=1;
 
@@ -1286,9 +1370,9 @@ function draw() {
                 let m = markers[i];
                 // Draw as filled rect at marker cell location
                 ctx.fillRect(
-                    (m.x-camx)*zoom+canvas.width/2,
-                    canvas.height/2-(m.y-camy)*zoom,
-                    zoom,zoom
+                    (m.x-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
+                    canvas.height/2-(m.y-camy)*zoom - (minCellSize-zoom)/2,
+                    Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
                 );
             }
             ctx.globalAlpha = 1;
@@ -1324,10 +1408,12 @@ function draw() {
             } else {
                 ctx.fillStyle = "white";
             }
+            // Enforce minimum cell size for live cells
+            const cellSize = Math.max(zoom, minCellSize);
             ctx.fillRect(
-                (p.x-camx)*zoom+canvas.width/2,
-                canvas.height/2-(p.y-camy)*zoom,
-                zoom,zoom
+                (p.x-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
+                canvas.height/2-(p.y-camy)*zoom - (cellSize-zoom)/2,
+                cellSize, cellSize
             );
         }
 
@@ -1335,14 +1421,15 @@ function draw() {
         // Draw 0,0 as rect at normal zoom, but as a circle if zoomed out far enough
         ctx.fillStyle = "#fff1";
         if (zoom >= 4) {
+            const cellSize = Math.max(zoom, minCellSize);
             ctx.fillRect(
-                (0-camx)*zoom+canvas.width/2,
-                canvas.height/2-(0-camy)*zoom,
-                zoom,zoom
+                (0-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
+                canvas.height/2-(0-camy)*zoom - (cellSize-zoom)/2,
+                cellSize, cellSize
             );
         } else {
             // Diameter = 1% of the smaller canvas dimension (help user find center)
-            const diameter = Math.min(canvas.width, canvas.height) * 0.01;
+            const diameter = Math.max(Math.min(canvas.width, canvas.height) * 0.01, minCellSize);
             ctx.beginPath();
             ctx.arc(
                 (0-camx)*zoom+canvas.width/2,
@@ -1351,17 +1438,17 @@ function draw() {
             );
             ctx.fill();
         }
-   
 
         if(draggingSelection&&selectionOriginal.length>0) {
             for(let i=0; i<selectionOriginal.length;i++) {
                 let nx = selectionOriginal[i].x + dragOffset.x,
                     ny = selectionOriginal[i].y + dragOffset.y;
                 ctx.fillStyle = "rgba(60,180,250,0.5)";
+                const cellSize = Math.max(zoom, minCellSize);
                 ctx.fillRect(
-                    (nx-camx)*zoom+canvas.width/2,
-                    canvas.height/2-(ny-camy)*zoom,
-                    zoom,zoom
+                    (nx-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
+                    canvas.height/2-(ny-camy)*zoom - (cellSize-zoom)/2,
+                    cellSize, cellSize
                 );
             }
         }
@@ -1374,10 +1461,11 @@ function draw() {
                 let nx=copiedPixels[i].x+offsetX,ny=copiedPixels[i].y+offsetY;
                 if(already.has(`${nx},${ny}`)) ctx.fillStyle = "hsla(0,100%,60%,0.4)";
                 else ctx.fillStyle = "hsla(210,100%,60%,0.5)";
+                const cellSize = Math.max(zoom, minCellSize);
                 ctx.fillRect(
-                    (nx-camx)*zoom+canvas.width/2,
-                    canvas.height/2-(ny-camy)*zoom,
-                    zoom,zoom
+                    (nx-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
+                    canvas.height/2-(ny-camy)*zoom - (cellSize-zoom)/2,
+                    cellSize, cellSize
                 );
             }
         }
@@ -1388,20 +1476,25 @@ function draw() {
             const maxX = Math.max(hiliteCorner1.x, hiliteCorner2.x);
             const minY = Math.min(hiliteCorner1.y, hiliteCorner2.y);
             const maxY = Math.max(hiliteCorner1.y, hiliteCorner2.y);
-            for(let hx=minX;hx<=maxX;hx++) for(let hy=minY;hy<=maxY;hy++)
+            for(let hx=minX;hx<=maxX;hx++) for(let hy=minY;hy<=maxY;hy++) {
+                const cellSize = Math.max(zoom, minCellSize);
                 ctx.fillRect(
-                    (hx-camx)*zoom+canvas.width/2,
-                    canvas.height/2-(hy-camy)*zoom,
-                    zoom,zoom
+                    (hx-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
+                    canvas.height/2-(hy-camy)*zoom - (cellSize-zoom)/2,
+                    cellSize, cellSize
                 );
+            }
             ctx.globalAlpha = 1;
         }
         ctx.globalAlpha=0.5; ctx.fillStyle="#888";
-        ctx.fillRect(
-            (hoverX-camx)*zoom+canvas.width/2,
-            canvas.height/2-(hoverY-camy)*zoom,
-            zoom,zoom
-        );
+        {
+            const cellSize = Math.max(zoom, minCellSize);
+            ctx.fillRect(
+                (hoverX-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
+                canvas.height/2-(hoverY-camy)*zoom - (cellSize-zoom)/2,
+                cellSize, cellSize
+            );
+        }
         ctx.globalAlpha=1;
 
         // Draw markers at 60% opacity
@@ -1411,17 +1504,17 @@ function draw() {
             for (let i = 0; i < markers.length; i++) {
                 let m = markers[i];
                 ctx.fillStyle = m.color || "#0ff";
+                const cellSize = Math.max(zoom, minCellSize);
                 ctx.fillRect(
-                    (m.x - camx) * zoom + canvas.width / 2,
-                    canvas.height / 2 - (m.y - camy) * zoom,
-                    zoom, zoom
+                    (m.x - camx) * zoom + canvas.width / 2 - (cellSize-zoom)/2,
+                    canvas.height / 2 - (m.y - camy) * zoom - (cellSize-zoom)/2,
+                    cellSize, cellSize
                 );
             }
             ctx.restore();
         }
-   
-
     }
+
 
 
 
@@ -1431,8 +1524,6 @@ function draw() {
         hiliteCorner2 = { x: hoverX, y: hoverY };
     }
 
-    display.textContent = `cam: (${camx.toFixed(2)},${camy.toFixed(2)}) hover: (${hoverX},${hoverY}) zoom: ${zoom.toFixed(3)}`;
-    display2.textContent = `livepx: ${livePx} maxpx: ${maxPx} tick: ${tickn} fps: ${(Math.ceil(fpsAv*1)/1).toFixed(2)}`
 
     // Fast draw/erase
     if (mousedown && !draggingSelection) {
@@ -1536,7 +1627,7 @@ function handleWheelZoom(e) {
     // (split zoom event evenly over steps in one frame if fps is low)
 
     // Make zoom less aggressive on trackpads
-    let zoomStep = isTrackpad ? 1.00025 : 1.02;
+    let zoomStep = isTrackpad ? 1.005 : 1.02;
 
     let performStep = function(step) {
         if (step > steps) return;
@@ -1878,7 +1969,7 @@ camxin.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         camxin.blur();
         inputFocus = false;
-    } else if (e.key === "r") {
+    } else if (e.key === "/") {
         camxin.value = 0;
     }
 });
@@ -1887,7 +1978,7 @@ camyin.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         camyin.blur();
         inputFocus = false;
-    } else if (e.key === "r") {
+    } else if (e.key === "/") {
         camyin.value = 0;
     }
 });
