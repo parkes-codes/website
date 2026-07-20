@@ -129,6 +129,82 @@ const chars = [
   "₡", "ə", "₢", "Σ", "₥", "π", "ß", "ƛ", "ζ", "β"
 ];
 
+// For space, we are already using "Ξ₥"
+// Let's pick two uncommon pairs for punctuation/mark mapping:
+// We will use "℈₢", "₮₱", "₭⅁", "₦⅋", "§₡", "ə₢" etc, for up to 6 punctuation marks
+// You can expand further as needed. We'll do for common punctuation.
+
+const PUNCT_MAP = {
+    // mark: [encode, decode] mapping
+    ".": "℈₢",
+    ",": "₮₱",
+    "!": "₭⅁",
+    "?": "₦⅋",
+    ":": "§₡",
+    ";": "ə₢",
+    "-": "Σ₥",
+    "_": "βζ",     
+    "\"": "Ʃ€",    
+    "'": "¥¢",
+    "(": "£Ξ",
+    ")": "₩θ",
+    "[": "℈₮",
+    "]": "₱₭",
+    "{": "₦⅁",
+    "}": "⅋§",
+    "/": "§ə",
+    "\\": "₢Σ",
+    "@": "₥π",
+    "#": "ßƛ",
+    "$": "ζβ",
+    "%": "ʎΩ",
+    "^": "ʞ☡",
+    "&": "β₩",
+    "*": "əµ",
+    "=": "ƔϞ",
+    "+": "ϞƔ",
+    "<": "µʖ",
+    ">": "ʖµ"
+};
+// Build reverse map (sequence->punct)
+const REV_PUNCT_MAP = {};
+for (const [k, v] of Object.entries(PUNCT_MAP)) {
+    REV_PUNCT_MAP[v] = k;
+}
+
+// Utility functions for text patching
+function encodeTextWithPunctSubs(str) {
+    // Replace spaces with "Ξ₥" AND each punctuation mark with its mapped sequence
+    let out = "";
+    for (let i = 0; i < str.length; ++i) {
+        const ch = str[i];
+        if (ch === " ") out += "Ξ₥";
+        else if (PUNCT_MAP[ch]) out += PUNCT_MAP[ch];
+        else out += ch;
+    }
+    return out;
+}
+
+function decodeTextWithPunctSubs(str) {
+    // Undo the process: replace all custom sequences with their corresponding chars
+    let out = "";
+    // First, restore spaces (safe first)
+    str = str.replace(/Ξ₥/g, " ");
+    // Replace ALL 2-char sequences matching any values in REV_PUNCT_MAP with their mapped char
+    let i = 0;
+    while (i < str.length) {
+        let two = str.slice(i, i+2);
+        if (REV_PUNCT_MAP[two]) {
+            out += REV_PUNCT_MAP[two];
+            i += 2;
+        } else {
+            out += str[i];
+            i++;
+        }
+    }
+    return out;
+}
+
 const arrows = [
 '←','↑','→','↓','↔','↕','↖','↗','↘','↙','↚','↛','↜','↝','↞','↟',
 '↠','↡','↢','↣','↤','↥','↦','↧','↨','↩','↪','↫','↬','↭','↮','↯',
@@ -148,26 +224,10 @@ const brackets = [
     '(',')','[',']','{','}'
 ];
 
-
-// Clock emojis representing every hour increment, in order of time increasing (1:00, 2:00, ..., 12:00):
 const clocks = [
-    '🕐', // 1:00
-    '🕑', // 2:00
-    '🕒', // 3:00
-    '🕓', // 4:00
-    '🕔', // 5:00
-    '🕕', // 6:00
-    '🕖', // 7:00
-    '🕗', // 8:00
-    '🕘', // 9:00
-    '🕙', // 10:00
-    '🕚', // 11:00
-    '🕛'  // 12:00
+    '🕐', '🕑', '🕒', '🕓', '🕔', '🕕', '🕖', '🕗', '🕘', '🕙', '🕚', '🕛'
 ];
 
-
-
-// Utility: encode number (bigint or string) to a charlist base
 function encodeToBase(n, b, set = "nums") {
     let charlist;
     if (set === "nums") {
@@ -201,13 +261,9 @@ function encodeToBase(n, b, set = "nums") {
     return isNegative ? '-' + encoded : encoded;
 }
 
-// Utility: split a string into emoji-segments according to emojiList
 function splitEmojiStringByList(str, emojiArr) {
-    // Build a regex that matches any emoji in emojiArr, sorted by length descending (greedy longest match)
     const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Sort by decreasing emoji string length
     const sortedEmoji = [...emojiArr].sort((a, b) => b.length - a.length);
-    // Group identical length emojis into alternation blocks for perf
     let pattern = '';
     let lengths = {};
     for (const emoji of sortedEmoji) {
@@ -218,17 +274,13 @@ function splitEmojiStringByList(str, emojiArr) {
         .sort((a, b) => b - a)
         .map(len => lengths[len].join('|'))
         .join('|');
-    // Safe fallback: greedy matching with regex alternation
     const re = new RegExp(pattern, "gu");
     let out = [];
-    let m;
     let idx = 0;
     let tries = 0;
-    // Remove all invisible characters (fix ZWJ, VS16, etc visual bugs)
     let cleaned = [...str].filter(c => /\S|\p{Extended_Pictographic}/u.test(c)).join('');
     let matches = cleaned.match(re);
     if (!matches) return [];
-    // Walk the string, matching left-to-right
     let cursor = 0;
     while (cursor < cleaned.length && tries < 10000) {
         let foundMatch = false;
@@ -241,17 +293,14 @@ function splitEmojiStringByList(str, emojiArr) {
             }
         }
         if (!foundMatch) {
-            // Maybe a skin tone or ZWJ sequence? Try single char.
             out.push(cleaned[cursor]);
             cursor++;
         }
         tries++;
     }
-    // Remove "matches" that are not in emojiArr, or that are only single characters not found in arr
     return out.filter(e => emojiArr.indexOf(e) !== -1);
 }
 
-// Utility: decode a string in charlist base to bigint (Updated EMOJI handling!)
 function decodeFromBase(n, b, set = "nums") {
     let charlist;
     if (set === "nums") {
@@ -282,7 +331,6 @@ function decodeFromBase(n, b, set = "nums") {
 
     let digitsArr;
     if (set === "emoji") {
-        // --- GREEDY SPLIT BY EMOJIS FROM EMOJILIST ---
         if (!(Array.isArray(charlist) && charlist.length > 0)) {
             throw new Error("emojiList missing or empty");
         }
@@ -291,7 +339,6 @@ function decodeFromBase(n, b, set = "nums") {
             throw new Error("Invalid emoji input: can't parse as emoji using configured emoji set.");
         }
     } else if(set === "clocks") {
-        // Greedy split by known clock emoji set
         digitsArr = splitEmojiStringByList(nStr, charlist);
         if (digitsArr.length === 0 && nStr.length !== 0) {
             throw new Error("Invalid clocks input: can't parse as clocks using configured clock set.");
@@ -313,17 +360,18 @@ function decodeFromBase(n, b, set = "nums") {
     return isNegative ? output * -1n : output;
 }
 
-// Utility: encode BigInt to emoji base
 function encodeToEmoji(bi) {
     if (typeof emojiList === "undefined" || !Array.isArray(emojiList) || !emojiList.length)
         return "(emojiList not loaded)";
     return encodeToBase(bi, emojiList.length, "emoji");
 }
 
-// --- Emoji Encrypt according to new spec ---
-// Take the input, interpret as base-100 (using digits 0-9), convert to BigInt (decodeFromBase), then to base 10 string, then encode to emojis
+// --- Emoji Encrypt ---
+
+// ENCODER PATCH FOR PUNCTUATION
 function emojiEncryptBase100ToEmoji(input) {
-    let str = input
+    // Replace all spaces and punctuation marks with their marker pairs
+    let str = typeof input === "string" ? encodeTextWithPunctSubs(input) : input;
     try {
         let base100Value = decodeFromBase(str, 100, "nums");
         let base10str = encodeToBase(base100Value, 10, "nums");
@@ -331,17 +379,6 @@ function emojiEncryptBase100ToEmoji(input) {
         return encodeToEmoji(finalBigInt);
     } catch (e) {
         return "(emoji encrypt failed: " + (e && e.message || String(e)) + ")";
-    }
-}
-// --- Emoji STR decode ---
-function emojiDecryptEmojiToBase100(str) {
-    if (typeof emojiList === "undefined" || !Array.isArray(emojiList) || !emojiList.length)
-        return "(emojiList not loaded)";
-    try {
-        let bi = decodeFromBase((str || '').trim(), emojiList.length, "emoji");
-        return bi.toString();
-    } catch (e) {
-        return "(invalid emoji input)";
     }
 }
 
@@ -370,26 +407,21 @@ const ENCODERS = [
             { name: "Text", id: "text", type: "string", placeholder: "Type text to encode", required: true }
         ],
         encode: (opts) => {
-            // Split on characters, but preserve line breaks and spaces as distinct "words"
-            // and split into words, then individually encode characters within words
+            // Morse encoder does not require extra punctuation encoding, keep as is.
             return opts.text
                 .toUpperCase()
-                .split(/(\s+)/) // include spaces in array for word separation
+                .split(/(\s+)/)
                 .map(wordOrSpace => {
-                    // If it's just whitespace, keep as is (convert space to '/')
                     if (/^\s+$/.test(wordOrSpace)) {
-                        // For whitespace, convert spaces to '/' as per MORSE_TABLE
                         return wordOrSpace.replace(/ /g, MORSE_TABLE[" "]);
                     }
-                    // Otherwise, encode as morse
                     return wordOrSpace
                         .split("")
                         .map(char => MORSE_TABLE[char] ?? "?")
                         .join(" ");
                 })
-                .join(" "); // Separate encoded-words properly
+                .join(" ");
         }
-
     },
     {
         name: "Base-😀",
@@ -412,7 +444,9 @@ const ENCODERS = [
             { name: "Text", id: "digits", type: "numberstr", placeholder: "e.g. 01020304 (grouped as 2 digits)", required: true }
         ],
         encode: (opts) => {
-            return emojiEncryptBase100ToEmoji(opts.digits);
+            // Replace all spaces and punctuation with marker pairs
+            let patchedInput = typeof opts.digits === "string" ? encodeTextWithPunctSubs(opts.digits) : opts.digits;
+            return emojiEncryptBase100ToEmoji(patchedInput);
         }
     },
     {
@@ -464,7 +498,7 @@ const ENCODERS = [
     }
 ];
 
-// ==================== DECODERS (no encode language!) ====================
+// ==================== DECODERS ====================
 const DECODERS = [
     {
         name: "Base-N",
@@ -507,7 +541,6 @@ const DECODERS = [
             if (typeof emojiList === "undefined" || !Array.isArray(emojiList) || !emojiList.length)
                 return "(emojiList not loaded)";
             try {
-                // Use fixed greedy emoji splitting
                 let bi = decodeFromBase(opts.emoji, emojiList.length, "emoji");
                 return bi.toString();
             } catch (e) {
@@ -523,8 +556,9 @@ const DECODERS = [
         ],
         decode: (opts) => {
             let bi = decodeFromBase(opts.emoji, emojiList.length, "emoji");
-            bi = encodeToBase(bi,100)
-            return bi.toString();
+            let patched = encodeToBase(bi,100);
+            patched = decodeTextWithPunctSubs(patched);
+            return patched.toString();
         }
     },
     {
@@ -589,7 +623,6 @@ const DECODERS = [
     }
 ];
 
-// Morse tables for conversion
 const MORSE_TABLE = {
     "A": ".-",    "B": "-...",  "C": "-.-.",  "D": "-..",
     "E": ".",     "F": "..-.",  "G": "--.",   "H": "....",
@@ -612,8 +645,6 @@ const REVERSE_MORSE_TABLE = (() => {
     for (const [k, v] of Object.entries(MORSE_TABLE)) t[v] = k;
     return t;
 })();
-
-// ---------- UI HELPER ----------
 
 function makeInputField(spec, value, onInput) {
     let input;
@@ -667,8 +698,6 @@ function renderOutput(block, out, prefix = "Output: ") {
     else block.textContent = prefix + out;
 }
 
-// --------- PAGE LOGIC ---------
-
 function populateDropdown(drop, arr) {
     drop.innerHTML = "";
     arr.forEach(fn => {
@@ -682,17 +711,14 @@ function populateDropdown(drop, arr) {
 // ---------- APP INIT ----------
 
 window.addEventListener("DOMContentLoaded", function() {
-    // UI Elements
     const encodeDropdown = document.getElementById("encoder-select");
     const decodeDropdown = document.getElementById("decoder-select");
     const encodeInputs = document.getElementById("encode-inputs");
     const decodeInputs = document.getElementById("decode-inputs");
     const encodeOutput = document.getElementById("encode-output");
     const decodeOutput = document.getElementById("decode-output");
-    // ========== TIME ENCODE TOP RIGHT ==========
     const encodedTimeDiv = document.getElementById("current-time-encoded");
 
-    // State
     let encodeState = {};
     let decodeState = {};
     let curEncoderIdx = 0;
@@ -701,7 +727,6 @@ window.addEventListener("DOMContentLoaded", function() {
     populateDropdown(encodeDropdown, ENCODERS);
     populateDropdown(decodeDropdown, DECODERS);
 
-    // ----------- encode setup ------------
     function handleEncodeInputChange() {
         const encoder = ENCODERS[curEncoderIdx];
         let haveAll = encoder.inputSpec.every(s => !s.required || encodeState[s.id]);
@@ -728,7 +753,6 @@ window.addEventListener("DOMContentLoaded", function() {
     });
     rebuildEncodeInputs();
 
-    // ----------- decode setup ------------
     function handleDecodeInputChange() {
         const decoder = DECODERS[curDecoderIdx];
         let haveAll = decoder.inputSpec.every(s => !s.required || decodeState[s.id]);
@@ -756,13 +780,9 @@ window.addEventListener("DOMContentLoaded", function() {
     rebuildDecodeInputs();
 
     // ====== Animated Time Encode Box (top right) =======
-    // Figure out the current "encoder": base and charset
     function getCurrentEncoderInfo() {
         const encoder = ENCODERS[curEncoderIdx];
-        // Use the current encoder's ID to select settings.
-        // Support: "baseN", "emoji", "clocks", "arrows", "braille", "brackets"
         if (encoder.id === "baseN") {
-            // Use base from input (fallback to 10)
             let bn = 10; 
             if (encodeState.base) {
                 let baseNum = Number(encodeState.base);
@@ -770,7 +790,6 @@ window.addEventListener("DOMContentLoaded", function() {
             }
             return { base: bn, set: "nums" };
         } else if (encoder.id === "emoji") {
-            // emojiList must be loaded and valid
             if (typeof emojiList !== "undefined" && Array.isArray(emojiList) && emojiList.length)
                 return { base: emojiList.length, set: "emoji" };
             else
@@ -789,8 +808,6 @@ window.addEventListener("DOMContentLoaded", function() {
     }
 
     function encodeCurrentTimeString() {
-        // Instead of milliseconds since 2000, use milliseconds of the hour
-        // That is, get current hour, calculate ms since the hour started
         const now = new Date();
         const msOfHour = now.getMinutes() * 60000 + now.getSeconds() * 1000 + now.getMilliseconds();
         const { base, set } = getCurrentEncoderInfo();
@@ -802,7 +819,6 @@ window.addEventListener("DOMContentLoaded", function() {
     }
 
     function updateTimeEncodedBox() {
-        // Show base and charset
         const { base, set } = getCurrentEncoderInfo();
         let charsetLabel =
             set === "nums" ? "0-9a-z" :
@@ -815,8 +831,6 @@ window.addEventListener("DOMContentLoaded", function() {
         const enc = encodeCurrentTimeString();
         encodedTimeDiv.textContent =
             `${enc}`;
-        // Optionally, display settings or base info:
-        // encodedTimeDiv.title = `Base: ${base} | Set: ${charsetLabel}`;
     }
 
     function stepTimeEncodedBox() {
@@ -824,16 +838,13 @@ window.addEventListener("DOMContentLoaded", function() {
         requestAnimationFrame(stepTimeEncodedBox);
     }
 
-    // Wait for emojiList to be loaded (if needed), then start ticking.
     if (typeof emojiList === 'undefined') {
-        // Wait for window.emojiList from emojis.js (async load)
         let waitEmoji = setInterval(() => {
             if (typeof emojiList !== 'undefined') {
                 clearInterval(waitEmoji);
                 stepTimeEncodedBox();
             }
         }, 50);
-        // But start ticking anyway (for non-emoji sets)
         stepTimeEncodedBox();
     } else {
         stepTimeEncodedBox();
