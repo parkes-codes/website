@@ -1672,6 +1672,8 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
 function exportRLE() {
+    const export2 = document.getElementById("export2");
+    if (export2) export2.blur();
     if (!pixels || pixels.length === 0) {
         alert("No live cells to export.");
         return;
@@ -1883,6 +1885,7 @@ function importlist() {
 }
 
 function exportlist() {
+    exportbtn.blur();
     if (pixels.length == 0) {
         alert("No live pixels to export.")
         return
@@ -1927,8 +1930,9 @@ function exportlist() {
 } else {
     alert("Too many pixels! Use this console command instead. copy('[' + pixels.map(p => `{x:${p.x},y:${p.y}}`).join(',') + ']')")
 }
-    exportbtn.blur();
 }
+
+
 
 let inputFocus = false;
 
