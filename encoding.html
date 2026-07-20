@@ -5,438 +5,841 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Encoding Things</title>
     <link rel="icon" type="image/x-icon" href="icon.ico" />
+    <meta name="format-detection" content="telephone=no">
     <style>
         body {
             background-color: #000;
             color: #fff;
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            min-height: 100vh;
         }
-
-        #nextbtn {
-            position: absolute;
-            right: calc(50% - 200px);
-            top: 130px;
-            z-index: 4
+        .container {
+            max-width: 510px;
+            margin: 80px auto 0 auto;
+            padding: 32px;
+            background-color: #101013AA;
+            border-radius: 14px;
+            box-shadow: 0 8px 32px #1116;
         }
-
-        #prevbtn {
-            position: absolute;
-            left: calc(50% - 200px);
-            top: 130px;
-            z-index: 4;
+        h2 {
+            margin: 0 0 12px 0;
+            font-size: 1.18em;
         }
-
-        /* --- MODIFIED STYLES FOR OVERLAPPING FADE --- */
-        #coder-container {
+        .action-block {
+            margin-bottom: 30px;
+        }
+        label {
+            display: inline-block;
+            margin: 0 8px 0 0;
+        }
+        input, select, textarea {
+            background: #222;
+            color: #fff;
+            border: 1px solid #454545;
+            border-radius: 6px;
+            padding: 5px 8px;
+            margin: 4px 0px 10px 0px;
+            font-size: 1em;
+        }
+        input[type="text"], textarea {
+            width: calc(100% - 22px);
+        }
+        .output-block {
+            margin-top: 5px;
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 100%;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        .hide {
+            display: none !important;
+        }
+        .base-group {
+            margin-left: 0;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            display: flex;
-            flex-direction: column;
-            margin-top: -20px;
-            position: relative; /* ADDED */
-            width: 100%;
-            min-width: 325px;
-            min-height: 350px;
-            /* min-height ensures enough space for both coders (can tweak as needed) */
+            gap: 4px;
+        }
+        textarea {
+            min-height: 48px;
+            resize: vertical;
+        }
+        /* --- Time Display --- */
+        #current-time-encoded {
+            position: fixed;
+            top: 18px;
+            right: 24px;
+            background: #202024dd;
+            color: #fff;
+            font-size: 1.00em;
+            padding: 9px 19px;
+            border-radius: 12px;
+            z-index: 9999;
+            min-width: 64px;
+            font-family: inherit;
+            text-align: right;
+            box-shadow: 0 2px 16px #2228;
+            user-select: text;
+            opacity: 0.96;
+            letter-spacing: 1px;
+            white-space: pre;
         }
 
-        .coder-section {
-            transition: opacity 0.5s ease, visibility 0.5s;
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            min-width: 325px;
-            position: absolute;  /* KEY: makes all coder panels overlap in same position */
-            top: 0;
-            left: 0;
-            right: 0;
-            /* This keeps coders positioned exactly at the same place */
-            margin: 0 auto;
-            width: 100%;
-        }
-        .coder-section.active {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-            z-index: 1;
-        }
-
-        /* Ensure fading sections are above their parent background when fading out */
-        .coder-section.fading {
-            z-index: 2;
-        }
-
-        .coder-nav {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        @media(max-width: 540px) {
+            .container { padding: 10px; margin-top: 13vw; }
+            #current-time-encoded { font-size: 0.94em; top: 7px; right: 7px; border-radius: 7px; padding: 5px 8px; }
         }
     </style>
 </head>
 <body>
-    <image src="space.jpg" style="width: 100%; height: 100%; margin: 0; position: absolute; top: 0px; left: 0px; z-index: -2"></image>
-    <div style="width: 100%; height: 100%; margin: 0; position: absolute; top: 0px; left: 0px; z-index: -1"></div> <!-- Image drag blocker-->
-
-    <div style="display: flex; flex-direction: row; align-items: center; justify-content: center; align-self: center;">
-        <div class="coder-nav">
-            <button id="prevbtn"><</button>
+    <!-- TIME ENCODED FLOATING DIV -->
+    <div id="current-time-encoded"></div>
+    <div class="container">
+        <div class="action-block" id="encode-block">
+            <h2>Encode to 
+                <select id="encoder-select"></select>
+            </h2>
+            <div id="encode-inputs"></div>
+            <div id="encode-output" class="output-block">Output: </div>
         </div>
-
-        <div id="coder-container">
-            <!-- Coder sections injected here by JS -->
-        </div>
-
-        <div class="coder-nav">
-            <button id="nextbtn">></button>
+        <div class="action-block" id="decode-block">
+            <h2>Decode from 
+                <select id="decoder-select"></select>
+            </h2>
+            <div id="decode-inputs"></div>
+            <div id="decode-output" class="output-block">Decoded: </div>
         </div>
     </div>
-</body>
+<script src="emojis.js"></script>
 <script>
-// ----- CODER SYSTEM -----
-/**
- * Each "coder" is a page/section for an encoding/decoding tool.
- * To add new coders, just add an object to the coders array.
- */
-
-const coders = [
-    {
-        name: "Base Encoder/Decoder",
-        html: `
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 50px; left: 0; right: 0;">
-          <h2 style="margin-bottom: 5px">Encode Number to Any Base</h2>
-          <input id="numberInput" style="width: 200px; margin-bottom: 5px;" placeholder="Number">
-          <input id="baseInput" style="width: 30px" placeholder="Base">
-          <div id="outputtext" style="margin-top: 5px;">Encoded outputs here</div>
-          <h2 style="margin-bottom: 5px;">Decode Number From Any Base</h2>
-          <input id="numberInput2" style="width: 200px; margin-bottom: 5px;" placeholder="Encoded">
-          <input id="baseInput2" style="width: 30px" placeholder="Base">
-          <div id="outputtext2" style="margin-top: 5px; width: fit-content; max-width: 500px; word-break: break-word; overflow-wrap: break-word;">Decoded outputs here</div>
-          </div>
-        `,
-        setup: function() {
-            // wire up events for base encoding/decoding
-            const outputDiv = document.getElementById("outputtext");
-            const outputDiv2 = document.getElementById("outputtext2")
-            const numberInput = document.getElementById("numberInput");
-            const numberInput2 = document.getElementById("numberInput2");
-            const baseInput = document.getElementById("baseInput");
-            const baseInput2 = document.getElementById("baseInput2");
+// ------------------ GLOBAL ENCODER INFRA  -------------------
 
 const chars = [
   "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
   "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
   "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
-  "u", "v", "w", "x", "y", "z",
-  "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
-  "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
-  "U", "V", "W", "X", "Y", "Z",
-  "∑", "⩖", "⧰", "∉", "ℶ", "∬", "⨎", "⨗", "⨖", "⨕",
-  "⨘", "⨙", "⨚",
-  "€", "¥", "¢", "£", "₽", "₩", "฿", "₺", "₮", "₱",
-  "₭", "₴", "₦", "₹", "₲", "₡", "₫", "₢", "₳", "₥",
-  "ⱺ", "ß", "ƛ", "ȣ", "ℵ"
+  "u", "v", "w", "x", "y", "z", "A", "B", "C", "D",
+  "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+  "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X",
+  "Y", "Z", "ʞ", "Ω", "Ϟ", "☈", "ↁ", "ʖ", "µ", "☡",
+  "ϔ", "Δ", "ʎ", "Ɣ", "Ʃ", "€", "¥", "¢", "£", "Ξ",
+  "₩", "θ", "℈", "₮", "₱", "₭", "⅁", "₦", "⅋", "§",
+  "₡", "ə", "₢", "Σ", "₥", "π", "ß", "ƛ", "ζ", "β"
 ];
 
-function encodeToBase(n, b) {
+const arrows = [
+'←','↑','→','↓','↔','↕','↖','↗','↘','↙','↚','↛','↜','↝','↞','↟',
+'↠','↡','↢','↣','↤','↥','↦','↧','↨','↩','↪','↫','↬','↭','↮','↯',
+'↰','↱','↲','↳','↴','↵','↶','↷','↸','↹','↺','↻','↼','↽','↾','↿',
+'⇀','⇁','⇂','⇃','⇄','⇅','⇆','⇇','⇈','⇉','⇊','⇋','⇌','⇍','⇎','⇏',
+'⇐','⇑','⇒','⇓','⇔','⇕','⇖','⇗','⇘','⇙','⇚','⇛','⇜','⇝','⇞','⇟',
+'⇠','⇡','⇢','⇣','⇤','⇥','⇦','⇧','⇨','⇩','⇪','⇫','⇬','⇭','⇮','⇯',
+'⇰','⇱','⇲','⇳','⇴','⇵','⇶','⇷','⇸','⇹','⇺','⇻','⇼','⇽','⇾','⇿'
+];
 
-    let num;
-    let base;
-    try {
-        num = BigInt(n);
-        base = BigInt(b);
-    } catch (e) {
-        return "(invalid input)";
+const braille = Array.from(
+    { length: 0x100 },
+    (_, i) => String.fromCodePoint(0x2800 + i)
+);
+
+const brackets = [
+    '(',')','[',']','{','}'
+];
+
+
+// Clock emojis representing every hour increment, in order of time increasing (1:00, 2:00, ..., 12:00):
+const clocks = [
+    '🕐', // 1:00
+    '🕑', // 2:00
+    '🕒', // 3:00
+    '🕓', // 4:00
+    '🕔', // 5:00
+    '🕕', // 6:00
+    '🕖', // 7:00
+    '🕗', // 8:00
+    '🕘', // 9:00
+    '🕙', // 10:00
+    '🕚', // 11:00
+    '🕛'  // 12:00
+];
+
+
+
+// Utility: encode number (bigint or string) to a charlist base
+function encodeToBase(n, b, set = "nums") {
+    let charlist;
+    if (set === "nums") {
+        charlist = chars;
+    } else if (set === "arrows") {
+        charlist = arrows;
+    } else if (set === "emoji") {
+        charlist = (typeof emojiList !== 'undefined' ? emojiList : []);
+    } else if (set === "braille") {
+        charlist = braille;
+    } else if (set === "brackets") {
+        charlist = brackets;
+    } else if (set === "clocks") {
+        charlist = clocks;
+    } else {
+        charlist = chars;
     }
-
-    if (base < 2n || base > BigInt(chars.length)) return "(base out of supported range)";
-
+    let num, base;
+    try { num = BigInt(n); base = BigInt(b); } catch (e) { return "(invalid input)"; }
+    if (base < 2n || base > BigInt(charlist.length)) return "(base out of supported range)";
     let isNegative = false;
-    if (num < 0n) {
-        isNegative = true;
-        num = -num;
-    }
-
-    if (num === 0n) return chars[0];
-
+    if (num < 0n) { isNegative = true; num = -num; }
+    if (num === 0n) return charlist[0];
     let encodedDigits = [];
     while (num > 0n) {
         const rem = num % base;
-        encodedDigits.push(chars[Number(rem)]);
+        encodedDigits.push(charlist[Number(rem)]);
         num = num / base;
     }
     let encoded = encodedDigits.reverse().join('');
     return isNegative ? '-' + encoded : encoded;
 }
 
-function encodeStuff() {
-    // Get and trim user input
-    const value = numberInput.value.trim();
-    const baseVal = baseInput.value.trim();
-
-    // Input presence check
-    if (value === "") {
-        outputDiv.textContent = "Output: (input needed)";
-        return;
+// Utility: split a string into emoji-segments according to emojiList
+function splitEmojiStringByList(str, emojiArr) {
+    // Build a regex that matches any emoji in emojiArr, sorted by length descending (greedy longest match)
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Sort by decreasing emoji string length
+    const sortedEmoji = [...emojiArr].sort((a, b) => b.length - a.length);
+    // Group identical length emojis into alternation blocks for perf
+    let pattern = '';
+    let lengths = {};
+    for (const emoji of sortedEmoji) {
+        if (!lengths[emoji.length]) lengths[emoji.length] = [];
+        lengths[emoji.length].push(esc(emoji));
     }
-    if (baseVal === "") {
-        outputDiv.textContent = "Output: (base needed)";
-        return;
+    pattern = Object.keys(lengths)
+        .sort((a, b) => b - a)
+        .map(len => lengths[len].join('|'))
+        .join('|');
+    // Safe fallback: greedy matching with regex alternation
+    const re = new RegExp(pattern, "gu");
+    let out = [];
+    let m;
+    let idx = 0;
+    let tries = 0;
+    // Remove all invisible characters (fix ZWJ, VS16, etc visual bugs)
+    let cleaned = [...str].filter(c => /\S|\p{Extended_Pictographic}/u.test(c)).join('');
+    let matches = cleaned.match(re);
+    if (!matches) return [];
+    // Walk the string, matching left-to-right
+    let cursor = 0;
+    while (cursor < cleaned.length && tries < 10000) {
+        let foundMatch = false;
+        for (const emoji of sortedEmoji) {
+            if (cleaned.slice(cursor, cursor + emoji.length) === emoji) {
+                out.push(emoji);
+                cursor += emoji.length;
+                foundMatch = true;
+                break;
+            }
+        }
+        if (!foundMatch) {
+            // Maybe a skin tone or ZWJ sequence? Try single char.
+            out.push(cleaned[cursor]);
+            cursor++;
+        }
+        tries++;
     }
-    if (!/^-?[0-9]+$/.test(value)) {
-        outputDiv.textContent = "Input needs to be a number.";
-        return;
-    }
-
-    if (!/^[0-9-]+$/.test(baseVal)) {
-        outputDiv.textContent = "Base needs to be a number.";
-        return;
-    }
-
-    let baseNum;
-    try {
-        baseNum = BigInt(baseVal);
-    } catch(e) {
-        outputDiv.textContent = "Base needs to be a number.";
-        return;
-    }
-    if (baseNum > BigInt(chars.length)) {
-        outputDiv.textContent = "Maximum supported base is " + chars.length;
-        return;
-    }
-    if (baseNum < BigInt(2)) {
-        outputDiv.textContent = "Minimum base is 2."
-        return
-    }
-
-    outputDiv.textContent = "Output: " + encodeToBase(value, baseVal);
+    // Remove "matches" that are not in emojiArr, or that are only single characters not found in arr
+    return out.filter(e => emojiArr.indexOf(e) !== -1);
 }
 
-function decodeFromBase(n, b) {
-    const nStr = n.toString();
+// Utility: decode a string in charlist base to bigint (Updated EMOJI handling!)
+function decodeFromBase(n, b, set = "nums") {
+    let charlist;
+    if (set === "nums") {
+        charlist = chars;
+    } else if (set === "arrows") {
+        charlist = arrows;
+    } else if (set === "emoji") {
+        charlist = (typeof emojiList !== 'undefined' ? emojiList : []);
+    } else if (set === "braille") {
+        charlist = braille;
+    } else if (set === "brackets") {
+        charlist = brackets;
+    } else if (set === "clocks") {
+        charlist = clocks;
+    } else {
+        charlist = chars;
+    }
     const base = BigInt(b);
+    if (base < 2n || base > BigInt(charlist.length)) {
+        throw new Error("(base out of supported range)");
+    }
+    let nStr = String(n);
+    let isNegative = false;
+    if (nStr.startsWith('-')) {
+        isNegative = true;
+        nStr = nStr.slice(1);
+    }
+
+    let digitsArr;
+    if (set === "emoji") {
+        // --- GREEDY SPLIT BY EMOJIS FROM EMOJILIST ---
+        if (!(Array.isArray(charlist) && charlist.length > 0)) {
+            throw new Error("emojiList missing or empty");
+        }
+        digitsArr = splitEmojiStringByList(nStr, charlist);
+        if (digitsArr.length === 0 && nStr.length !== 0) {
+            throw new Error("Invalid emoji input: can't parse as emoji using configured emoji set.");
+        }
+    } else if(set === "clocks") {
+        // Greedy split by known clock emoji set
+        digitsArr = splitEmojiStringByList(nStr, charlist);
+        if (digitsArr.length === 0 && nStr.length !== 0) {
+            throw new Error("Invalid clocks input: can't parse as clocks using configured clock set.");
+        }
+    } else {
+        digitsArr = nStr.split("");
+    }
 
     let output = BigInt(0);
     let power = BigInt(1);
-
-    for (let i = nStr.length - 1; i >= 0; i--) {
-        const digit = chars.indexOf(nStr.charAt(i));
+    for (let i = digitsArr.length - 1; i >= 0; i--) {
+        let digit = charlist.indexOf(digitsArr[i]);
         if (digit === -1) {
             throw new Error("Invalid digit in input string for decoding.");
         }
         output += BigInt(digit) * power;
         power *= base;
     }
-
-    return output;
+    return isNegative ? output * -1n : output;
 }
 
-function decodeStuff() {
-    const value2 = numberInput2.value.trim();
-    const baseVal2 = baseInput2.value.trim();
+// Utility: encode BigInt to emoji base
+function encodeToEmoji(bi) {
+    if (typeof emojiList === "undefined" || !Array.isArray(emojiList) || !emojiList.length)
+        return "(emojiList not loaded)";
+    return encodeToBase(bi, emojiList.length, "emoji");
+}
 
-                if (value2 === "") {
-                    outputDiv2.textContent = "Output: (input needed)";
-                    return;
-                }
-                if (baseVal2 === "") {
-                    outputDiv2.textContent = "Output: (base needed)";
-                    return;
-                }
-                if (/\s/.test(value2)) {
-                    outputDiv2.textContent = "Input cannot contain spaces.";
-                    return;
-                }
-                if (!/^[0-9-]+$/.test(baseVal2)) {
-                    outputDiv2.textContent = "Base needs to be a number.";
-                    return;
-                }
-                let baseNum2;
-                try {
-                    baseNum2 = BigInt(baseVal2);
-                } catch(e) {
-                    outputDiv2.textContent = "Base needs to be a number.";
-                    return;
-                }
-                if (baseNum2 > BigInt(chars.length)) {
-                    outputDiv2.textContent = "Maximum supported base is " + chars.length;
-                    return;
-                }
-                if (baseNum2 < BigInt(2)) {
-                    outputDiv2.textContent = "Minimum base is 2.";
-                    return;
-                }
+// --- Emoji Encrypt according to new spec ---
+// Take the input, interpret as base-100 (using digits 0-9), convert to BigInt (decodeFromBase), then to base 10 string, then encode to emojis
+function emojiEncryptBase100ToEmoji(input) {
+    let str = input
+    try {
+        let base100Value = decodeFromBase(str, 100, "nums");
+        let base10str = encodeToBase(base100Value, 10, "nums");
+        let finalBigInt = BigInt(base10str);
+        return encodeToEmoji(finalBigInt);
+    } catch (e) {
+        return "(emoji encrypt failed: " + (e && e.message || String(e)) + ")";
+    }
+}
+// --- Emoji STR decode ---
+function emojiDecryptEmojiToBase100(str) {
+    if (typeof emojiList === "undefined" || !Array.isArray(emojiList) || !emojiList.length)
+        return "(emojiList not loaded)";
+    try {
+        let bi = decodeFromBase((str || '').trim(), emojiList.length, "emoji");
+        return bi.toString();
+    } catch (e) {
+        return "(invalid emoji input)";
+    }
+}
 
-    // Check that every character in value2 is in the charset for the base
-    let allowedChars = chars.slice(0, Number(baseNum2));
-    for (let c of value2) {
-        if (!allowedChars.includes(c)) {
-            outputDiv2.textContent = "At least one character is outside of this base's range.";
-            return;
+// ==================== ENCODERS ====================
+const ENCODERS = [
+    {
+        name: "Base-N",
+        id: "baseN",
+        inputSpec: [
+            { name: "Number", id: "number", type: "numberstr", placeholder: "e.g. 42.12 or -123", required: true },
+            { name: "Base", id: "base", type: "base", placeholder: "e.g. 16", min: 2, max: chars.length, required: true }
+        ],
+        encode: (opts) => {
+            if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input needs to be a valid number)";
+            let baseNum = Number(opts.base);
+            if (!Number.isSafeInteger(baseNum) || baseNum < 2 || baseNum > chars.length)
+                return `(base must be 2-${chars.length})`;
+            if (/\./.test(opts.number)) return "(decimals not implemented)";
+            return encodeToBase(opts.number, baseNum, "nums");
+        }
+    },
+    {
+        name: "Morse Code",
+        id: "morse",
+        inputSpec: [
+            { name: "Text", id: "text", type: "string", placeholder: "Type text to encode", required: true }
+        ],
+        encode: (opts) => {
+            // Split on characters, but preserve line breaks and spaces as distinct "words"
+            // and split into words, then individually encode characters within words
+            return opts.text
+                .toUpperCase()
+                .split(/(\s+)/) // include spaces in array for word separation
+                .map(wordOrSpace => {
+                    // If it's just whitespace, keep as is (convert space to '/')
+                    if (/^\s+$/.test(wordOrSpace)) {
+                        // For whitespace, convert spaces to '/' as per MORSE_TABLE
+                        return wordOrSpace.replace(/ /g, MORSE_TABLE[" "]);
+                    }
+                    // Otherwise, encode as morse
+                    return wordOrSpace
+                        .split("")
+                        .map(char => MORSE_TABLE[char] ?? "?")
+                        .join(" ");
+                })
+                .join(" "); // Separate encoded-words properly
+        }
+
+    },
+    {
+        name: "Base-😀",
+        id: "emoji",
+        inputSpec: [
+            { name: "Number", id: "number", type: "numberstr", placeholder: "e.g. 123.45", required: true }
+        ],
+        encode: (opts) => {
+            if (typeof emojiList === "undefined" || !Array.isArray(emojiList) || !emojiList.length)
+                return "(emojiList not loaded)";
+            if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input must be a valid number)";
+            if (opts.number.includes('.')) return "(not implemented for decimals)";
+            return encodeToBase(opts.number, emojiList.length, "emoji");
+        }
+    },
+    {
+        name: "Emoji Encrypt",
+        id: "emoji-encrypt",
+        inputSpec: [
+            { name: "Text", id: "digits", type: "numberstr", placeholder: "e.g. 01020304 (grouped as 2 digits)", required: true }
+        ],
+        encode: (opts) => {
+            return emojiEncryptBase100ToEmoji(opts.digits);
+        }
+    },
+    {
+        name: "Clock Notation",
+        id: "clocks",
+        inputSpec: [
+            { name: "Number", id: "number", type: "numberstr", placeholder: "e.g. 123", required: true }
+        ],
+        encode: (opts) => {
+            if (!/^-?(\d+)$/.test(opts.number)) return "(input must be a valid integer number)";
+            return encodeToBase(opts.number, clocks.length, "clocks");
+        }
+    },
+    {
+        name: "Arrow Notation",
+        id: "arrows",
+        inputSpec: [
+            { name: "Number", id: "number", type: "numberstr", placeholder: "e.g. 123.45", required: true }
+        ],
+        encode: (opts) => {
+            if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input must be a valid number)";
+            if (opts.number.includes('.')) return "(not implemented for decimals)";
+            return encodeToBase(opts.number, arrows.length, "arrows");
+        }
+    },
+    {
+        name: "Braille Notation",
+        id: "braille",
+        inputSpec: [
+            { name: "Number", id: "number", type: "numberstr", placeholder: "e.g. 123.45", required: true }
+        ],
+        encode: (opts) => {
+            if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input must be a valid number)";
+            if (opts.number.includes('.')) return "(not implemented for decimals)";
+            return encodeToBase(opts.number, braille.length, "braille");
+        }
+    },
+    {
+        name: "Bracket Notation",
+        id: "brackets",
+        inputSpec: [
+            { name: "Number", id: "number", type: "numberstr", placeholder: "e.g. 123.45", required: true }
+        ],
+        encode: (opts) => {
+            if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input must be a valid number)";
+            if (opts.number.includes('.')) return "(not implemented for decimals)";
+            return encodeToBase(opts.number, brackets.length, "brackets");
         }
     }
+];
 
-    try {
-        outputDiv2.textContent = "Output: " + decodeFromBase(value2, baseVal2);
-    } catch (e) {
-        outputDiv2.textContent = e.message;
-    }
-}
-
-            if (numberInput && baseInput)
-            {
-                numberInput.addEventListener("input", encodeStuff);
-                baseInput.addEventListener("input", encodeStuff);
-            }
-            if (numberInput2 && baseInput2)
-            {
-                numberInput2.addEventListener("input", decodeStuff);
-                baseInput2.addEventListener("input", decodeStuff)
+// ==================== DECODERS (no encode language!) ====================
+const DECODERS = [
+    {
+        name: "Base-N",
+        id: "baseN",
+        inputSpec: [
+            { name: "Input (Base-N digits)", id: "input", type: "string", placeholder: "Encoded value", required: true },
+            { name: "Base", id: "base", type: "base", placeholder: "e.g. 16", min: 2, max: chars.length, required: true }
+        ],
+        decode: (opts) => {
+            if (!opts.input) return "(no input)";
+            let baseNum = Number(opts.base);
+            if (!Number.isSafeInteger(baseNum) || baseNum < 2 || baseNum > chars.length)
+                return `(base must be 2-${chars.length})`;
+            try {
+                let bi = decodeFromBase(opts.input, baseNum, "nums");
+                return bi.toString();
+            } catch (e) {
+                return "(invalid input for base-N decode)";
             }
         }
     },
     {
         name: "Morse Code",
-        html: `
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 50px; left: 0; right: 0;">
-          <h2 style="margin-bottom: 5px;">Encode Text to Morse Code</h2>
-          <input id="morseEncodeInput" style="width: 250px; margin-bottom: 5px;" placeholder="Text">
-          <div id="morseOutput" style="margin-top: 5px; width: fit-content; max-width: 300px; word-break: break-word; overflow-wrap: break-word;">Encoded outputs here</div>
-          <h2 style="margin-bottom: 5px;">Decode Morse Code to Text</h2>
-          <input id="morseDecodeInput" style="width: 250px; margin-bottom: 5px;" placeholder="Morse">
-          <div id="morseOutput2" style="margin-top: 5px; width: fit-content; max-width: 300px; word-break: break-word; overflow-wrap: break-word;">Decoded outputs here</div>
-          </div>
-        `,
-        setup: function() {
-            // wire up events for Morse encoding/decoding
-            const morseEncodeInput = document.getElementById("morseEncodeInput");
-            const morseDecodeInput = document.getElementById("morseDecodeInput");
-            const morseOutput = document.getElementById("morseOutput");
-            const morseOutput2 = document.getElementById("morseOutput2");
-            // Basic Morse Code Table
-            const morseTable = {
-                "A": ".-",    "B": "-...",  "C": "-.-.",  "D": "-..",
-                "E": ".",     "F": "..-.",  "G": "--.",   "H": "....",
-                "I": "..",    "J": ".---",  "K": "-.-",   "L": ".-..",
-                "M": "--",    "N": "-.",    "O": "---",   "P": ".--.",
-                "Q": "--.-",  "R": ".-.",   "S": "...",   "T": "-",
-                "U": "..-",   "V": "...-",  "W": ".--",   "X": "-..-",
-                "Y": "-.--",  "Z": "--..",
-                "0": "-----", "1": ".----", "2": "..---", "3": "...--",
-                "4": "....-", "5": ".....", "6": "-....", "7": "--...",
-                "8": "---..", "9": "----.",
-                ".": ".-.-.-", ",": "--..--", "?": "..--..", "'": ".----.",
-                "!": "-.-.--", "/": "-..-.", "(": "-.--.", ")": "-.--.-",
-                "&": ".-...", ":": "---...", ";": "-.-.-.", "=": "-...-",
-                "+": ".-.-.", "-": "-....-", "_": "..--.-", "\"": ".-..-.",
-                "$": "...-..-", "@": ".--.-.", " ": "/"
-            };
-            const reverseMorseTable = {};
-            for (const [k, v] of Object.entries(morseTable)) {
-                reverseMorseTable[v] = k;
+        id: "morse",
+        inputSpec: [
+            { name: "Morse Code", id: "morse", type: "string", placeholder: "Enter morse (letters separated by spaces)", required: true }
+        ],
+        decode: (opts) => {
+            let chunks = (opts.morse || "").split(" ");
+            return chunks.map(c => REVERSE_MORSE_TABLE[c] ?? "?").join("");
+        }
+    },
+    {
+        name: "Base-😀",
+        id: "emoji",
+        inputSpec: [
+            { name: "Base-😀 Goes Here", id: "emoji", type: "emoji", placeholder: "…" , required: true }
+        ],
+        decode: (opts) => {
+            if (typeof emojiList === "undefined" || !Array.isArray(emojiList) || !emojiList.length)
+                return "(emojiList not loaded)";
+            try {
+                // Use fixed greedy emoji splitting
+                let bi = decodeFromBase(opts.emoji, emojiList.length, "emoji");
+                return bi.toString();
+            } catch (e) {
+                return "(invalid emoji input)";
             }
-            function encodeToMorse(text) {
-                return text
-                    .toUpperCase()
-                    .split("")
-                    .map(char => morseTable[char] ?? "?")
-                    .join(" ");
+        }
+    },
+    {
+        name: "Emoji Decrypt",
+        id: "emoji-decrypt",
+        inputSpec: [
+            { name: "Base-😀", id: "emoji", type: "emoji", placeholder: "…" , required: true }
+        ],
+        decode: (opts) => {
+            let bi = decodeFromBase(opts.emoji, emojiList.length, "emoji");
+            bi = encodeToBase(bi,100)
+            return bi.toString();
+        }
+    },
+    {
+        name: "Clock Notation",
+        id: "clocks",
+        inputSpec: [
+            { name: "Clock String", id: "input", type: "string", placeholder: "Clock emojis", required: true }
+        ],
+        decode: (opts) => {
+            try {
+                let bi = decodeFromBase(opts.input, clocks.length, "clocks");
+                return bi.toString();
+            } catch (e) {
+                return "(invalid clock input)";
             }
-            function decodeFromMorse(morse) {
-                return morse.split(" ").map(
-                    symbol => symbol === "/" ? " " : (reverseMorseTable[symbol] ?? "?")
-                ).join("");
+        }
+    },
+    {
+        name: "Arrow Notation",
+        id: "arrows",
+        inputSpec: [
+            { name: "Arrow String", id: "input", type: "string", placeholder: "Arrow symbols", required: true }
+        ],
+        decode: (opts) => {
+            try {
+                let bi = decodeFromBase(opts.input, arrows.length, "arrows");
+                return bi.toString();
+            } catch (e) {
+                return "(invalid arrow input)";
             }
-            morseEncodeInput?.addEventListener("input", function() {
-                let text = morseEncodeInput.value;
-                morseOutput.textContent = "Output: " + encodeToMorse(text);
-            });
-            morseDecodeInput?.addEventListener("input", function() {
-                let code = morseDecodeInput.value;
-                morseOutput2.textContent = "Output: " + decodeFromMorse(code);
-            });
+        }
+    },
+    {
+        name: "Braille Notation",
+        id: "braille",
+        inputSpec: [
+            { name: "Braille String", id: "input", type: "string", placeholder: "Braille unicode", required: true }
+        ],
+        decode: (opts) => {
+            try {
+                let bi = decodeFromBase(opts.input, braille.length, "braille");
+                return bi.toString();
+            } catch (e) {
+                return "(invalid braille input)";
+            }
+        }
+    },
+    {
+        name: "Bracket Notation",
+        id: "brackets",
+        inputSpec: [
+            { name: "Bracket String", id: "input", type: "string", placeholder: "Bracket symbols", required: true }
+        ],
+        decode: (opts) => {
+            try {
+                let bi = decodeFromBase(opts.input, brackets.length, "brackets");
+                return bi.toString();
+            } catch (e) {
+                return "(invalid bracket input)";
+            }
         }
     }
 ];
 
-let currentCoderIdx = 0;
-let prevCoderIdx = null;
-let fadeTimeout = null;
+// Morse tables for conversion
+const MORSE_TABLE = {
+    "A": ".-",    "B": "-...",  "C": "-.-.",  "D": "-..",
+    "E": ".",     "F": "..-.",  "G": "--.",   "H": "....",
+    "I": "..",    "J": ".---",  "K": "-.-",   "L": ".-..",
+    "M": "--",    "N": "-.",    "O": "---",   "P": ".--.",
+    "Q": "--.-",  "R": ".-.",   "S": "...",   "T": "-",
+    "U": "..-",   "V": "...-",  "W": ".--",   "X": "-..-",
+    "Y": "-.--",  "Z": "--..",
+    "0": "-----", "1": ".----", "2": "..---", "3": "...--",
+    "4": "....-", "5": ".....", "6": "-....", "7": "--...",
+    "8": "---..", "9": "----.",
+    ".": ".-.-.-", ",": "--..--", "?": "..--..", "'": ".----.",
+    "!": "-.-.--", "/": "-..-.", "(": "-.--.", ")": "-.--.-",
+    "&": ".-...", ":": "---...", ";": "-.-.-.", "=": "-...-",
+    "+": ".-.-.", "-": "-....-", "_": "..--.-", "\"": ".-..-.",
+    "$": "...-..-", "@": ".--.-.", " ": "/"
+};
+const REVERSE_MORSE_TABLE = (() => {
+    let t = {};
+    for (const [k, v] of Object.entries(MORSE_TABLE)) t[v] = k;
+    return t;
+})();
 
-function showCoder(idx) {
-    const container = document.getElementById("coder-container");
-    if (!container) return;
+// ---------- UI HELPER ----------
 
-    // New implementation: Keep old coder-section divs for fade-out
-    // If it's already built, just update active/fading classes
-
-    let coderSections = Array.from(container.getElementsByClassName("coder-section"));
-
-    // Mark current active as fading (start fadeout)
-    coderSections.forEach((section, i) => {
-        if (section.classList.contains("active")) {
-            section.classList.remove("active");
-            section.classList.add("fading");
-            setTimeout(() => {
-                // After fade completes, remove the element if not re-activated
-                if (!section.classList.contains("active")) {
-                    section.remove();
-                }
-            }, 500); // match the CSS transition speed
-        } else if (section.classList.contains("fading")) {
-            // Already fading, do nothing
-        } else {
-            // Remove any lingering class
-            section.classList.remove("active");
-            section.classList.remove("fading");
+function makeInputField(spec, value, onInput) {
+    let input;
+    if (spec.type === "numberstr" || spec.type === "basestr" || spec.type === "base" || spec.type === "emoji") {
+        input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = spec.placeholder || "";
+        if (spec.type === "base") {
+            input.pattern = "\\d+";
+            input.inputMode = "numeric";
+            if ("min" in spec) input.min = spec.min;
+            if ("max" in spec) input.max = spec.max;
         }
-    });
-
-    // Add the new active coder if not present
-    let activeSection = coderSections.find(
-        (section, i) => Number(section.dataset.coderIdx) === idx
-    );
-    if (!activeSection) {
-        // Create a new coder-section for the selected coder
-        let section = document.createElement("div");
-        section.className = "coder-section active";
-        section.setAttribute("data-coder-idx", idx);
-        section.innerHTML =
-            "<h1 style='text-align:center'>" +
-            coders[idx].name +
-            "</h1>" +
-            coders[idx].html;
-        container.appendChild(section);
-
-        // Call coder setup after DOM insertion so it finds the right DOM elements
-        coders[idx].setup();
+    } else if (spec.type === "string") {
+        input = document.createElement("textarea");
+        input.placeholder = spec.placeholder || "";
     } else {
-        // Section is already present (possibly fading); reactivate it
-        activeSection.classList.remove("fading");
-        activeSection.classList.add("active");
-        coders[idx].setup();
+        input = document.createElement("input");
+        input.type = "text";
     }
+    input.id = "input-" + spec.id;
+    input.value = value||"";
+    input.required = !!spec.required;
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    input.style.marginBottom = "8px";
+    input.addEventListener("input", onInput);
+    return input;
 }
 
-function clampCoderIdx(idx) {
-    return ((idx % coders.length) + coders.length) % coders.length;
+function buildInputs(container, inputSpec, inputState, onInput) {
+    container.innerHTML = "";
+    inputSpec.forEach(spec => {
+        let wrapper = document.createElement("div");
+        wrapper.className = "iwrap";
+        let label = document.createElement("label");
+        label.htmlFor = "input-" + spec.id;
+        label.textContent = spec.name + ": ";
+        wrapper.appendChild(label);
+        let inp = makeInputField(spec, inputState[spec.id]||"", (e) => {
+            inputState[spec.id] = e.target.value;
+            onInput();
+        });
+        wrapper.appendChild(inp);
+        container.appendChild(wrapper);
+    });
 }
 
-function gotoCoder(idx) {
-    if (idx === currentCoderIdx) return;
-    prevCoderIdx = currentCoderIdx;
-    currentCoderIdx = clampCoderIdx(idx);
-    showCoder(currentCoderIdx);
+function renderOutput(block, out, prefix = "Output: ") {
+    if (typeof out === "undefined" || out === null || out === "") block.textContent = prefix;
+    else block.textContent = prefix + out;
 }
+
+// --------- PAGE LOGIC ---------
+
+function populateDropdown(drop, arr) {
+    drop.innerHTML = "";
+    arr.forEach(fn => {
+        let opt = document.createElement("option");
+        opt.value = fn.id;
+        opt.textContent = fn.name;
+        drop.appendChild(opt);
+    });
+}
+
+// ---------- APP INIT ----------
 
 window.addEventListener("DOMContentLoaded", function() {
-    // Setup initial coders
-    showCoder(currentCoderIdx);
+    // UI Elements
+    const encodeDropdown = document.getElementById("encoder-select");
+    const decodeDropdown = document.getElementById("decoder-select");
+    const encodeInputs = document.getElementById("encode-inputs");
+    const decodeInputs = document.getElementById("decode-inputs");
+    const encodeOutput = document.getElementById("encode-output");
+    const decodeOutput = document.getElementById("decode-output");
+    // ========== TIME ENCODE TOP RIGHT ==========
+    const encodedTimeDiv = document.getElementById("current-time-encoded");
 
-    document.getElementById("nextbtn").addEventListener("click", () => {
-        gotoCoder(currentCoderIdx + 1);
+    // State
+    let encodeState = {};
+    let decodeState = {};
+    let curEncoderIdx = 0;
+    let curDecoderIdx = 0;
+
+    populateDropdown(encodeDropdown, ENCODERS);
+    populateDropdown(decodeDropdown, DECODERS);
+
+    // ----------- encode setup ------------
+    function handleEncodeInputChange() {
+        const encoder = ENCODERS[curEncoderIdx];
+        let haveAll = encoder.inputSpec.every(s => !s.required || encodeState[s.id]);
+        if (haveAll) {
+            try {
+                renderOutput(encodeOutput, encoder.encode(encodeState));
+            } catch (e) {
+                renderOutput(encodeOutput, e.message || String(e));
+            }
+        } else {
+            renderOutput(encodeOutput, "");
+        }
+    }
+    function rebuildEncodeInputs() {
+        const encoder = ENCODERS[curEncoderIdx];
+        encodeState = {};
+        buildInputs(encodeInputs, encoder.inputSpec, encodeState, handleEncodeInputChange);
+        handleEncodeInputChange();
+    }
+
+    encodeDropdown.addEventListener("change", function() {
+        curEncoderIdx = encodeDropdown.selectedIndex;
+        rebuildEncodeInputs();
     });
-    document.getElementById("prevbtn").addEventListener("click", () => {
-        gotoCoder(currentCoderIdx - 1);
+    rebuildEncodeInputs();
+
+    // ----------- decode setup ------------
+    function handleDecodeInputChange() {
+        const decoder = DECODERS[curDecoderIdx];
+        let haveAll = decoder.inputSpec.every(s => !s.required || decodeState[s.id]);
+        if (haveAll) {
+            try {
+                renderOutput(decodeOutput, decoder.decode(decodeState), "Decoded: ");
+            } catch (e) {
+                renderOutput(decodeOutput, e.message || String(e), "Decoded: ");
+            }
+        } else {
+            renderOutput(decodeOutput, "", "Decoded: ");
+        }
+    }
+    function rebuildDecodeInputs() {
+        const decoder = DECODERS[curDecoderIdx];
+        decodeState = {};
+        buildInputs(decodeInputs, decoder.inputSpec, decodeState, handleDecodeInputChange);
+        handleDecodeInputChange();
+    }
+
+    decodeDropdown.addEventListener("change", function() {
+        curDecoderIdx = decodeDropdown.selectedIndex;
+        rebuildDecodeInputs();
     });
+    rebuildDecodeInputs();
+
+    // ====== Animated Time Encode Box (top right) =======
+    // Figure out the current "encoder": base and charset
+    function getCurrentEncoderInfo() {
+        const encoder = ENCODERS[curEncoderIdx];
+        // Use the current encoder's ID to select settings.
+        // Support: "baseN", "emoji", "clocks", "arrows", "braille", "brackets"
+        if (encoder.id === "baseN") {
+            // Use base from input (fallback to 10)
+            let bn = 10; 
+            if (encodeState.base) {
+                let baseNum = Number(encodeState.base);
+                if (!isNaN(baseNum) && baseNum >= 2 && baseNum <= chars.length) bn = baseNum;
+            }
+            return { base: bn, set: "nums" };
+        } else if (encoder.id === "emoji") {
+            // emojiList must be loaded and valid
+            if (typeof emojiList !== "undefined" && Array.isArray(emojiList) && emojiList.length)
+                return { base: emojiList.length, set: "emoji" };
+            else
+                return { base: 10, set: "nums" };
+        } else if (encoder.id === "clocks") {
+            return { base: clocks.length, set: "clocks" };
+        } else if (encoder.id === "arrows") {
+            return { base: arrows.length, set: "arrows" };
+        } else if (encoder.id === "braille") {
+            return { base: braille.length, set: "braille" };
+        } else if (encoder.id === "brackets") {
+            return { base: brackets.length, set: "brackets" };
+        } else {
+            return { base: 10, set: "nums" };
+        }
+    }
+
+    function encodeCurrentTimeString() {
+        // Instead of milliseconds since 2000, use milliseconds of the hour
+        // That is, get current hour, calculate ms since the hour started
+        const now = new Date();
+        const msOfHour = now.getMinutes() * 60000 + now.getSeconds() * 1000 + now.getMilliseconds();
+        const { base, set } = getCurrentEncoderInfo();
+        try {
+            return encodeToBase(msOfHour*10, base, set);
+        } catch(e) {
+            return "(error)";
+        }
+    }
+
+    function updateTimeEncodedBox() {
+        // Show base and charset
+        const { base, set } = getCurrentEncoderInfo();
+        let charsetLabel =
+            set === "nums" ? "0-9a-z" :
+            set === "emoji" ? "😀" :
+            set === "clocks" ? "🕐" :
+            set === "arrows" ? "→" :
+            set === "braille" ? "⠁" :
+            set === "brackets" ? "()" :
+            set;
+        const enc = encodeCurrentTimeString();
+        encodedTimeDiv.textContent =
+            `${enc}`;
+        // Optionally, display settings or base info:
+        // encodedTimeDiv.title = `Base: ${base} | Set: ${charsetLabel}`;
+    }
+
+    function stepTimeEncodedBox() {
+        updateTimeEncodedBox();
+        requestAnimationFrame(stepTimeEncodedBox);
+    }
+
+    // Wait for emojiList to be loaded (if needed), then start ticking.
+    if (typeof emojiList === 'undefined') {
+        // Wait for window.emojiList from emojis.js (async load)
+        let waitEmoji = setInterval(() => {
+            if (typeof emojiList !== 'undefined') {
+                clearInterval(waitEmoji);
+                stepTimeEncodedBox();
+            }
+        }, 50);
+        // But start ticking anyway (for non-emoji sets)
+        stepTimeEncodedBox();
+    } else {
+        stepTimeEncodedBox();
+    }
 });
+
 </script>
+</body>
 </html>
