@@ -109,24 +109,22 @@ function draw() {
         let tipX = canvas.width / 2;
         let tipY = canvas.height - 300;
 
-
-        let segments = 60;
         let currX = tipX;
         let currY = tipY;
         let stepLength = 10;
 
         let particleTouchedMouse = false;
-        for (let i = 0; i < segments; i++) {
 
+        let safetyCounter = 0;
+        while (!particleTouchedMouse && safetyCounter < 2000) {
+            safetyCounter++;
             let dx = mouseX - currX;
             let dy = mouseY - currY;
             let dist = Math.hypot(dx, dy);
 
-
             if (!particleTouchedMouse && dist < stepLength) {
                 particleTouchedMouse = true;
-                for (let j = 0; j < 20; j++) {
-
+                for (let j = 0; j < 10+safetyCounter/2.5; j++) {
                     let baseAngle = Math.atan2(dy, dx);
                     let jitter = (Math.random() - 0.5) * (Math.PI / 3) * 4;
                     let angle = baseAngle + jitter;
