@@ -11,7 +11,6 @@
         background-size: cover;
         background-repeat: no-repeat;
         background-position: center;
-   
       }
       #background-layer {
         position: fixed;
@@ -98,7 +97,7 @@
 
     // Start position and state variables, moved to allow resetting via initpos
     let px, py, yv, xv, camy, t, fuelUsed, platformsDrawn, grounded, dir, firstmove, delta;
-    const maxHold = 24;
+    const maxHold = 26.;
     let jumptimer = 0;
     const baseFps = 60;
 
@@ -157,6 +156,8 @@
 
     let collided = 0;
 
+    // -- REFACTORED COLLISION-PLATFORM LOGIC: Use swept AABB style
+
     function platform(x, y) {
       ctx.fillStyle = "#fff";
       ctx.fillRect(
@@ -171,8 +172,6 @@
       const playerWidth = 80;
       const playerHeight = 50;
       const feetOffset = -25;
-      const prevFeetY = py - yv - playerHeight / 2 + feetOffset;
-      const curFeetY = py - playerHeight / 2 + feetOffset;
       const playerLeft = px - playerWidth / 2 + 12;
       const playerRight = px + playerWidth / 2 - 12;
       const platLeft = x - 50;
@@ -180,24 +179,35 @@
       const platTop = y;
       const platBottom = y + 10;
 
-      if (
-        yv < 0 &&
-        prevFeetY > platTop &&
-        curFeetY <= platTop &&
-        playerRight > platLeft &&
-        playerLeft < platRight
-      ) {
-        py = platTop + playerHeight / 2 - feetOffset+0.1;
-        yv = yv/2;
-        collided++;
-      } else if (
-        Math.abs(curFeetY - platTop) < 2 &&
-        playerRight > platLeft &&
-        playerLeft < platRight &&
-        yv <= 0
-      ) {
-        py = platTop + playerHeight / 2 - feetOffset+0.1;
-        collided++;
+      // Calculate previous and current foot locations accurately
+      // vdelta: how far the player actually moved since last frame
+      let stepY = yv * delta * baseFps;
+      const prevFeetY = py - stepY - playerHeight / 2 + feetOffset;
+      const curFeetY = py - playerHeight / 2 + feetOffset;
+
+      // Only check if player is moving down (yv <= 0)
+      if (yv <= 0) {
+        // Swept AABB: did the foot pass the top of platform this frame?
+        if (
+          prevFeetY > platTop &&
+          curFeetY <= platTop &&
+          playerRight > platLeft &&
+          playerLeft < platRight
+        ) {
+          py = platTop + playerHeight / 2 - feetOffset + 0.01;
+          yv = 0; // absorb full vertical speed
+          collided++;
+        }
+        // If the foot is right at the platform, also snap & stick
+        else if (
+          Math.abs(curFeetY - platTop) < 2 &&
+          playerRight > platLeft &&
+          playerLeft < platRight
+        ) {
+          py = platTop + playerHeight / 2 - feetOffset + 0.01;
+          yv = 0;
+          collided++;
+        }
       }
     }
 
@@ -250,14 +260,12 @@
     let lastTime = performance.now();
 
     function draw() {
-
       if (py < -1000) {
         initpos();
       }
 
-
       const now = performance.now();
-       delta = (now - lastTime) / 1000; // in seconds
+      delta = (now - lastTime) / 1000; // in seconds
       lastTime = now;
 
       // Clamp delta to prevent jumps on tab switch etc.
@@ -275,8 +283,8 @@
 
       // gravity, divided by fps
       yv -= (0.4 * delta * baseFps);
-      if (yv < -20) {
-        yv = -20;
+      if (yv < -30) {
+        yv = -30;
       }
 
       // divide velocities per frame by fps so the game speed does not depend on frame rate
