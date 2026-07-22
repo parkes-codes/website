@@ -88,7 +88,7 @@
             <option value="sinez">Sine-Z (oscillate)</option>
             <option value="diag">Diagonal Spin</option>
             <option value="sinexyz">Sine X+Y+Z (oscillate)</option>
-            <option value="siney_x">Sine(Y) + spin X</option>
+            <option value="siney_x">Sine(Y) + spin Y</option>
         </select>
     </div>
     <div class="hint">Upload an image - drag to spin, scroll to zoom</div>
@@ -220,12 +220,12 @@
                         z: Math.sin((t + 0.66) * 2 * Math.PI) * (Math.PI/3)
                     };
                 case "siney_x":
-                    // Y oscillates, X spins at constant rate
                     return {
-                        x: 0,
-                        y: Math.sin(t * 2 * Math.PI) * (Math.PI/4),
-                        z: 1 * Math.PI * t
+
+                   
                     };
+                   
+                    
                 default:
                     return {x: 0, y: 2 * Math.PI * t, z: 0};
             }
@@ -242,12 +242,20 @@
                         rotMode === "sinexy" ||
                         rotMode === "sinex" ||
                         rotMode === "sinez" ||
-                        rotMode === "sinexyz" ||
-                        rotMode === "siney_x"
+                        rotMode === "sinexyz"
                     ) {
                         let duration = 2.0;
                         let cycleT = (t % duration) / duration;
                         rot = getRotationFunc(rotMode, cycleT, duration);
+                    } else if (rotMode === "siney_x") {
+                        let duration = 2.0;
+                        let cycleT = (t % duration) / duration;
+
+                        rot = {
+                            x: Math.sin(cycleT * 2 * Math.PI) * (Math.PI * 3 / 8) , // Keep linear accumulation (not periodic!)
+                            y: 0.5 * Math.PI * t, // Sine y, 1.5x amplitude
+                            z: 0
+                        };
                     } else {
                         rot = (function() {
                             switch (rotMode) {
