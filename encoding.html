@@ -245,19 +245,49 @@ function encodeToBase(n, b, set = "nums") {
     } else {
         charlist = chars;
     }
-    let num, base;
-    try { num = BigInt(n); base = BigInt(b); } catch (e) { return "(invalid input)"; }
-    if (base < 2n || base > BigInt(charlist.length)) return "(base out of supported range)";
+    // Allow decimals: parse n as string, handle fractions
     let isNegative = false;
-    if (num < 0n) { isNegative = true; num = -num; }
-    if (num === 0n) return charlist[0];
-    let encodedDigits = [];
-    while (num > 0n) {
-        const rem = num % base;
-        encodedDigits.push(charlist[Number(rem)]);
-        num = num / base;
+    let numStr = String(n);
+    if (numStr.startsWith('-')) {
+        isNegative = true;
+        numStr = numStr.slice(1);
     }
-    let encoded = encodedDigits.reverse().join('');
+    let [intStr, fracStr] = numStr.split('.');
+    let intNum = BigInt(intStr || "0");
+    let base = BigInt(b);
+    if (base < 2n || base > BigInt(charlist.length)) return "(base out of supported range)";
+    let encodedDigits = [];
+    // Encode integer part
+    if (intNum === 0n) {
+        encodedDigits.push(charlist[0]);
+    } else {
+        let tempIntNum = intNum;
+        while (tempIntNum > 0n) {
+            const rem = tempIntNum % base;
+            encodedDigits.push(charlist[Number(rem)]);
+            tempIntNum = tempIntNum / base;
+        }
+        encodedDigits = encodedDigits.reverse();
+    }
+    // Encode fraction part
+    let encodedFrac = '';
+    if (fracStr && !/^0*$/.test(fracStr)) {
+        // Limit fractional precision to 12 places (arbitrary)
+        let frac = "0." + fracStr;
+        let value = Number(frac);
+        if (isNaN(value)) return "(invalid decimal input)";
+        let count = 0, limit = 12;
+        encodedFrac += '.';
+        while (value > 0 && count < limit) {
+            value = value * Number(b);
+            let digit = Math.floor(value);
+            encodedFrac += charlist[digit];
+            value = value - digit;
+            count++;
+        }
+        // Optionally trim trailing zeros in encoding
+    }
+    let encoded = encodedDigits.join('') + encodedFrac;
     return isNegative ? '-' + encoded : encoded;
 }
 
@@ -329,35 +359,53 @@ function decodeFromBase(n, b, set = "nums") {
         nStr = nStr.slice(1);
     }
 
-    let digitsArr;
+    // Handle decimals
+    let [intStr, fracStr] = nStr.split('.');
+    let intArr;
     if (set === "emoji") {
         if (!(Array.isArray(charlist) && charlist.length > 0)) {
             throw new Error("emojiList missing or empty");
         }
-        digitsArr = splitEmojiStringByList(nStr, charlist);
-        if (digitsArr.length === 0 && nStr.length !== 0) {
+        intArr = splitEmojiStringByList(intStr, charlist);
+        if (intArr.length === 0 && intStr.length !== 0) {
             throw new Error("Invalid emoji input: can't parse as emoji using configured emoji set.");
         }
     } else if(set === "clocks") {
-        digitsArr = splitEmojiStringByList(nStr, charlist);
-        if (digitsArr.length === 0 && nStr.length !== 0) {
+        intArr = splitEmojiStringByList(intStr, charlist);
+        if (intArr.length === 0 && intStr.length !== 0) {
             throw new Error("Invalid clocks input: can't parse as clocks using configured clock set.");
         }
     } else {
-        digitsArr = nStr.split("");
+        intArr = intStr.split("");
     }
 
     let output = BigInt(0);
     let power = BigInt(1);
-    for (let i = digitsArr.length - 1; i >= 0; i--) {
-        let digit = charlist.indexOf(digitsArr[i]);
+    for (let i = intArr.length - 1; i >= 0; i--) {
+        let digit = charlist.indexOf(intArr[i]);
         if (digit === -1) {
             throw new Error("Invalid digit in input string for decoding.");
         }
         output += BigInt(digit) * power;
         power *= base;
     }
-    return isNegative ? output * -1n : output;
+    // Decode fraction
+    let frac = 0;
+    if (fracStr && fracStr.length > 0) {
+        let divisor = Number(b);
+        let denom = divisor;
+        for (let i = 0; i < fracStr.length; i++) {
+            let c = fracStr[i];
+            let idx = charlist.indexOf(c);
+            if (idx === -1) break;
+            frac += idx / denom;
+            denom *= divisor;
+        }
+    }
+    let result = Number(output) + frac;
+    if (isNegative) result *= -1;
+    // Return as string to preserve decimals
+    return fracStr && fracStr.length > 0 ? result.toString() : (isNegative ? output * -1n : output);
 }
 
 function encodeToEmoji(bi) {
@@ -396,7 +444,7 @@ const ENCODERS = [
             let baseNum = Number(opts.base);
             if (!Number.isSafeInteger(baseNum) || baseNum < 2 || baseNum > chars.length)
                 return `(base must be 2-${chars.length})`;
-            if (/\./.test(opts.number)) return "(decimals not implemented)";
+            // Allow decimals (removed the restriction)
             return encodeToBase(opts.number, baseNum, "nums");
         }
     },
@@ -433,7 +481,7 @@ const ENCODERS = [
             if (typeof emojiList === "undefined" || !Array.isArray(emojiList) || !emojiList.length)
                 return "(emojiList not loaded)";
             if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input must be a valid number)";
-            if (opts.number.includes('.')) return "(not implemented for decimals)";
+            // Allow decimals (removed the restriction)
             return encodeToBase(opts.number, emojiList.length, "emoji");
         }
     },
@@ -456,7 +504,8 @@ const ENCODERS = [
             { name: "Number", id: "number", type: "numberstr", placeholder: "e.g. 123", required: true }
         ],
         encode: (opts) => {
-            if (!/^-?(\d+)$/.test(opts.number)) return "(input must be a valid integer number)";
+            if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input must be a valid number)";
+            // Allow decimals
             return encodeToBase(opts.number, clocks.length, "clocks");
         }
     },
@@ -468,7 +517,7 @@ const ENCODERS = [
         ],
         encode: (opts) => {
             if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input must be a valid number)";
-            if (opts.number.includes('.')) return "(not implemented for decimals)";
+            // Allow decimals
             return encodeToBase(opts.number, arrows.length, "arrows");
         }
     },
@@ -480,7 +529,7 @@ const ENCODERS = [
         ],
         encode: (opts) => {
             if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input must be a valid number)";
-            if (opts.number.includes('.')) return "(not implemented for decimals)";
+            // Allow decimals
             return encodeToBase(opts.number, braille.length, "braille");
         }
     },
@@ -492,7 +541,7 @@ const ENCODERS = [
         ],
         encode: (opts) => {
             if (!/^-?(\d+(\.\d+)?|\.\d+)$/.test(opts.number)) return "(input must be a valid number)";
-            if (opts.number.includes('.')) return "(not implemented for decimals)";
+            // Allow decimals
             return encodeToBase(opts.number, brackets.length, "brackets");
         }
     }
