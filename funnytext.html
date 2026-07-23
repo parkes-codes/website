@@ -10,11 +10,24 @@
     <div id="modeButtons" style="margin: 10px 0;">
     </div>
     
-    <p id="outputText"></p>
+    <pre id="outputText" style="margin:0;padding:0;background:none;border:none;"></pre>
     <button id="copyBtn" style="display:none;">Copy</button>
 <style>
   #textInput{
     width: 300px;
+  }
+  body {
+    background-color: #111;
+    color: #fff
+  }
+  #outputText {
+    font-family: inherit;
+    white-space: pre-wrap;
+    background: none;
+    color: inherit;
+    border: none;
+    margin: 0;
+    padding: 0;
   }
 </style>
 <script>
@@ -26,17 +39,16 @@
   // Current selected mode number
   let textMode = 1;
 
-  // Create buttons 1 to 9 dynamically
-for(let i = 1; i <= 10; i++) {
-  const btn = document.createElement('button');
-  btn.textContent = i;
-  btn.style.marginRight = '5px';
-  btn.addEventListener('click', () => {
-    setMode(i);
-  });
-  modeButtons.appendChild(btn);
-}
-
+  // Add new mode (16: Double Un-silent Vowels) -- update button count:
+  for(let i = 1; i <= 16; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    btn.style.marginRight = '5px';
+    btn.addEventListener('click', () => {
+      setMode(i);
+    });
+    modeButtons.appendChild(btn);
+  }
 
   function highlightSelectedButton(selected) {
     [...modeButtons.children].forEach(button => {
@@ -47,217 +59,418 @@ for(let i = 1; i <= 10; i++) {
   highlightSelectedButton(textMode);
 
   function alternateCaps(text) {
-    return text.split(' ').map(word => {
-      return word.split('').map((char, index) => {
-        return ((index + textMode) % 2 === 0) ? char.toUpperCase() : char.toLowerCase();
-      }).join('');
-    }).join(' ');
+    // This preserves all spaces between words!
+    return text.replace(/(\S+)/g, word =>
+      word.split('').map((char, idx) =>
+        ((idx + textMode) % 2 === 0) ? char.toUpperCase() : char.toLowerCase()
+      ).join('')
+    );
   }
 
- function randomizeWords(text) {
-    let words = text.trim().split(/\s+/);
-    for(let i = words.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [words[i], words[j]] = [words[j], words[i]];
+  function randomizeWords(text) {
+    // Split words using a regexp and capture spaces
+    let parts = Array.from(text.matchAll(/(\S+|\s+)/g)).map(x => x[0]);
+    let wordIndices = [];
+    for (let i = 0; i < parts.length; i++) {
+      if (/\S/.test(parts[i])) wordIndices.push(i);
     }
-    return words.join(' ');
+    // Shuffle the word parts only
+    let shuffled = wordIndices.slice();
+    for(let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const swapWords = parts.slice();
+    for (let i = 0; i < wordIndices.length; i++) {
+      swapWords[wordIndices[i]] = parts[shuffled[i]];
+    }
+    return swapWords.join('');
   }
 
-function alphabetizeWords(str) {
-  return str
-    .split(/\s+/)         
-    .sort((a, b) => a.localeCompare(b)) 
-    .join(" ");          
-}
+  function alphabetizeWords(str) {
+    // Use matchAll to capture both words and spaces for perfect spacing
+    let parts = Array.from(str.matchAll(/(\S+|\s+)/g)).map(x => x[0]);
+    let words = parts.filter(x => /\S/.test(x));
+    let sortedWords = [...words].sort((a, b) => a.localeCompare(b));
+    let wi = 0;
+    return parts.map(x => /\S/.test(x) ? sortedWords[wi++] : x).join('');
+  }
 
 
-function lengthSort(str) {
-  const words = str.split(/\s+/);
+  function lengthSort(str) {
+    let parts = Array.from(str.matchAll(/(\S+|\s+)/g)).map(x => x[0]);
+    let indexedWords = [];
+    for (let i = 0; i < parts.length; i++) {
+      if (/\S/.test(parts[i])) {
+        // letters + numbers only for length
+        const cleanLen = parts[i].replace(/[^a-zA-Z0-9]/g, "").length;
+        indexedWords.push({ i, word: parts[i], cleanLen });
+      }
+    }
+    indexedWords.sort((a, b) => {
+      if (a.cleanLen !== b.cleanLen) return a.cleanLen - b.cleanLen;
+      if (a.word !== b.word) return a.word.localeCompare(b.word);
+      return a.i - b.i;
+    });
+    let swapParts = parts.slice();
+    let idx = 0;
+    for (let i = 0; i < parts.length; i++) {
+      if (/\S/.test(parts[i])) {
+        swapParts[i] = indexedWords[idx++].word;
+      }
+    }
+    return swapParts.join('');
+  }
 
-  return words
-    .map((w, i) => [w, i])
-    .sort((a, b) => {
-      // 1️⃣ clean words for length: letters + numbers only
-      const lenA = a[0].replace(/[^a-zA-Z0-9]/g, "").length;
-      const lenB = b[0].replace(/[^a-zA-Z0-9]/g, "").length;
+  // Improved reverseLetters: reverses only the "letters" part in each word,
+  // keeping punctuation at the end unmoved (e.g., "order." => "redro.")
+  function reverseLetters(str) {
+    // For each word, split into main(word or letters) and any trailing punctuation
+    return str.replace(/\S+/g, w => {
+      // match: [core, punctuation] — e.g., 'order.' => ['order', '.']
+      const m = /^([a-zA-Z0-9'-]+)([^a-zA-Z0-9'-]+)?$/.exec(w);
+      if (m) {
+        // reverse the core, then append any trailing punctuation
+        return m[1].split('').reverse().join('') + (m[2] || '');
+      } else {
+        // fallback: just reverse everything if it does not match (e.g. lol!!! or __init__)
+        return w.split('').reverse().join('');
+      }
+    });
+  }
 
-      // sort by length
-      if (lenA !== lenB) return lenA - lenB;
+  function reverseWords(str) {
+    // Match all words and spaces, then reverse only the words, keeping space order
+    let parts = Array.from(str.matchAll(/(\S+|\s+)/g)).map(x => x[0]);
+    let words = parts.filter(x => /\S/.test(x)).reverse();
+    let wi = 0;
+    return parts.map(x => /\S/.test(x) ? words[wi++] : x).join('');
+  }
 
-      // 2️⃣ identical words stay together
-      if (a[0] !== b[0]) return a[0].localeCompare(b[0]);
+  // Improved shuffleLetters: shuffle only the letter part of each word,
+  // keep any trailing punctuation fixed (e.g., "order," => "deoor,")
+  function shuffleLetters(str) {
+    return str.replace(/\S+/g, w => {
+      // Match leading letter part and trailing punctuation/non-letters
+      const m = /^([a-zA-Z0-9'-]+)([^a-zA-Z0-9'-]+)?$/.exec(w);
+      if (m) {
+        let arr = m[1].split('');
+        for(let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr.join('') + (m[2] || '');
+      } else {
+        // fallback: shuffle all
+        const arr = w.split('');
+        for(let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr.join('');
+      }
+    });
+  }
 
-      // 3️⃣ stable order
-      return a[1] - b[1];
-    })
-    .map(x => x[0])
-    .join(" ");
-}
+  // ---- Shuffle Sentences mode ----
+  // For each sentence (period, !, ?, or comma if list), shuffle the words within, preserve punctuation/spacing
+  function shuffleSentences(text) {
+    // We'll define a sentence as being terminated by [.!?] or by a list comma if the sentence already contains at least four words.
+    // We want to preserve whitespace and punctuation at end.
 
-function reverseLetters(str) {
-  return str
-    .split(/\s+/)
-    .map(w => w.split('').reverse().join(''))
-    .join(' ');
-}
-
-function reverseWords(str) {
-  return str.split(/\s+/).reverse().join(' ');
-}
-
-function shuffleLetters(str) {
-  return str
-    .split(/\s+/)
-    .map(w => {
-      const arr = w.split('');
-      for(let i = arr.length - 1; i > 0; i--) {
+    // Helper to shuffle array in place
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
       }
-      return arr.join('');
-    })
-    .join(' ');
-}
+    }
 
-function germanAccentSort(str) {
-  return str
-    .replace(/\bthis\b/gi, 'zees')   
-    .replace(/\bthe\b/gi, 'zee')     
-    .replace(/\bwhat\b/gi, 'vat')    
-    .replace(/\bis\b/gi, 'eez')      
-    .replace(/\bany\b/gi, 'eeny')
-    .replace(/\bof\b/gi, 'ov')       
-    .replace(/\bpart\b/gi, 'paart')  
-    .replace(/\bcan\b/gi, 'coon')    
-    .replace(/\bare\b/gi, 'arr')    
-    .replace(/\btheir\b/gi, 'thair') 
-    .replace(/\bthen\b/gi, 'theen')  
-    .replace(/\band\b/gi, 'eend')
-    .replace(/\bhave\b/gi, 'hav')
-    .replace(/\bover\b/gi, 'ovah')
-    .replace(/\bother\b/gi, 'uthah')
-    .replace(/\bcolor\b/gi, 'collar')
-    .replace(/\bcolour\b/gi, 'collar')
-    .replace(/\btreated\b/gi, 'treeated')
-    .replace(/\bzealand\b/gi, 'zeeland')
-    .replace(/\bonly\b/gi, 'oonly')
-    .replace(/\bkill\b/gi, 'keel')
-    .replace(/\blay\b/gi, 'laye')
-    .replace(/\bby\b/gi, 'bie')
-    .replace(/\bgroup\b/gi, 'groop')
-    .replace(/\bthat\b/gi, 'zat')
-    .replace(/\btribe\b/gi, 'trieb')
-    .replace(/\bwhere\b/gi, 'weere')
-    .replace(/\bwere\b/gi, 'weer')
-    .replace(/\bto\b/gi, 'too')
-    .replace(/\bwith\b/gi, 'weeth')
-    .replace(/\bappear\b/gi, 'appeer')
-    .replace(/\ball\b/gi, 'oll')
-    .replace(/\bband\b/gi, 'bond')
-    .replace(/\bon\b/gi, 'oon')
-    .replace(/\bwe\b/gi, 'wee')
-    .replace(/um/gi, 'oom')   
-    .replace(/ittle/gi, 'eetle')
-    .replace(/kid/gi, 'keed')
-    .replace(/ack/gi, 'eek')         
-    .replace(/or/gi, 'oor')        
-    .replace(/tec/gi, 'teec') 
-    .replace(/fem/gi, 'feem') 
-    .replace(/ten/gi, 'teen') 
-    .replace(/in/gi, 'een')
-    .replace(/hair/gi, 'har') 
-    .replace(/ead/gi, 'eed')
-    .replace(/you/gi, 'yoo') 
-    .replace(/uck/gi, 'ook') 
-    .replace(/re/gi, 'ree') 
-    .replace(/land/gi, 'leend') 
-    .replace(/mania/gi, 'meenia') 
-    .replace(/s/gi, 'z')
-    .replace(/zh/gi, 'sh')        
-    .replace(/ity/gi, 'eety');            
-}
-
-function caveman(text) {
-  const contractions = {
-    "that's":"that","thats":"that",
-    "it's":"it","its":"it",
-    "there's":"there","theres":"there",
-    "what's":"what","whats":"what",
-    "who's":"who","whos":"who",
-    "where's":"where","wheres":"where",
-    "when's":"when","whens":"when",
-    "why's":"why","whys":"why",
-    "how's":"how","hows":"how"
-  };
-
-  const pronouns = {
-    "i":"me","me":"me","my":"me",
-    "you":"you","your":"you",
-    "he":"him","him":"him",
-    "she":"her","her":"her",
-    "they":"them","them":"them",
-    "we":"us","us":"us",
-    "it":"thing"
-  };
-
-  const remove = new Set([
-    "the","a","an",
-    "to","from","in","on","at","by","with","about","against","between",
-    "into","through","during","before","after","above","below","under",
-    "over","near","of","for","as",
-    "is","are","was","were","am","been","being",
-    "do","does","did",
-    "very","really","just","quite","maybe","basically"
-  ]);
-
-  let out = [];
-
-  for (let raw of text.toLowerCase().replace(/[^\w\s']/g,"").split(/\s+/)) {
-    if (!raw) continue;
-
-    let w = contractions[raw] || raw;
-    if (remove.has(w)) continue;
-
-    if (pronouns[w]) w = pronouns[w];
-
-    if (w.endsWith("ing") && w.length > 4) w = w.slice(0,-3);
-    else if (w.endsWith("ed") && w.length > 3) w = w.slice(0,-2);
-
-    if (out[out.length - 1] !== w) out.push(w);
+    // Regex to split into sentences. Sentences end with . ! ? or , (if lists)
+    // We'll match each "sentence part" as up to and including a terminal [.!?], or a comma when previous part is already long enough,
+    // or until the end if nothing else.
+    let result = [];
+    let pos = 0;
+    // For splitting, but allowing for extra spaces and keeping them.
+    let regex = /[^.!?,]+[.!?,]?[\s]*/g;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      let sentence = match[0];
+      // Split into tokens (words plus spaces), e.g., ["The"," ","red"," ","fox",","," "] etc.
+      let tokens = Array.from(sentence.matchAll(/(\s+|[^\s]+)/g)).map(x => x[0]);
+      // Build a list of word indices (not just punctuation)
+      let wordIdxs = [];
+      for (let ti = 0; ti < tokens.length; ti++) {
+        // Consider a "word" as any non-space that is at least one alphanumeric in it (not just punctuation)
+        if (/\S/.test(tokens[ti]) && /[a-zA-Z0-9]/.test(tokens[ti])) {
+          wordIdxs.push(ti);
+        }
+      }
+      // If at least 2 words, shuffle them
+      if (wordIdxs.length >= 2) {
+        let shuffled = wordIdxs.slice();
+        shuffle(shuffled);
+        let swapTokens = tokens.slice();
+        for (let wi = 0; wi < wordIdxs.length; wi++) {
+          swapTokens[wordIdxs[wi]] = tokens[shuffled[wi]];
+        }
+        result.push(swapTokens.join(''));
+      } else {
+        // if not enough words to shuffle, just take as is
+        result.push(sentence);
+      }
+    }
+    return result.join('');
   }
 
-  return out.join(" ");
-}
+
+  // --- Typos Mode (swap one random adjacent pair with 50% chance per word) ---
+
+  function typoSwap(word) {
+    if (word.length < 2) return word;
+    // Pick a random index to swap with its neighbor (left or right)
+    let arr = word.split('');
+    // Randomly pick between swapping with left (-1) or right (+1)
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    // Constrain i so neighbor exists (avoids -1 and arr.length out of bounds)
+    let i;
+    if (dir === -1) {
+      i = Math.floor(Math.random() * (arr.length - 1)) + 1; // 1 .. arr.length-1
+    } else {
+      i = Math.floor(Math.random() * (arr.length - 1)); // 0 .. arr.length-2
+    }
+    // Swap arr[i] with arr[i+dir]
+    [arr[i], arr[i + dir]] = [arr[i + dir], arr[i]];
+    return arr.join('');
+  }
+
+  function typosMode(text) {
+    // For each word, with 50% chance, swap a random adjacent letter pair
+    let parts = Array.from(text.matchAll(/(\S+|\s+)/g)).map(x => x[0]);
+    for (let i = 0; i < parts.length; i++) {
+      if (/\S/.test(parts[i]) && Math.random() < 0.5) {
+        parts[i] = typoSwap(parts[i]);
+      }
+    }
+    return parts.join('');
+  }
+
+  function germanAccentSort(str) {
+    // Not intelligent, but we preserve the whitespace
+    return str
+      .replace(/\bthis\b/gi, 'zees')   
+      .replace(/\bthe\b/gi, 'zee')     
+      .replace(/\bwhat\b/gi, 'vat')    
+      .replace(/\bis\b/gi, 'eez')      
+      .replace(/\bany\b/gi, 'eeny')
+      .replace(/\bof\b/gi, 'ov')       
+      .replace(/\bpart\b/gi, 'paart')  
+      .replace(/\bcan\b/gi, 'coon')    
+      .replace(/\bare\b/gi, 'arr')    
+      .replace(/\btheir\b/gi, 'thair') 
+      .replace(/\bthen\b/gi, 'theen')  
+      .replace(/\band\b/gi, 'eend')
+      .replace(/\bhave\b/gi, 'hav')
+      .replace(/\bover\b/gi, 'ovah')
+      .replace(/\bother\b/gi, 'uthah')
+      .replace(/\bcolor\b/gi, 'collar')
+      .replace(/\bcolour\b/gi, 'collar')
+      .replace(/\btreated\b/gi, 'treeated')
+      .replace(/\bzealand\b/gi, 'zeeland')
+      .replace(/\bonly\b/gi, 'oonly')
+      .replace(/\bkill\b/gi, 'keel')
+      .replace(/\blay\b/gi, 'laye')
+      .replace(/\bby\b/gi, 'bie')
+      .replace(/\bgroup\b/gi, 'groop')
+      .replace(/\bthat\b/gi, 'zat')
+      .replace(/\btribe\b/gi, 'trieb')
+      .replace(/\bwhere\b/gi, 'weere')
+      .replace(/\bwere\b/gi, 'weer')
+      .replace(/\bto\b/gi, 'too')
+      .replace(/\bwith\b/gi, 'weeth')
+      .replace(/\bappear\b/gi, 'appeer')
+      .replace(/\ball\b/gi, 'oll')
+      .replace(/\bband\b/gi, 'bond')
+      .replace(/\bon\b/gi, 'oon')
+      .replace(/\bwe\b/gi, 'wee')
+      .replace(/um/gi, 'oom')   
+      .replace(/ittle/gi, 'eetle')
+      .replace(/kid/gi, 'keed')
+      .replace(/ack/gi, 'eek')         
+      .replace(/or/gi, 'oor')        
+      .replace(/tec/gi, 'teec') 
+      .replace(/fem/gi, 'feem') 
+      .replace(/ten/gi, 'teen') 
+      .replace(/in/gi, 'een')
+      .replace(/hair/gi, 'har') 
+      .replace(/ead/gi, 'eed')
+      .replace(/you/gi, 'yoo') 
+      .replace(/uck/gi, 'ook') 
+      .replace(/re/gi, 'ree') 
+      .replace(/land/gi, 'leend') 
+      .replace(/mania/gi, 'meenia') 
+      .replace(/s/gi, 'z')
+      .replace(/zh/gi, 'sh')        
+      .replace(/ity/gi, 'eety')
+      .replace(/ical/gi, 'eecal')
+      .replace(/ight/gi, 'eeght')
+      .replace(/oid/gi, 'eoid');
+  }
+
+  function caveman(text) {
+    const contractions = {
+      "that's":"that","thats":"that",
+      "it's":"it","its":"it",
+      "there's":"there","theres":"there",
+      "what's":"what","whats":"what",
+      "who's":"who","whos":"who",
+      "where's":"where","wheres":"where",
+      "when's":"when","whens":"when",
+      "why's":"why","whys":"why",
+      "how's":"how","hows":"how"
+    };
+
+    const pronouns = {
+      "i":"me","me":"me","my":"me",
+      "you":"you","your":"you",
+      "he":"him","him":"him",
+      "she":"her","her":"her",
+      "they":"them","them":"them",
+      "we":"us","us":"us",
+      "it":"thing"
+    };
+
+    const remove = new Set([
+      "the","a","an",
+      "to","from","in","on","at","by","with","about","against","between",
+      "into","through","during","before","after","above","below","under",
+      "over","near","of","for","as",
+      "is","are","was","were","am","been","being",
+      "do","does","did",
+      "very","really","just","quite","maybe","basically"
+    ]);
+    // We need to preserve the original spacing
+    let out = [];
+    let match = Array.from(text.matchAll(/(\s+|[^\s]+)/g)).map(x => x[0]);
+    let lastWord = undefined;
+    for (let token of match) {
+      if (/^\s+$/.test(token)) {
+        out.push(token);
+        continue;
+      }
+      let raw = token.toLowerCase().replace(/[^\w\s']/g,"");
+      if (!raw) {
+        out.push(token);
+        continue;
+      }
+      let w = contractions[raw] || raw;
+      if (remove.has(w)) continue;
+      if (pronouns[w]) w = pronouns[w];
+      if (w.endsWith("ing") && w.length > 4) w = w.slice(0,-3);
+      else if (w.endsWith("ed") && w.length > 3) w = w.slice(0,-2);
+      // Deduplicate but preserve spacing
+      if (lastWord !== w) {
+        out.push(w);
+        lastWord = w;
+      }
+    }
+    return out.join('');
+  }
 
 
-function uncomfortableCaps(text) {
-  return text
-    .split(/\s+/)
-    .map(w =>
+  function uncomfortableCaps(text) {
+    return text.replace(/\S+/g, w =>
       w.replace(/[a-zA-Z]/, c => c.toUpperCase())
-    )
-    .join(" ");
-}
+    );
+  }
 
+  function wideText(text) {
+    return text.split('').join(' ');
+  }
 
+  // ---- NEW MODES ----
 
+  function removeVowels(text) {
+    // Remove a, e, i, o, u (case-insensitive), preserve everything else
+    return text.replace(/[aeiouAEIOU]/g, '');
+  }
+
+  function removeConsonants(text) {
+    // Remove all consonants a-z and A-Z except for vowels (preserve vowels and other chars)
+    return text.replace(/([b-df-hj-np-tv-z])/gi, '');
+  }
+
+  // ---- NEW MODE 16: Double unsilent vowels in each word (longer words mode) ----
+  // For silent vowels, conservatively only at the *end* if "e" is silent (like "time", "make", "one", "cake", "blame", etc.)
+  // We'll avoid doubling a trailing 'e' when it is silent.
+  function doubleUnsilentVowels(text) {
+    // Helper: is given E at the end of a word likely silent?
+    // We'll apply a very simple heuristic: if word ends in "e" and is at least three letters and the previous is a consonant (i.e., CVCe pattern),
+    // and at least one other vowel occurs before, assume silent e.
+    function isTrailingESilent(word) {
+      if (word.length < 3) return false;
+      if (word[word.length-1].toLowerCase() !== 'e') return false;
+      // If word is e.g., "the", "we", "he", treat as not silent
+      if (["the","he","be","me","we","she"].includes(word.toLowerCase())) return false;
+      // Get second last char
+      let prev = word[word.length-2].toLowerCase();
+      // Is consonant before e? (NOT a, e, i, o, u, y)
+      if (!/[b-df-hj-np-tv-z]/.test(prev)) return false;
+      // Is there at least one other vowel before?
+      if (!/[aeiouy]/i.test(word.slice(0,-1))) return false;
+      return true;
+    }
+    // For each "word" (preserving spaces and punctuation)
+    return text.replace(/\b([a-zA-Z]+)\b/g, function(fullmatch, word){
+      let chars = word.split('');
+      let out = [];
+      let len = chars.length;
+      let vowels = "aeiouAEIOU";
+      // If trailing 'e' is likely silent, mark it
+      let silentE = isTrailingESilent(word);
+      for(let i=0;i<len;i++) {
+        let c = chars[i];
+        let isLastChar = (i === len-1);
+        let isVowel = vowels.includes(c);
+        // Only double if vowel, AND not silent e at the end
+        if (isVowel && !(isLastChar && silentE)) {
+          out.push(c + c);
+        } else {
+          out.push(c);
+        }
+      }
+      return out.join('');
+    });
+  }
 
   function transformAndDisplay(text) {
     let transformed = '';
+    switch (textMode) {
+      case 1: transformed = alternateCaps(text); break;
+      case 2: transformed = randomizeWords(text); break;
+      case 3: transformed = alphabetizeWords(text); break;
+      case 4: transformed = lengthSort(text); break;
+      case 5: transformed = reverseLetters(text); break;
+      case 6: transformed = reverseWords(text); break;
+      case 7: transformed = shuffleLetters(text); break;
+      case 8: transformed = germanAccentSort(text); break;
+      case 9: transformed = caveman(text); break;
+      case 10: transformed = uncomfortableCaps(text); break;
+      case 11: transformed = wideText(text); break;
+      case 12: transformed = typosMode(text); break; // Typos mode!
+      case 13: transformed = shuffleSentences(text); break; // Shuffle Sentences!
+      case 14: transformed = removeVowels(text); break;    // Remove Vowels
+      case 15: transformed = removeConsonants(text); break; // Remove Consonants
+      case 16: transformed = doubleUnsilentVowels(text); break; // Double unsilent vowels (longer words)
+      default: transformed = text; break;
+    }
     
-    if (textMode == 1) { transformed = alternateCaps(text)}
-    if (textMode == 2) { transformed = randomizeWords(text)}
-    if (textMode == 3) { transformed = alphabetizeWords(text)}
-    if (textMode == 4) { transformed = lengthSort(text)}
-    if (textMode == 5) { transformed = reverseLetters(text)}
-    if (textMode == 6) { transformed = reverseWords(text)}
-    if (textMode == 7) { transformed = shuffleLetters(text)}
-    if (textMode == 8) { transformed = germanAccentSort(text)}
-    if (textMode == 9) { transformed = caveman(text)}
-    if (textMode == 10) { transformed = uncomfortableCaps(text)}
-    
+    output.textContent = '';
+    output.innerText = '';
+    // Use textContent so we can set spaces, but to preserve leading/multiple/ending spaces:
+    // use innerText for copy/copy fallback, and textContent for display, but force white-space: pre-wrap via <pre>
     output.textContent = transformed;
-    copyBtn.style.display = transformed.trim().length > 0 ? 'inline-block' : 'none';
+    copyBtn.style.display = transformed.replace(/\s/g,'').length > 0 ? 'inline-block' : 'none';
   }
 
   input.addEventListener('input', () => {
@@ -265,8 +478,9 @@ function uncomfortableCaps(text) {
   });
 
   copyBtn.addEventListener('click', () => {
+    // Use original transformed, not stripping spaces!
     const textToCopy = output.textContent;
-    if (textToCopy.trim().length > 0) {
+    if (textToCopy.replace(/\s/g,'').length > 0) {
       if (navigator.clipboard) {
         navigator.clipboard.writeText(textToCopy)
           .then(() => {
@@ -296,28 +510,29 @@ function uncomfortableCaps(text) {
   }
   
   const title = document.querySelector('.title');
+  const titles = [
+    'fOnT tHiNgY  (alternating caps)',
+    'thingy font (randomized words)',
+    'font thingy (alphabetical sort)',
+    'font thingy (length sort)',
+    'tnof ygniht (reverse words)',
+    'thingy font (reverse words)',
+    'ftno thigny (shuffle letters)',
+    'foont theengy (german sort)',
+    'me change font (confusing)',
+    'Font Thingy (Title Caps)',
+    'F o n t  T h i n g y (Wide)',
+    'Fnot Thnigy (Typos)',
+    'font thingy (shuffle sentences)',
+    'font thingy (remove vowels)',          // <-- 14
+    'font thingy (remove consonants)',      // <-- 15
+    'foont thiiingy (longer words)'         // <-- 16
+  ];
 
 function updateTitle(mode) {
-  if(mode === 1) {
-    title.textContent = 'fOnT tHiNgY  (alternating caps)';
-  } else  if (mode === 2) {
-    title.textContent = 'thingy font (randomized words)';
-  } else if (mode === 3) {
-    title.textContent = 'font thingy (alphabetical sort)';
-  } else if (mode === 4) {
-    title.textContent = 'font thingy (length sort)';
-  } else if (mode === 5) {
-    title.textContent = 'tnof ygniht (reverse words)';
-  } else if (mode === 6) {
-    title.textContent = 'thingy font (reverse words)';
-  } else if (mode === 7) {
-    title.textContent = 'ftno thigny (shuffle letters)'
-  } else if (mode === 8) {
-    title.textContent = 'foont theengy (german sort)'
-  } else if (mode === 9) {
-    title.textContent = 'me change font (confusing)'
-  } else if (mode === 10) {
-    title.textContent = 'Font Thingy (Title Caps)'
+  // modes are 1-based
+  if (titles[mode - 1]) {
+    title.textContent = titles[mode - 1];
   }
 }
 
@@ -328,8 +543,6 @@ function setMode(newMode) {
   updateTitle(newMode);
   transformAndDisplay(input.value);
 }
-
-
 
 updateTitle(textMode);
 
