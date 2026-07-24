@@ -183,6 +183,46 @@ input[type="range"].slid::-webkit-slider-thumb {
   #right-arrow-btn {
     right: 10px;
   }
+
+  /* Help overlay styling */
+  #help-overlay {
+    display: none;
+    position: fixed;
+    left: 0; right: 0; top: 0; bottom: 0;
+    margin: 0;
+    color: #fff;
+    background: rgba(30,26,39,0.95);
+    padding: 44px 18px;
+    border-radius: 16px;
+    font-size: 19px;
+    white-space: pre-line;
+    z-index: 10002;
+    align-items: center;
+    justify-content: center;
+    text-align: left;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s cubic-bezier(.61,.13,.25,1.07);
+    display: flex;
+    flex-direction: column;
+  }
+  #help-overlay b {
+    color: #2ea9f3;
+  }
+
+  /* Add: Glow effect for controls button if needed */
+  #help-btn.glow-yellow {
+    box-shadow: 0 0 0 3px #fff708, 0 0 14px 7px #fff143, 0 0 7px 2px #fff143;
+    animation: yellow-glow-pulse 1s ease-in-out infinite alternate;
+    background: #ffe20a !important;
+    color: #000 !important;
+    border: 2px solid #ffec7d !important;
+    z-index: 10;
+  }
+  @keyframes yellow-glow-pulse {
+    0% { box-shadow: 0 0 0 3px #fff708, 0 0 14px 7px #fff143, 0 0 7px 2px #fff143;}
+    100% { box-shadow: 0 0 0 5px #ffe744, 0 0 16px 11px #fec20b, 0 0 15px 6px #ffe96b;}
+  }
     </style>
   </head>
 <body tabindex="0">
@@ -218,6 +258,10 @@ input[type="range"].slid::-webkit-slider-thumb {
           <button id="copy-graph-btn" title="Copy & show graph function code" style="display: flex; align-items: center; justify-content: center; text-align: center; width: 18px; height: 14px; border-radius: 4px; background: #7d6afb; color: #fff; font-size: 10px; border: none; cursor: pointer; margin-left:10px; padding:0 2px;">
             <span style="width:100%; text-align:center; display:inline-block; line-height: 1; font-weight:bold;">&lt;/&gt;</span>
           </button>
+          <!-- Help Button -->
+          <button id="help-btn" title="Show controls help" style="display: flex; align-items: center; justify-content: center; text-align: center; width: 18px; height: 14px; border-radius: 4px; background: #22cadc; color: #fff; font-size: 13px; border: none; cursor: pointer; margin-left:10px; padding:0 3px;">
+            <span style="width:100%; text-align:center; display:inline-block; line-height: 1; font-weight:bold;">?</span>
+          </button>
           <!-- Info Overlay -->
           <span id="circle-text" style="display: none; position: fixed; left: 0; right: 0; top: 0; bottom: 0; margin: 0; color: #fff; background: rgba(32,38,60,0.92); padding: 44px 18px; border-radius: 16px; font-size: 18px; white-space: pre-line; z-index: 10000; align-items: center; justify-content: center; text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.35s cubic-bezier(.61,.13,.25,1.07); display: flex; flex-direction: column;">
             <span>
@@ -233,6 +277,18 @@ input[type="range"].slid::-webkit-slider-thumb {
               loading...
             </span>
             <button id="close-graph-code-btn" style="margin-top:18px; background:#3af; border:none; color:#fff; padding:4px 14px; border-radius:6px; cursor:pointer; font-size:14px;">Close</button>
+          </span>
+          <!-- Help Overlay -->
+          <span id="help-overlay">
+            <span style="display: block; text-align:center; font-size: 21px; font-weight: bold; margin-bottom: 18px; color: #24eec1;">Controls</span>
+            <span>
+<b>Press keys 1-9</b> to change color modes.<br>
+<b>Press left and right arrows</b> to change graphs.<br>
+<b>Use the sliders</b> to modify the graph and zoom in and out.<br>
+<b>Press R</b> to set resolution.<br>
+<b>A S W D</b> to move camera.<br>
+<b>Press G</b> to show the axis.
+            </span>
           </span>
           <script>
             // Existing info overlay
@@ -268,6 +324,7 @@ input[type="range"].slid::-webkit-slider-thumb {
             window.addEventListener('keydown', function(e){
               if (textElem.style.display === 'flex' && (e.key === 'Escape' || e.key === 'Esc')) fadeHide(textElem);
               if (graphCodeText.style.display === 'flex' && (e.key === 'Escape' || e.key === 'Esc')) fadeHide(graphCodeText);
+              if (helpOverlay.style.display === 'flex' && (e.key === 'Escape' || e.key === 'Esc')) fadeHide(helpOverlay);
             });
 
             const copyBtn = document.getElementById('copy-graph-btn'); 
@@ -328,6 +385,38 @@ input[type="range"].slid::-webkit-slider-thumb {
             graphCodeText.addEventListener('click', function(e){
               if (e.target === graphCodeText) fadeHide(graphCodeText);
             });
+
+            // Help overlay logic
+            const helpBtn = document.getElementById('help-btn');
+            const helpOverlay = document.getElementById('help-overlay');
+
+            // New: Controls button glow logic
+            (function() {
+              // LocalStorage flag key
+              const LS_CONTROLS_SEEN = '__help_controls_clicked__';
+              // Check if seen before
+              let seen = false;
+              try {
+                seen = !!localStorage.getItem(LS_CONTROLS_SEEN);
+              } catch (e) {}
+              if (!seen) {
+                helpBtn.classList.add('glow-yellow');
+              }
+              helpBtn.addEventListener('click', function() {
+                if (!seen) {
+                  helpBtn.classList.remove('glow-yellow');
+                  try {
+                    localStorage.setItem(LS_CONTROLS_SEEN, "yes");
+                  } catch (e) {}
+                }
+                seen = true;
+                fadeShow(helpOverlay);
+              });
+            })();
+
+            helpOverlay.addEventListener('click', function(e) {
+              if (e.target === helpOverlay) fadeHide(helpOverlay);
+            });
           </script>
         </div>
     </div>
@@ -336,15 +425,15 @@ input[type="range"].slid::-webkit-slider-thumb {
 </div>
     </div>
     <script>
-      const editMode = true;
+      const editMode = false;
       let showAxes = false;
 
       let cameraX = 0;
       let cameraY = 0;
       let isPaused = false;
       
-      let resolution = 320;
-      if (window.location.href.includes('onecompiler.com')) {resolution=400;}
+      let resolution = 400;
+
         if (localStorage.getItem("res") && !editMode) {
           resolution = localStorage.getItem("res");
         }
@@ -399,14 +488,7 @@ function isNoKeyboardDevice() {
       const pi = 3.14159265;
        let screenX = resolution/2;
  let screenY = resolution/2;
-      
-      const supit=(localStorage.getItem('hold')=="true")
-      if(supit) {
-        localStorage.setItem('hold',false)
-      } else {
-          if (!editMode) {
-            alert("Press keys 1-9 to change color modes. press left and right arrows to change graphs. use the sliders to modify the graph and zoom in and out. press r to set resolution. ASWD to move camera. press g to show the axis")
-      }}
+
       
       
       
@@ -1123,7 +1205,6 @@ window.addEventListener('keydown', (e) => {
 
 if (Math.pow(answer, 3) !== 0 && (answer > 0) && (answer <= 1500) && (answer - Math.ceil(answer) == 0)) {
      localStorage.setItem('res',answer)
-     localStorage.setItem('hold', true);
      location.reload()
     }
   }
@@ -1569,6 +1650,8 @@ function ZS2(x, y) {
             function graph139(){zoomSet(0,45); value=sin(div(abs(X),Y+sin(X+t)))-(Z/10)*(abs(X+sin(t+Y))%(0.1*Y))}
 
             function graph140(){zoomSet(0,45); value=tan(arcsin(sin(Y))+arcsin(sin(Y+sin(X+t)))-X)+t}
+
+            function graph141(){zoomSet(0,45); Y+=0.5; value=sin((X+sin(Z/20*Y+t))%1+t)-sin((X+sin(Z/20*Y-t))%(Y+sin(X+t)))}
             
 const graphFunctions = {
   1: graph1,
@@ -1710,7 +1793,8 @@ const graphFunctions = {
   137: graph137,
   138: graph138,
   139: graph139,
-  140: graph140
+  140: graph140,
+  141: graph141
 };
 
 const advancedList = [
@@ -1898,8 +1982,9 @@ const names = {
 136: "yingyang2",
 137: "attack",
 138: "sin sin sin sin",
-139: "",
-140: "double asin"
+139: "singularity",
+140: "double asin",
+141: "generic"
 
 };
 
