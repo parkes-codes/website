@@ -286,6 +286,7 @@
         <a href="Amazing_Graphs_2" target="_blank" class="linkbutton"><button class="button text" id="ag2text">Open Amazing Graphs 2</button></a>
         <a href="trigslideshow" target="_blank" class="linkbutton"><button class="button text">Open Trigonometery Slideshow</button></a>
         <a href="gol" target="_blank" class="linkbutton"><button class="button text" id="golbtn">Open GOL</button></a>
+        <a href="coreball" target="_blank" class="linkbutton"><button class="button text" id="corbtn" style="color: #000; font-weight: bold; text-shadow: 0px 0px 5px #ffff;">Open Coreball</button></a>
         <a href="clicker" target="_blank" class="linkbutton"><button class="button text">Open My Clicker Game</button></a>
         <a href="Listpractice" target="_blank" class="linkbutton"><button class="button text">Open List Learning</button></a>
         <a href="Canvaspractice" target="_blank" class="linkbutton"><button class="button text">Open Canvasse</button></a>
@@ -426,6 +427,7 @@
       const pi = Math.PI;
       const funbutton = document.getElementById("funbutton");
       const golbutton = document.getElementById("golbtn");
+      const corbutton = document.getElementById("corbtn");
       const ag2text = document.getElementById("ag2text");
       const algoText = document.getElementById("algoText");
       const thingy = document.getElementById("thingy");
@@ -540,11 +542,14 @@
           funbutton.style.borderColor = `hsl(${(t * 50) % 360},50%,80%)`;
         if (golbutton)
           golbutton.style.color = `hsl(0,0%,${(Math.sin(t)) * 10 + 85}%)`;
+        if (corbutton) 
+          corbutton.style.textShadow = `0px 0px ${Math.sin(t/4)*2+3}px #ffff`
         if (ag2text)
           ag2text.style.color = `hsl(200,50%,${(Math.sin(t)) * 8 + 85}%)`;
         if (algoText) {
           algoText.style.color = `hsl(${(t*30)%360},50%,90%)`;
-        }
+        } 
+
         requestAnimationFrame(tick);
       }
       tick();
