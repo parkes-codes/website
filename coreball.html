@@ -59,11 +59,31 @@
         top: 55%;
         display: none;
     }
+    #restartbtn {
+        position: absolute;
+        right: 7px;
+        bottom: 7px;
+        width: 40px;
+        font-size: 11px;
+        height: 15px;
+        z-index: 99;
+        border: #fff 2px solid;
+        background: #811;
+        color: #fff;
+        border-radius: 5px;
+        transition: background 0.15s cubic-bezier(1, 0, 0, 1);
+        cursor: pointer;
+    }
+    #restartbtn:hover {
+        background: #a77;
+        transition: background 0.10s cubic-bezier(1, 0, 0, 1);
+    }
 </style>
 <body>
  <div id="canvasWrapper">
    <canvas id="gamecanvas" width="495" height="916"></canvas>
    <div id="timeDisplay"></div>
+   <button id="restartbtn" onclick="resetProg()"><span style="position: absolute; margin-bottom: 0px; margin-top: -6px; padding: 0; margin-left: -15px;">Reset</span></button>
  </div>
  <div id="wintext">you won, poggies!</div>
 </body>
@@ -93,6 +113,12 @@ let fpsHist = [];
 let fpsAv = 60;
 let time = 0;
 let realtime = 0;
+let level = 1;
+let storedLevel = Number(localStorage.getItem("levelReached"));
+if (isNaN(storedLevel) || storedLevel < 1) {
+    storedLevel = 1;
+}
+level = storedLevel;
 let gameWon = false;
 const pi = Math.PI
 const tau = Math.PI * 2;
@@ -101,6 +127,13 @@ let chig2 = canvas.height/2;
 const yoffset = 80;
 let ballsOffscreen = false;
 let mouseDown = false;
+
+function resetProg() {
+    level = 1;
+    realtime = 0;
+    localStorage.setItem("levelReached", 1);
+    setupLevel(1);
+}
 
 function sleep(ms) {
     return new Promise(resolve => { setTimeout(resolve, ms); });
@@ -144,13 +177,11 @@ const levels = [
     {speed: 0.25*2.5, num: 10, balls: 14, reverse: false, slow: [1.25,0.2,1]},
     {speed: 0.25*2.5, num: 0, balls: 25, reverse: false, slow: [1.25,0.15,1]},
     {speed: 0.25*3, num: 6, balls: 16, reverse: false, slow: [1.25,0.2,1]},
-    {speed: 0.25*2.6, num: 0, balls: 26, reverse: false, slow: [1.25,0.15,1]},//35
-
+    {speed: 0.25*2.6, num: 0, balls: 26, reverse: false, slow: [1.25,0.15,1]}//35
 ]
 
 let rods = []
 let balls = []
-let level = 1;
 let direction = 1;
 let speedModifier = 1;
 
@@ -217,6 +248,9 @@ function setupLevel(levell) {
     }
     if (Array.isArray(levels[levell-1].slow)) {
         slowLoop(levell);
+    }
+    if (levell > storedLevel) {
+        localStorage.setItem("levelReached", levell)
     }
 }
 
@@ -430,7 +464,7 @@ window.addEventListener("keydown", (e) => {
   //keysPressed[e.key.toLowerCase()] = true;
 });
 
-window.addEventListener("pointerdown", (e) => {
+canvas.addEventListener("pointerdown", (e) => {
     mouseDown = true;
     shoot();
 })
