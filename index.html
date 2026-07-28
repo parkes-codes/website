@@ -278,7 +278,7 @@
       Les presento una colección de scripts que he escrito.
      </p>
      <p style="font-size: 9px; color: #ffffffc0; margin-left: 18px;" class="text">
-     ver jul 26 2026
+     ver jul 28 2026
     </p>
   </div>
     <div id="column">
@@ -338,6 +338,7 @@
         <a href="timer.html" target="_blank" class="linkbutton"><button class="button text">Open 30 Minute Timer</button></a>
         <a href="typing.html" target="_blank" class="linkbutton"><button class="button text">Open Typing Test</button></a>
         <a href="pelle.html" target="_blank" class="linkbutton"><button class="button text">Open Scary Text</button></a>
+        <a href="hacking.html" target="_blank" class="linkbutton"><button class="button text" id="hacktext" style="font-family: monospace;">Open 0101010010</button></a>
         
 
     
@@ -432,6 +433,7 @@
       const corbutton = document.getElementById("corbtn");
       const ag2text = document.getElementById("ag2text");
       const algoText = document.getElementById("algoText");
+      const hacktext = document.getElementById("hacktext");
       const thingy = document.getElementById("thingy");
       const bgOverlay = document.getElementById("backgroundOverlay");
       const velkomm = document.getElementById("velkomm");
@@ -475,9 +477,6 @@
           });
         });
 
-        // Optionally, ensure two rows of two for profile images in JS
-        // In most cases, the CSS above will handle this responsively,
-        // But this JS code ensures even more robust behavior if needed
         function adjustPfpGrid() {
           const linksRow = document.getElementById('linksRow');
           const minPfpWidth = 140 * 2 + 20 * 2; // two profile containers + gaps (rough heuristic)
@@ -550,7 +549,14 @@
           ag2text.style.color = `hsl(200,50%,${(Math.sin(t)) * 8 + 85}%)`;
         if (algoText) {
           algoText.style.color = `hsl(${(t*30)%360},50%,90%)`;
-        } 
+        }
+        if (hacktext) {
+          let temp = "";
+          for (let i = 0; i<10; i++) {
+            temp+= Math.floor(Math.random()*2);
+          }
+          hacktext.innerHTML = `<span>Open&nbsp</span><span style="color: #8f8">${temp}</span>`
+        }
 
         requestAnimationFrame(tick);
       }
