@@ -39,8 +39,8 @@
   // Current selected mode number
   let textMode = 1;
 
-  // Add new mode (16: Double Un-silent Vowels) -- update button count:
-  for(let i = 1; i <= 16; i++) {
+  // Add new mode (18: apostrophe-replacement) -- update button count:
+  for(let i = 1; i <= 18; i++) {
     const btn = document.createElement('button');
     btn.textContent = i;
     btn.style.marginRight = '5px';
@@ -239,7 +239,7 @@
     } else {
       i = Math.floor(Math.random() * (arr.length - 1)); // 0 .. arr.length-2
     }
-    // Swap arr[i] with arr[i+dir]
+    // Swap arr[i] with arr[i + dir]
     [arr[i], arr[i + dir]] = [arr[i + dir], arr[i]];
     return arr.join('');
   }
@@ -410,7 +410,7 @@
     function isTrailingESilent(word) {
       if (word.length < 3) return false;
       if (word[word.length-1].toLowerCase() !== 'e') return false;
-      // If word is e.g., "the", "we", "he", treat as not silent
+      // If word is e.g., "the", "he", "be", "me", "we", "she". These are typically not silent.
       if (["the","he","be","me","we","she"].includes(word.toLowerCase())) return false;
       // Get second last char
       let prev = word[word.length-2].toLowerCase();
@@ -443,6 +443,43 @@
     });
   }
 
+  // ---- NEW MODE 17: Fontskis Thingyskis (skis) ----
+  function fontskisMode(text) {
+    // For each word (sequence of non-whitespace), append "skis"
+    // Use the same matching as other word modes to preserve spacing and punctuation
+    return text.replace(/(\S+)/g, function(word) {
+      // Attempt to keep trailing punctuation unmoved
+      let m = /^([a-zA-Z0-9'-]+)([^a-zA-Z0-9'-]+)?$/.exec(word);
+      if (m) {
+        // core + punctuation
+        return m[1] + "skis" + (m[2] || "");
+      } else {
+        // doesn't match, just append
+        return word + "skis";
+      }
+    });
+  }
+
+  // ---- NEW MODE 18: Apostrophe-Replace-First (if word is 4+ letters, first letter replaced by apostrophe) ----
+  function apostropheFirstMode(text) {
+    // For each "word" (sequence of non-whitespace), if core is >=4 letters (ignoring punctuation), replace first letter with "'"
+    // Match groups: letters+punctuation
+    return text.replace(/(\S+)/g, function(word) {
+      let m = /^([a-zA-Z0-9'-]+)([^a-zA-Z0-9'-]+)?$/.exec(word);
+      if (m) {
+        let core = m[1];
+        let rest = m[2] || "";
+        if (core.length >= 4) {
+          return "'" + core.slice(1) + rest;
+        } else {
+          return word;
+        }
+      } else {
+        return word;
+      }
+    });
+  }
+
   function transformAndDisplay(text) {
     let transformed = '';
     switch (textMode) {
@@ -462,6 +499,8 @@
       case 14: transformed = removeVowels(text); break;    // Remove Vowels
       case 15: transformed = removeConsonants(text); break; // Remove Consonants
       case 16: transformed = doubleUnsilentVowels(text); break; // Double unsilent vowels (longer words)
+      case 17: transformed = fontskisMode(text); break; // fontskis thingyskis (skis)
+      case 18: transformed = apostropheFirstMode(text); break; // apostrophe on long words
       default: transformed = text; break;
     }
     
@@ -526,7 +565,9 @@
     'font thingy (shuffle sentences)',
     'font thingy (remove vowels)',          // <-- 14
     'font thingy (remove consonants)',      // <-- 15
-    'foont thiiingy (longer words)'         // <-- 16
+    'foont thiiingy (longer words)',        // <-- 16
+    'fontskis thingyskis (skis)',           // <-- 17
+    "'ont 'ingy (idk)"       // <-- 18
   ];
 
 function updateTitle(mode) {
