@@ -1649,7 +1649,7 @@ function ZS2(x, y) {
 
             function graph139(){zoomSet(0,45); value=sin(div(abs(X),Y+sin(X+t)))-(Z/10)*(abs(X+sin(t+Y))%(0.1*Y))}
 
-            function graph140(){zoomSet(0,45); value=tan(arcsin(sin(Y))+arcsin(sin(Y+sin(X+t)))-X)+t}
+            function graph140(){zoomSet(0,45); value=(Z/20+0.1)*(tan(arcsin(sin(Y))+arcsin(sin(Y+sin(X+t)))-X))+t}
 
             function graph141(){zoomSet(0,45); Y+=0.5; value=sin((X+sin(Z/20*Y+t))%1+t)-sin((X+sin(Z/20*Y-t))%(Y+sin(X+t)))}
 
