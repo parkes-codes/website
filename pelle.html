@@ -21,10 +21,13 @@
       text-shadow: 0 2px 8px #222, 0 0 3px #760909;
       min-height: 1.2em;
       margin-bottom: 1em;
-      max-width: 80%;
+      max-width: 80vw;
       white-space: pre-wrap;
-      flex-wrap: wrap;            /* Wrap glitch-wraps if they overflow */
-      align-items: center;        /* Vertically align children in case of multiline */
+      word-break: break-word;
+      /* Remove flexbox properties to allow native wrapping! */
+      /* display: flex; */
+      /* flex-wrap: wrap; */
+      /* align-items: center; */
     }
     .glitch-part {
       display: inline-block;
@@ -32,14 +35,14 @@
       box-sizing: content-box;
       vertical-align: bottom;
       white-space: pre;
-      /* width is set dynamically via JS for the longest string */
     }
     .glitch-wrap {
-      display: inline-flex;  
-      flex-direction: row;
-      align-items: center;
-      justify-content: center;  /* Ensures the .glitch-part is centered inside */
-      text-align: center;
+      display: inline;
+      /* Remove flex here too! */
+      /* flex-direction: row; */
+      /* align-items: center; */
+      /* justify-content: center;  */
+      text-align: inherit;
     }
     textarea, button {
       font-family: inherit;
@@ -324,6 +327,7 @@
       return {maxW, maxStr};
     }
 
+    // NEW: Render as true inline with spans instead of divs, addresses wrapping issue!
     function runCustomMultiEpicGlitch(inputString) {
       removeAllOffscreenAnims();
       display.innerHTML = '';
@@ -344,15 +348,14 @@
         if (segment.type === 'text') {
           let txt = stripGlitchTags(segment.value);
           if (txt) {
-            // For centered text: wrap plain text in a <span style="display:inline-block;">
-            // so that flexbox considers it as a chunk for alignment
+            // Just a span, display inline for proper wrapping
             let span = document.createElement('span');
             span.textContent = txt;
-            span.style.display = "inline-block";
             display.appendChild(span);
           }
         } else if (segment.type === 'glitch') {
-          let glitchWrap = document.createElement('div');
+          // Use an inline span for glitch-wrap too!
+          let glitchWrap = document.createElement('span');
           glitchWrap.className = 'glitch-wrap';
           let glitchSpan = document.createElement('span');
           glitchSpan.className = 'glitch-part';
@@ -361,10 +364,8 @@
 
           // Compute the longest string and rendered width in pixels for this glitch-part
           let {maxW, maxStr} = getLongestStringAndWidth(customList);
-          // Also add the lengths of any animation frames that glitch-part will produce,
-          // so use the max of options' string lengths.
           let padLen = Math.max(...customList.map(q=>(q||'').length));
-          // Set minWidth to the measured width in px, will pad with spaces as needed in content
+          // Set minWidth to the measured width in px, for width stability, otherwise leave unset for wrapping
           glitchSpan.style.display = 'inline-block';
           glitchSpan.style.minWidth = maxW + 'px';
 
@@ -383,9 +384,9 @@
 
           function loopedTransition(seq, displayElem, glitchUpdateCallback) {
             let idx = 0;
-            // Attach a MutationObserver if we want to sync textContent of offscreen display to main span
             let obs = new MutationObserver(function() {
               glitchSpan.textContent = displayElem.textContent;
+              // Manually trigger wrapping if needed
             });
             obs.observe(displayElem, { characterData: true, subtree: true, childList: true });
             function next() {
@@ -407,7 +408,6 @@
                   allActiveAnimationIds.push(id);
                 },
                 true,
-                // Always pad to the longest string for this glitch sequence
                 maxStr.padEnd(padLen)
               );
             }
@@ -453,7 +453,6 @@
       if (val.length === 0) {
         stopAllAnimations();
         removeAllOffscreenAnims();
-      
         runCustomMultiEpicGlitch(hardcodedAnim);
       }
     });
