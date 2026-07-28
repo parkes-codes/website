@@ -64,6 +64,17 @@ function getCupPosition(i, j) {
 // Game initialization logic as a function for resets
 function initializeGame() {
     cupStates = [];
+
+    // Dynamically calculate cups per row based on canvas width
+    // and cups per column based on canvas height
+    let usableWidth = canvas.width/1.3 - 2 * CUP_X_MARGIN;
+    let cupsPerRow = Math.max(1, Math.floor(usableWidth / CUP_X_SPACING));
+    cols = cupsPerRow;
+
+    let usableHeight = canvas.height/1.3 - 2 * CUP_Y_MARGIN;
+    let cupsPerCol = Math.max(1, Math.floor(usableHeight / CUP_Y_SPACING));
+    rows = cupsPerCol;
+
     // Position cups so they're always centered anywhere
     for (let j = 0; j < rows; j++) {
         for (let i = 0; i < cols; i++) {
@@ -264,10 +275,12 @@ function resetGame() {
     repositionCups();
 }
 
-// Setup function for game start
-initializeGame();
-repositionCups();
-draw();
+setTimeout(() => {
+    initializeGame();
+    repositionCups();
+    draw();
+}, 100)
+
 
 // -- Resizing
 function resizeCanvas() {
@@ -289,7 +302,7 @@ window.addEventListener("keyup", (e) => {
 
 
 // -- Mouse interaction for cup moving logic
-canvas.addEventListener("mousedown", (e) => {
+canvas.addEventListener("pointerdown", (e) => {
     mousedown = true;
     let rect = canvas.getBoundingClientRect();
     let mx = e.clientX - rect.left;
@@ -421,11 +434,11 @@ canvas.addEventListener("mousedown", (e) => {
     }, 100);
 });
 
-canvas.addEventListener("mouseup", (e) => {
+canvas.addEventListener("pointerup", (e) => {
     mousedown = false;
 });
 
-canvas.addEventListener("mousemove", (e) => {
+canvas.addEventListener("pointermove", (e) => {
     let rect = canvas.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
     mouseY = e.clientY - rect.top;
