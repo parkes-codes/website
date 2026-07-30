@@ -250,6 +250,9 @@
     <p>
         ◉ Command R to fully clear board.
     </p>
+    <p>
+        ◉ O key to toggle render optimization
+    </p>
     <h3>Highlight Hotkeys (all require Command key held)</h3>
     <p>
         ◉ RightClick on any selected cell to drag the selected and reposition it.
@@ -301,6 +304,17 @@
       and
       <a href="https://cannabrava.co/golly/" target="_blank" rel="noopener noreferrer">Marcos</a> (a few)
     </p>
+    <h3 class="header3">Randoms</h3>
+    <p>Random Pattern (100x100)
+        <a class="link" href="#" onclick="loadLexi('rand100')">Generate</a>
+    </p>
+    <p>Random Pattern (250x250)
+        <a class="link" href="#" onclick="loadLexi('rand250')">Generate</a>
+    </p>
+    <p>Random Pattern (500x500)
+        <a class="link" href="#" onclick="loadLexi('rand500')">Generate</a>
+    </p>
+
     <h3 class="header3">Glider Guns</h3>
     <p>Glider Gun (p30)
         <a class="link" href="#" onclick="loadLexi('gliderGun1')">Spawn</a>
@@ -427,7 +441,7 @@
     <p>Glider Loop (p63)
         <a class="link" href="#" onclick="loadLexi('gliderloop')">Spawn</a>
     </p>
-    <p>47P72 (discovered by me)
+    <p>Two blockers hassling a thingy
         <a class="link" href="#" onclick="loadLexi('47p72')">Spawn</a>
     </p>
     
@@ -515,6 +529,7 @@
     <p>Mega Overweight Spaceship Escort
         <a class="link" href="#" onclick="loadLexi('megaOWSS')">Spawn</a>
     </p>
+
     
     <h3 class="header3">Fillers</h3>
     <p>Space Filler
@@ -599,6 +614,23 @@
     </p>
     <p>Elbow Ladder 2
         <a class="link" href="#" onclick="loadLexi('elbow2')">Spawn</a>
+    </p>
+
+    <h3 class="header3">Growths</h3>
+    <p>Log (t)^2 Growth
+        <a class="link" href="#" onclick="loadLexi('logt2')">Spawn</a>
+    </p>
+    <p>Mosquito1
+        <a class="link" href="#" onclick="loadLexi('mosq1')">Spawn</a>
+    </p>
+    <p>Mosquito5
+        <a class="link" href="#" onclick="loadLexi('mosq5')">Spawn</a>
+    </p>
+    <p>Teeth
+        <a class="link" href="#" onclick="loadLexi('teeth')">Spawn</a>
+    </p>
+    <p>Catacryst
+        <a class="link" href="#" onclick="loadLexi('catacryst')">Spawn</a>
     </p>
 
     <h3 class="header3">Rakes</h3>
@@ -761,6 +793,9 @@
     <p>Zigzag Wickstretch
         <a class="link" href="#" onclick="loadLexi('zigzag-wickstretch')">Spawn</a>
     </p>
+    <p>Broken Lines
+        <a class="link" href="#" onclick="loadLexi('brokenlines')">Spawn</a>
+    </p>
     <p>Blockstacker
         <a class="link" href="#" onclick="loadLexi('blockstacker')">Spawn</a>
     </p>
@@ -803,6 +838,9 @@
     <p>Shtshow (insanity)
         <a class="link" href="#" onclick="loadLexi('shtshow')">Spawn</a>
     </p>
+    <p>Turing Machine
+        <a class="link" href="#" onclick="loadLexi('tmachine')">Spawn</a>
+    </p>
 </div>
 </body>
 
@@ -834,13 +872,14 @@ function sampleFPS() {
     lastTimestamp = now;
     display.textContent = `cam: (${camx.toFixed(2)},${camy.toFixed(2)}) hover: (${hoverX},${hoverY}) zoom: ${zoom.toFixed(3)}`;
     let fpsToShow = Math.min(...fpsHist);
-    display2.textContent = `livepx: ${livePx} maxpx: ${maxPx} tick: ${tickn} fps: ${(Math.ceil(fpsToShow*1)/1)}`
+    display2.textContent = `livepx: ${livePx} maxpx: ${maxPx} rendered: ${rendered} tick: ${tickn} fps: ${(Math.ceil(fpsToShow*1)/1)}`
     requestAnimationFrame(sampleFPS);
 }
 
 
 
 let webglSupported = false;
+let rendered = 0;
 let gl = null;
 let glProgram = null;
 let glBuffer = null;
@@ -992,6 +1031,7 @@ let camy = 0;
 let zoom = 10;
 let keysPressed = [];
 let paused = true;
+let sparseEnabled = true;
 let mouseX = 0;
 let mouseY = 0;
 let mousedown = 0;
@@ -1064,6 +1104,7 @@ function animateAlert() {
     }
 }
 function loadLexi(id) {
+
     if (!lexloaded) {
         alert("Lexicon file not found");
         return;
@@ -1071,7 +1112,25 @@ function loadLexi(id) {
 
     let offsett = (id === "sword") ? -50 : 0;
 
-    // Demonoid macrocell support removed (not supported).
+    if (id.includes("rand")) {
+        let dimensions = Number(id[4] + id[5] + id[6])
+        pixels = [];
+        for (let y = dimensions/-2; y<dimensions/2; y++) {
+            for (let x = dimensions/-2; x<dimensions/2; x++) {
+                if (Math.random() < 1/4) {pixels.push({x: x, y: y})}
+            }
+        }
+        saveCurrent();
+        paused = true;
+        document.getElementById('lexicon').style.display = 'none';
+        document.body.style.overflow = '';
+        camx = 0; camy = 0;
+        alertMsg.textContent = `Generated ${dimensions}x${dimensions} Board`;
+        alertOpac = 100;
+        animateAlert();
+        getData();
+        return
+    }
 
     if (Object.prototype.hasOwnProperty.call(patterns, id)) {
         let patternData = patterns[id];
@@ -1172,35 +1231,77 @@ function isLive(pixel) {
 }
 
 function settingsPrompt() {
-    maxPxLen = prompt("Length of max pixel's history?")
-    document.getElementById("settingsbtn").blur()
-    if (!maxPxLen) {maxPxLen = 50}
+    maxPxLen = prompt("Length of max pixel's history?");
+    document.getElementById("settingsbtn").blur();
+    if (!maxPxLen) { maxPxLen = 50; }
 }
 
 let camChangeX = 0;
 let camChangeY = 0;
 
 
+// --- Persistent State for Optimized Tick ---
+let prevStateHashes = new Set();
+let prevTickHashes = [];
+const MAX_STATE_HISTORY = 100; // Adjust for memory/perf balance
+
+// Simple hash for cell array, order-invariant and quick
+function hashPixArr(arr) {
+    // Use a rolling hash
+    let hash = 5381;
+    for (let i = 0; i < arr.length; ++i) {
+        // Simple combine on packed x/y
+        let p = arr[i];
+        let k = ((p.x & 0xFFFF) << 16) | (p.y & 0xFFFF);
+        hash = ((hash << 5) + hash) ^ k;
+    }
+    return hash >>> 0; // unsigned
+}
+
+function arraysEqualUnordered(a, b) {
+    if (a.length !== b.length) return false;
+    // Pack to string and compare sets for quick test (slow only for large arrays)
+    let setA = new Set(a.map(p=>((p.x&0xFFFF)<<16)|(p.y&0xFFFF)));
+    let setB = new Set(b.map(p=>((p.x&0xFFFF)<<16)|(p.y&0xFFFF)));
+    if (setA.size !== setB.size) return false;
+    for (let val of setA) if (!setB.has(val)) return false;
+    return true;
+}
+
+function detectCycleOrStable(newPixels) {
+    // Only if prev hashes recorded
+    const hash = hashPixArr(newPixels);
+    for (let i = 0; i < prevTickHashes.length; ++i) {
+        if (prevTickHashes[i].hash === hash) {
+            // Quick further test: compare full arrays
+            if (arraysEqualUnordered(prevTickHashes[i].arr, newPixels)) {
+                return { period: i+1, at: prevTickHashes[i] };
+            }
+        }
+    }
+    return null;
+}
+
 /*
  * Ultra-optimized Game of Life tick -- X/Y packed into 32-bit ints, raw bit-math everywhere.
  * Main data: pixels: {x, y}[]
  * Algorithm: NO string objects. Use number keys, avoid object allocs, minimize JS engine overhead.
+ * Now with state memory for early exit on repetition (periodicity or stability).
  */
 
- function getData() {
+function getData() {
     livePx = pixels.length;
-    livePxHist.unshift(livePx);
-    if (livePxHist.length > maxPxLen) livePxHist.length = maxPxLen;
-    maxPx = livePxHist.length ? Math.max(...livePxHist) : 0;
- }
+}
 
 function tick() {
     if (draggingSelection) return;
 
-    // Bookkeeping (unchanged)
-    getData();
-
     const N = pixels.length;
+
+    // update maxpx per tick
+    livePxHist.unshift(livePx);
+    if (livePxHist.length > maxPxLen) livePxHist.length = maxPxLen;
+    maxPx = livePxHist.length ? Math.max(...livePxHist) : 0;
 
     // Bit-packed liveSet for fast lookup
     const liveSet = new Set();
@@ -1268,8 +1369,44 @@ function tick() {
         }
     });
 
+    const newPixels = survivors.concat(births);
+
+    // --- Check for repeated state (still lifes, oscillators, etc) for fast early stop ---
+    if (newPixels.length < 4096) { // Reason: very large patterns vary too often; hash for small/normal cases
+        const stateHash = hashPixArr(newPixels);
+
+        // Early detect cycles or stability: e.g. block still life, blinkers, etc.
+        let result = detectCycleOrStable(newPixels);
+        if (result) {
+            // We hit a previous state (oscillator/loop or stability)
+            // Could optionally auto-pause, flash UI, or flag "Loop length n"
+            // Optionally only tickn++; -- no change in state if stable
+            if (result.period === 1) {
+                // Stable (still life)
+                // Optionally set paused=true; Only update if something visual expects tickn.
+                tickn++;
+                // Overwrite .pixels with newPixels (idempotent), but don't update history again
+                pixels = newPixels;
+                return; // Early exit
+            } else {
+                // Oscillator detected
+                tickn++;
+                pixels = newPixels;
+                // Optionally: pause or visually indicate period
+                // e.g. alertMsg.textContent = `Oscillator of period ${result.period} detected`;
+                return;
+            }
+        }
+        // Remember state for future cycle detection
+        prevTickHashes.unshift({ hash: stateHash, arr: newPixels });
+        if (prevTickHashes.length > MAX_STATE_HISTORY) prevTickHashes.length = MAX_STATE_HISTORY;
+    } else {
+        // For very large pattern, don't store state history (avoid OOM)
+        prevTickHashes.length = 0;
+    }
+
     if (births.length > 0 || survivors.length !== pixels.length) tickn++;
-    pixels = survivors.concat(births);
+    pixels = newPixels;
 }
 
 // Draw a single pixel using WebGL fast path if in liveCells and not highlighted, else fallback to CPU drawing
@@ -1278,15 +1415,32 @@ function drawPixelGL(x, y, color) {
 }
 
 // ========== OPTIMIZED DRAW: GPU FAST PATH ==========
-
 function draw() {
+    // Counter for the number of *actually visible on-screen* rendered pixels this frame
+    rendered = 0;
+    getData();
+
     if (!paused) {
-       camx+=(Number(camxin.value)*tps)*tpt*0.005
-       camy+=(Number(camyin.value)*tps)*tpt*0.005
+        camx += (Number(camxin.value) * tps) * tpt * 0.005
+        camy += (Number(camyin.value) * tps) * tpt * 0.005
     }
 
-    hoverX = Math.floor(((mouseX - canvas.width / 2) / zoom + camx) -  14/ zoom);
-    hoverY = 1 + Math.floor(((- (mouseY - canvas.height / 2) / zoom) + camy) + 14 / zoom);
+    hoverX = Math.floor(((mouseX - canvas.width / 2) / zoom + camx) - 14 / zoom);
+    hoverY = 1 + Math.floor((-(mouseY - canvas.height / 2) / zoom + camy) + 14 / zoom);
+
+    let cellSize = Math.max(zoom+0.1/zoom,0.4);
+
+    function isPixelOnScreen(px, py, size = 1) {
+        const sx = (px - camx) * zoom + canvas.width / 2;
+        const sy = canvas.height / 2 - (py - camy) * zoom;
+        // Slight margins to compensate for fractional/rounded cells
+        return (
+            sx + cellSize > 0 &&
+            sx - cellSize < canvas.width &&
+            sy + cellSize > 0 &&
+            sy - cellSize < canvas.height
+        );
+    }
 
     if (zoom > 15 || zoom < 1.5) {
         canvas.style.cursor = 'auto';
@@ -1295,90 +1449,92 @@ function draw() {
     }
 
     // Minimum pixel size for live cells
-    const minCellSize = 0.5;
+    const minCellSize = -99999
+    // Calculate sparsity factor for pixel drawing always
+    let sparsity = Math.max(Math.ceil(0.5 / zoom), 1); // Less pixels for more zoomed out, optimises game by a lot
+    if (!sparseEnabled) {sparsity = 1;}
 
     // Draw background/clear
     if (webglSupported) {
         // WebGL mode -- clear
-        gl.viewport(0,0,canvas.width,canvas.height);
-        gl.clearColor(0,0,0,0);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = "#222";
         ctx.lineWidth = 1;
         let cols = Math.ceil(canvas.width / zoom) + 2;
         let rows = Math.ceil(canvas.height / zoom) + 2;
         let x0 = Math.floor(camx - canvas.width / (2 * zoom));
         let y0 = Math.floor(camy - canvas.height / (2 * zoom));
-        for(let xx=0;xx<=cols; xx++) {
+        for (let xx = 0; xx <= cols; xx++) {
             ctx.beginPath();
-            let xCell = x0+xx, xPixel = (xCell-camx)*zoom+canvas.width/2;
-            ctx.moveTo(xPixel,0); ctx.lineTo(xPixel,canvas.height); ctx.stroke();
+            let xCell = x0 + xx, xPixel = (xCell - camx) * zoom + canvas.width / 2;
+            ctx.moveTo(xPixel, 0); ctx.lineTo(xPixel, canvas.height); ctx.stroke();
         }
-        for(let yy=0;yy<=rows;yy++) {
+        for (let yy = 0; yy <= rows; yy++) {
             ctx.beginPath();
-            let yCell = y0+yy, yPixel = canvas.height/2-(yCell-camy)*zoom;
-            ctx.moveTo(0,yPixel); ctx.lineTo(canvas.width,yPixel); ctx.stroke();
+            let yCell = y0 + yy, yPixel = canvas.height / 2 - (yCell - camy) * zoom;
+            ctx.moveTo(0, yPixel); ctx.lineTo(canvas.width, yPixel); ctx.stroke();
         }
 
-        // Draw all pixels as GL points in a single buffer update if zoom>=minCellSize, else fallback to larger overlay
+        // Always use sparsity for GL mode
         let mainVerts = [];
-        let highlights = new Set(selectedLivePixels.map(p=> p.x+","+p.y));
-        if (zoom >= minCellSize) {
-            for(let i=0; i<pixels.length;i++) {
-                let p = pixels[i], key = p.x+","+p.y;
-                if(draggingSelection && highlights.has(key)) continue; // skip, will draw in drag
-                mainVerts.push(p.x, p.y);
-            }
+        let highlights = new Set(selectedLivePixels.map(p => p.x + "," + p.y));
+        for (let i = 0; i < pixels.length; i++) {
+            let p = pixels[i], key = p.x + "," + p.y;
+            if (draggingSelection && highlights.has(key)) continue; // skip, will draw in drag
+            // Use both x and y for sparsity checks now
+            if (((p.x + p.y) % sparsity) !== 0) continue; // Enforce sparsity
+            if (!isPixelOnScreen(p.x, p.y, minCellSize)) continue; // skip offscreen
+            mainVerts.push(p.x, p.y);
+            rendered++;
+        }
+        if (mainVerts.length > 0) {
             gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mainVerts), gl.STREAM_DRAW);
             gl.uniform2f(glResolutionLoc, canvas.width, canvas.height);
             gl.uniform2f(glCamLoc, camx, camy);
             gl.uniform1f(glZoomLoc, zoom);
-            gl.uniform4f(glColorLoc,1,1,1,1);
-            gl.drawArrays(gl.POINTS,0,mainVerts.length/2);
-        } else {
-            // When zoomed out, fallback to canvas rectangles for big dots
-            for(let i=0; i<pixels.length;i++) {
-                let p = pixels[i], key = p.x+","+p.y;
-                if(draggingSelection && highlights.has(key)) continue; // skip, will draw in drag
-                ctx.fillStyle = highlights.has(key) ? `hsla(120,${(Math.sin(t2/10)+1.2)*25}%,80%,1)` : "white";
-                ctx.fillRect(
-                    (p.x-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
-                    canvas.height/2-(p.y-camy)*zoom - (minCellSize-zoom)/2,
-                    minCellSize, minCellSize
-                );
-            }
+            gl.uniform4f(glColorLoc, 1, 1, 1, 1);
+            gl.drawArrays(gl.POINTS, 0, mainVerts.length / 2);
         }
 
         // Draw selection highlights (in green pulsating)
-        if(selectedLivePixels.length>0) {
+        if (selectedLivePixels.length > 0) {
             let selVerts = [];
-            for(let i=0; i<pixels.length;i++) {
-                let p = pixels[i], key = p.x+","+p.y;
-                if(highlights.has(key)) {
-                    selVerts.push(p.x,p.y);
+            for (let i = 0; i < pixels.length; i++) {
+                let p = pixels[i], key = p.x + "," + p.y;
+                if (highlights.has(key)) {
+                    if (((p.x + p.y) % sparsity) === 0 && isPixelOnScreen(p.x, p.y, minCellSize)) {
+                        selVerts.push(p.x, p.y);
+                        // Count highlit pixel as visible for rendered ONLY if not also in mainVerts (i.e. not skipped above; main rendered++ is not for selection highlight)
+                        // Actually, highlights are also pixels shown onscreen, so count them too if onscreen
+                        rendered++;
+                    }
                 }
             }
-            if(selVerts.length>0 && zoom >= minCellSize) {
-                gl.bindBuffer(gl.ARRAY_BUFFER,glBuffer);
-                gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(selVerts),gl.STREAM_DRAW);
-                gl.uniform2f(glResolutionLoc,canvas.width,canvas.height);
-                gl.uniform2f(glCamLoc,camx,camy);
-                gl.uniform1f(glZoomLoc,zoom);
+            // Use GL for highlight if zoomed in, else ctx
+            if (selVerts.length > 0 && zoom >= minCellSize) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(selVerts), gl.STREAM_DRAW);
+                gl.uniform2f(glResolutionLoc, canvas.width, canvas.height);
+                gl.uniform2f(glCamLoc, camx, camy);
+                gl.uniform1f(glZoomLoc, zoom);
                 // Animate green highlight
                 let s = (Math.sin(t2 / 10) + 1.2) * 0.25;
-                gl.uniform4f(glColorLoc,0.2,0.7,0.2+s,1);
-                gl.drawArrays(gl.POINTS,0,selVerts.length/2);
-            } else if (selVerts.length > 0 && zoom < minCellSize) {
+                gl.uniform4f(glColorLoc, 0.2, 0.7, 0.2 + s, 1);
+                gl.drawArrays(gl.POINTS, 0, selVerts.length / 2);
+            } else if (selVerts.length > 0) {
                 let s = (Math.sin(t2 / 10) + 1.2) * 0.25;
-                ctx.fillStyle = `rgba(44,181,44,${0.7+s})`;
-                for (let k=0;k<selVerts.length;k+=2) {
-                    let x = selVerts[k], y = selVerts[k+1];
+                ctx.fillStyle = `rgba(44,181,44,${0.7 + s})`;
+                for (let k = 0; k < selVerts.length; k += 2) {
+                    let x = selVerts[k], y = selVerts[k + 1];
+                    if (!isPixelOnScreen(x, y, minCellSize)) continue;
                     ctx.fillRect(
-                        (x-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
-                        canvas.height/2-(y-camy)*zoom - (minCellSize-zoom)/2,
+                        (x - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
+                        canvas.height / 2 - (y - camy) * zoom - (minCellSize - zoom) / 2,
                         minCellSize, minCellSize
                     );
                 }
@@ -1386,34 +1542,35 @@ function draw() {
         }
 
         // Draw dragged preview and overlays using 2D context for flexibility
-        // Dragging (preview selection in blue)
-        if(draggingSelection&&selectionOriginal.length>0) {
+        if (draggingSelection && selectionOriginal.length > 0) {
             for (let i = 0; i < selectionOriginal.length; i++) {
                 let nx = selectionOriginal[i].x + dragOffset.x, ny = selectionOriginal[i].y + dragOffset.y;
+                if (!isPixelOnScreen(nx, ny, minCellSize)) continue;
                 ctx.fillStyle = "rgba(50,180,255,0.5)";
                 ctx.fillRect(
-                    (nx-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
-                    canvas.height/2-(ny-camy)*zoom - (minCellSize-zoom)/2,
-                    Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
+                    (nx - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
+                    canvas.height / 2 - (ny - camy) * zoom - (minCellSize - zoom) / 2,
+                    Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
                 );
             }
         }
         // Paste preview
-        if (pastePreviewActive&&copiedPixels.length>0) {
+        if (pastePreviewActive && copiedPixels.length > 0) {
             let pasteMinX = Math.min(...copiedPixels.map(p => p.x));
             let pasteMinY = Math.min(...copiedPixels.map(p => p.y));
-            let offsetX = hoverX-pasteMinX,
-                offsetY = hoverY-pasteMinY;
-            let already = new Set(pixels.map(p=>`${p.x},${p.y}`));
-            for (let i=0;i<copiedPixels.length;i++) {
-                let nx = copiedPixels[i].x+offsetX,
-                    ny = copiedPixels[i].y+offsetY;
-                if(already.has(`${nx},${ny}`)) ctx.fillStyle = "rgba(240,40,40,0.4)";
+            let offsetX = hoverX - pasteMinX,
+                offsetY = hoverY - pasteMinY;
+            let already = new Set(pixels.map(p => `${p.x},${p.y}`));
+            for (let i = 0; i < copiedPixels.length; i++) {
+                let nx = copiedPixels[i].x + offsetX,
+                    ny = copiedPixels[i].y + offsetY;
+                if (!isPixelOnScreen(nx, ny, minCellSize)) continue;
+                if (already.has(`${nx},${ny}`)) ctx.fillStyle = "rgba(240,40,40,0.4)";
                 else ctx.fillStyle = "rgba(80,180,255,0.5)";
                 ctx.fillRect(
-                    (nx-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
-                    canvas.height/2-(ny-camy)*zoom - (minCellSize-zoom)/2,
-                    Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
+                    (nx - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
+                    canvas.height / 2 - (ny - camy) * zoom - (minCellSize - zoom) / 2,
+                    Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
                 );
             }
         }
@@ -1425,37 +1582,40 @@ function draw() {
             const maxX = Math.max(hiliteCorner1.x, hiliteCorner2.x);
             const minY = Math.min(hiliteCorner1.y, hiliteCorner2.y);
             const maxY = Math.max(hiliteCorner1.y, hiliteCorner2.y);
-            for(let hx=minX;hx<=maxX;hx++) {
-              for(let hy=minY;hy<=maxY;hy++) {
-                ctx.fillRect(
-                    (hx-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
-                    canvas.height/2-(hy-camy)*zoom - (minCellSize-zoom)/2,
-                    Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
-                );
-              }
+            for (let hx = minX; hx <= maxX; hx++) {
+                for (let hy = minY; hy <= maxY; hy++) {
+                    if (!isPixelOnScreen(hx, hy, minCellSize)) continue;
+                    ctx.fillRect(
+                        (hx - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
+                        canvas.height / 2 - (hy - camy) * zoom - (minCellSize - zoom) / 2,
+                        Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
+                    );
+                }
             }
             ctx.globalAlpha = 1;
         }
         // Draw hovered cell
-        ctx.globalAlpha=0.5; ctx.fillStyle="#888";
-        ctx.fillRect(
-            (hoverX-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
-            canvas.height/2-(hoverY-camy)*zoom - (minCellSize-zoom)/2,
-            Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
-        );
-        ctx.globalAlpha=1;
+        if (isPixelOnScreen(hoverX, hoverY, minCellSize)) {
+            ctx.globalAlpha = 0.5; ctx.fillStyle = "#888";
+            ctx.fillRect(
+                (hoverX - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
+                canvas.height / 2 - (hoverY - camy) * zoom - (minCellSize - zoom) / 2,
+                Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
+            );
+            ctx.globalAlpha = 1;
+        }
 
         // ---- Draw markers using ctx (2D context) ----
         if (typeof markers !== "undefined" && Array.isArray(markers)) {
             ctx.globalAlpha = 0.4;
-            ctx.fillStyle = markers[i].color;
             for (let i = 0; i < markers.length; i++) {
                 let m = markers[i];
-                // Draw as filled rect at marker cell location
+                if (!isPixelOnScreen(m.x, m.y, minCellSize)) continue;
+                ctx.fillStyle = m.color;
                 ctx.fillRect(
-                    (m.x-camx)*zoom+canvas.width/2 - (minCellSize-zoom)/2,
-                    canvas.height/2-(m.y-camy)*zoom - (minCellSize-zoom)/2,
-                    Math.max(zoom,minCellSize),Math.max(zoom,minCellSize)
+                    (m.x - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
+                    canvas.height / 2 - (m.y - camy) * zoom - (minCellSize - zoom) / 2,
+                    Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
                 );
             }
             ctx.globalAlpha = 1;
@@ -1463,7 +1623,7 @@ function draw() {
 
     } else {
 
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         // Draw grid
         ctx.strokeStyle = "#222";
         ctx.lineWidth = 1;
@@ -1471,66 +1631,69 @@ function draw() {
         let rows = Math.ceil(canvas.height / zoom) + 2;
         let x0 = Math.floor(camx - canvas.width / (2 * zoom));
         let y0 = Math.floor(camy - canvas.height / (2 * zoom));
-        for(let xx=0;xx<=cols; xx++) {
+        for (let xx = 0; xx <= cols; xx++) {
             ctx.beginPath();
-            let xCell = x0+xx, xPixel = (xCell-camx)*zoom+canvas.width/2;
-            ctx.moveTo(xPixel,0); ctx.lineTo(xPixel,canvas.height); ctx.stroke();
+            let xCell = x0 + xx, xPixel = (xCell - camx) * zoom + canvas.width / 2;
+            ctx.moveTo(xPixel, 0); ctx.lineTo(xPixel, canvas.height); ctx.stroke();
         }
-        for(let yy=0;yy<=rows;yy++) {
+        for (let yy = 0; yy <= rows; yy++) {
             ctx.beginPath();
-            let yCell = y0+yy, yPixel = canvas.height/2-(yCell-camy)*zoom;
-            ctx.moveTo(0,yPixel); ctx.lineTo(canvas.width,yPixel); ctx.stroke();
+            let yCell = y0 + yy, yPixel = canvas.height / 2 - (yCell - camy) * zoom;
+            ctx.moveTo(0, yPixel); ctx.lineTo(canvas.width, yPixel); ctx.stroke();
         }
-        // Draw main live pixels and highlight
-        let highlights = new Set(selectedLivePixels.map(p=>p.x+","+p.y));
-        for(let i=0;i<pixels.length;i++) {
-            let p=pixels[i], key=p.x+","+p.y;
-            if(draggingSelection && highlights.has(key)) continue;
-            if(highlights.has(key)) {
-                ctx.fillStyle = `hsla(120,${(Math.sin(t2/10)+1.2)*25}%,80%,1)`;
+
+        // Draw main live pixels and highlight, always using sparsity
+        let highlights = new Set(selectedLivePixels.map(p => p.x + "," + p.y));
+        for (let i = 0; i < pixels.length; i++) {
+            let p = pixels[i], key = p.x + "," + p.y;
+            if (draggingSelection && highlights.has(key)) continue;
+            if (((p.x + p.y) % sparsity) !== 0) continue;
+            if (!isPixelOnScreen(p.x, p.y, minCellSize)) continue;
+            if (highlights.has(key)) {
+                ctx.fillStyle = `hsla(120,${(Math.sin(t2 / 10) + 1.2) * 25}%,80%,1)`;
             } else {
                 ctx.fillStyle = "white";
             }
             // Enforce minimum cell size for live cells
-            const cellSize = Math.max(zoom, minCellSize);
+
             ctx.fillRect(
-                (p.x-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
-                canvas.height/2-(p.y-camy)*zoom - (cellSize-zoom)/2,
+                (p.x - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
+                canvas.height / 2 - (p.y - camy) * zoom - (cellSize - zoom) / 2,
                 cellSize, cellSize
             );
+            rendered++;
         }
 
         // draw 0,0 cell whiter
-        // Draw 0,0 as rect at normal zoom, but as a circle if zoomed out far enough
-        ctx.fillStyle = "#fff1";
-        if (zoom >= 4) {
-            const cellSize = Math.max(zoom, minCellSize);
-            ctx.fillRect(
-                (0-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
-                canvas.height/2-(0-camy)*zoom - (cellSize-zoom)/2,
-                cellSize, cellSize
-            );
-        } else {
-            // Diameter = 1% of the smaller canvas dimension (help user find center)
-            const diameter = Math.max(Math.min(canvas.width, canvas.height) * 0.01, minCellSize);
-            ctx.beginPath();
-            ctx.arc(
-                (0-camx)*zoom+canvas.width/2,
-                canvas.height/2-(0-camy)*zoom,
-                diameter/2, 0, 2 * Math.PI
-            );
-            ctx.fill();
+        if (isPixelOnScreen(0, 0, minCellSize)) {
+            ctx.fillStyle = "#fff1";
+            if (zoom >= 4) {
+                ctx.fillRect(
+                    (0 - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
+                    canvas.height / 2 - (0 - camy) * zoom - (cellSize - zoom) / 2,
+                    cellSize, cellSize
+                );
+            } else {
+                const diameter = Math.max(Math.min(canvas.width, canvas.height) * 0.01, minCellSize);
+                ctx.beginPath();
+                ctx.arc(
+                    (0 - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (0 - camy) * zoom,
+                    diameter / 2, 0, 2 * Math.PI
+                );
+                ctx.fill();
+            }
         }
 
-        if(draggingSelection&&selectionOriginal.length>0) {
-            for(let i=0; i<selectionOriginal.length;i++) {
+        if (draggingSelection && selectionOriginal.length > 0) {
+            for (let i = 0; i < selectionOriginal.length; i++) {
                 let nx = selectionOriginal[i].x + dragOffset.x,
                     ny = selectionOriginal[i].y + dragOffset.y;
+                if (!isPixelOnScreen(nx, ny, minCellSize)) continue;
                 ctx.fillStyle = "rgba(60,180,250,0.5)";
-                const cellSize = Math.max(zoom, minCellSize);
                 ctx.fillRect(
-                    (nx-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
-                    canvas.height/2-(ny-camy)*zoom - (cellSize-zoom)/2,
+                    (nx - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
+                    canvas.height / 2 - (ny - camy) * zoom - (cellSize - zoom) / 2,
                     cellSize, cellSize
                 );
             }
@@ -1539,15 +1702,15 @@ function draw() {
             let pasteMinX = Math.min(...copiedPixels.map(p => p.x));
             let pasteMinY = Math.min(...copiedPixels.map(p => p.y));
             let offsetX = hoverX - pasteMinX, offsetY = hoverY - pasteMinY;
-            let already = new Set(pixels.map(p=>`${p.x},${p.y}`));
-            for (let i=0;i<copiedPixels.length;i++){
-                let nx=copiedPixels[i].x+offsetX,ny=copiedPixels[i].y+offsetY;
-                if(already.has(`${nx},${ny}`)) ctx.fillStyle = "hsla(0,100%,60%,0.4)";
+            let already = new Set(pixels.map(p => `${p.x},${p.y}`));
+            for (let i = 0; i < copiedPixels.length; i++) {
+                let nx = copiedPixels[i].x + offsetX, ny = copiedPixels[i].y + offsetY;
+                if (!isPixelOnScreen(nx, ny, minCellSize)) continue;
+                if (already.has(`${nx},${ny}`)) ctx.fillStyle = "hsla(0,100%,60%,0.4)";
                 else ctx.fillStyle = "hsla(210,100%,60%,0.5)";
-                const cellSize = Math.max(zoom, minCellSize);
                 ctx.fillRect(
-                    (nx-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
-                    canvas.height/2-(ny-camy)*zoom - (cellSize-zoom)/2,
+                    (nx - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
+                    canvas.height / 2 - (ny - camy) * zoom - (cellSize - zoom) / 2,
                     cellSize, cellSize
                 );
             }
@@ -1559,26 +1722,25 @@ function draw() {
             const maxX = Math.max(hiliteCorner1.x, hiliteCorner2.x);
             const minY = Math.min(hiliteCorner1.y, hiliteCorner2.y);
             const maxY = Math.max(hiliteCorner1.y, hiliteCorner2.y);
-            for(let hx=minX;hx<=maxX;hx++) for(let hy=minY;hy<=maxY;hy++) {
-                const cellSize = Math.max(zoom, minCellSize);
+            for (let hx = minX; hx <= maxX; hx++) for (let hy = minY; hy <= maxY; hy++) {
+                if (!isPixelOnScreen(hx, hy, minCellSize)) continue;
                 ctx.fillRect(
-                    (hx-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
-                    canvas.height/2-(hy-camy)*zoom - (cellSize-zoom)/2,
+                    (hx - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
+                    canvas.height / 2 - (hy - camy) * zoom - (cellSize - zoom) / 2,
                     cellSize, cellSize
                 );
             }
             ctx.globalAlpha = 1;
         }
-        ctx.globalAlpha=0.5; ctx.fillStyle="#888";
-        {
-            const cellSize = Math.max(zoom, minCellSize);
+        if (isPixelOnScreen(hoverX, hoverY, minCellSize)) {
+            ctx.globalAlpha = 0.5; ctx.fillStyle = "#888";
             ctx.fillRect(
-                (hoverX-camx)*zoom+canvas.width/2 - (cellSize-zoom)/2,
-                canvas.height/2-(hoverY-camy)*zoom - (cellSize-zoom)/2,
+                (hoverX - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
+                canvas.height / 2 - (hoverY - camy) * zoom - (cellSize - zoom) / 2,
                 cellSize, cellSize
             );
         }
-        ctx.globalAlpha=1;
+        ctx.globalAlpha = 1;
 
         // Draw markers at 60% opacity
         if (Array.isArray(markers)) {
@@ -1586,11 +1748,11 @@ function draw() {
             ctx.globalAlpha = 0.6;
             for (let i = 0; i < markers.length; i++) {
                 let m = markers[i];
+                if (!isPixelOnScreen(m.x, m.y, minCellSize)) continue;
                 ctx.fillStyle = m.color || "#0ff";
-                const cellSize = Math.max(zoom, minCellSize);
                 ctx.fillRect(
-                    (m.x - camx) * zoom + canvas.width / 2 - (cellSize-zoom)/2,
-                    canvas.height / 2 - (m.y - camy) * zoom - (cellSize-zoom)/2,
+                    (m.x - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
+                    canvas.height / 2 - (m.y - camy) * zoom - (cellSize - zoom) / 2,
                     cellSize, cellSize
                 );
             }
@@ -1598,26 +1760,21 @@ function draw() {
         }
     }
 
-
-
-
-
     // UI text/logic
     if (shiftpressed) {
         hiliteCorner2 = { x: hoverX, y: hoverY };
     }
 
-
     // Fast draw/erase
     if (mousedown && !draggingSelection) {
-        if (isLive({x: hoverX, y: hoverY}) && (clickedFirst == 0)) {
+        if (isLive({ x: hoverX, y: hoverY }) && (clickedFirst == 0)) {
             let inHighlight = selectedLivePixels.find(p => p.x === hoverX && p.y === hoverY);
             if (!inHighlight) {
                 const idx = pixels.findIndex(p => p.x === hoverX && p.y === hoverY);
                 if (idx !== -1) pixels.splice(idx, 1);
             }
         } else if (clickedFirst == 1 && !pixels.some(p => p.x === hoverX && p.y === hoverY)) {
-            pixels.push({x: hoverX, y: hoverY})
+            pixels.push({ x: hoverX, y: hoverY })
         }
     }
 
@@ -1651,18 +1808,18 @@ function sleep(ms) {
 }
 
 async function waitUntil(condition) {
-        while (!condition()) {
-            await sleep(10);
-        }
+    while (!condition()) {
+        await sleep(10);
     }
+}
 
 async function tickLoop() {
-     tps = tpsInput.value ? tpsInput.value : 60;
+    tps = tpsInput.value ? tpsInput.value : 60;
     tpt = (tptInput.value ? tptInput.value : 1);
-    if (tps < fps) {await sleep(600/(tps))}
+    if (tps < fps) { await sleep(600 / (tps)) }
     if (paused) { await waitUntil(() => !paused); }
     for (let i = 0; i < (tpt); i++) {
-     tick();
+        tick();
     }
     requestAnimationFrame(tickLoop);
 }
@@ -2097,6 +2254,12 @@ window.addEventListener("keydown", (e) => {
         } else {
             markers.push({x:hoverX, y:hoverY, color: `#${markerColors[colorIndex]}`});
         }
+    }
+
+    if (e.key == "o") {
+        sparseEnabled = !sparseEnabled;
+        alertMsg.textContent = `Render Optimise ${sparseEnabled}`;
+        alertOpac = 100; animateAlert();
     }
 
     if (e.key === "n") {
