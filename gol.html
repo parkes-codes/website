@@ -910,28 +910,40 @@
 // Note: For GPU+CPU, we use a hybrid approach below with dynamic switching for tick/draw (WebGL if possible, falls back to CPU).
 
 console.clear();
-let frameCounter = 0;
+// Improved FPS calculation using a rolling window of timestamps for smoother and less blocking updates.
+// Improved FPS calculation with a fixed-size ring buffer for smoother, low-overhead updates that avoid array shifting (lag spikes).
+const FPS_BUFFER_SIZE = 120; // 2 seconds at 60 FPS
+let frameTimestamps = new Array(FPS_BUFFER_SIZE);
+let frameIndex = 0;
+let numSamples = 0;
 let fps = 0;
-let fpsTimerStart = performance.now();
+let lastDisplayUpdate = 0;
+const DISPLAY_UPDATE_INTERVAL = 120; // ms, update FPS/UI at most ~8 times/sec
 
-function sampleFPS() {
-    frameCounter += 1;
-
-    const now = performance.now();
-    const elapsed = now - fpsTimerStart;
-
-    // If a second (or more) has passed, update fps and reset counter
-    if (elapsed >= 1000) {
-        fps = frameCounter / (elapsed / 1000);
-        frameCounter = 0;
-        fpsTimerStart = now;
+function sampleFPS(now = performance.now()) {
+    frameTimestamps[frameIndex] = now;
+    frameIndex = (frameIndex + 1) % FPS_BUFFER_SIZE;
+    if (numSamples < FPS_BUFFER_SIZE) numSamples++;
+    
+    // Only update FPS/UI at DISPLAY_UPDATE_INTERVAL
+    if (now - lastDisplayUpdate > DISPLAY_UPDATE_INTERVAL) {
+        // Find oldest timestamp still in the buffer within the last 1 sec
+        let validFrames = 0;
+        const oneSecAgo = now - 1000;
+        for (let i = 0; i < numSamples; ++i) {
+            const idx = (frameIndex - 1 - i + FPS_BUFFER_SIZE) % FPS_BUFFER_SIZE;
+            if (frameTimestamps[idx] > oneSecAgo) validFrames++;
+            else break;
+        }
+        fps = validFrames/2;
+        lastDisplayUpdate = now;
     }
 
-    display.textContent = `cam: (${camx.toFixed(2)},${camy.toFixed(2)}) hover: (${hoverX},${hoverY}) zoom: ${zoom.toFixed(3)}`;
-    display2.textContent = `livepx: ${livePx} maxpx: ${maxPx} rendered: ${rendered} tick: ${tickn} fps: ${Math.round(fps)}`;
     requestAnimationFrame(sampleFPS);
 }
 
+// Start the update loop
+requestAnimationFrame(sampleFPS);
 
 
 let webglSupported = false;
@@ -1848,6 +1860,9 @@ function draw() {
     if ((keysPressed["d"] && !cmdPressed) || (keysPressed["arrowright"] && !inputFocus)) camx += (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
     if (keysPressed["w"] || (keysPressed["arrowup"] && !inputFocus)) camy += (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
     if ((keysPressed["s"] && !cmdPressed) || (keysPressed["arrowdown"] && !inputFocus)) camy -= (1 / Math.abs(Math.log(zoom + 1.5))) * 1;
+
+    display.textContent = `cam: (${camx.toFixed(2)},${camy.toFixed(2)}) hover: (${hoverX},${hoverY}) zoom: ${zoom.toFixed(3)}`;
+    display2.textContent = `livepx: ${livePx} maxpx: ${maxPx} rendered: ${rendered} tick: ${tickn} fps: ${Math.ceil(fps)}`;
 
     requestAnimationFrame(draw);
 }
