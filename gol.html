@@ -420,6 +420,9 @@
     <p>Period 2c/6 Ships Collection
         <a class="link" href="#" onclick="loadLexi('p6ships')">Spawn</a>
     </p>
+    <p>Period c/4 Ships Collection
+        <a class="link" href="#" onclick="loadLexi('c4s')">Spawn</a>
+    </p>
     
     <h3 class="header3">Un-Orthogonal Ships</h3>
     <p>Antstretcher
@@ -502,6 +505,9 @@
     </p>
     <p>Pony Express
         <a class="link" href="#" onclick="loadLexi('ponyexpress')">Spawn</a>
+    </p>
+    <p>Synthesis of Crabstretcher
+        <a class="link" href="#" onclick="loadLexi('crabsynth')">Spawn</a>
     </p>
     <p>Pinwheel Synth
         <a class="link" href="#" onclick="loadLexi('pinwheelsynth')">Spawn</a>
@@ -754,14 +760,23 @@
     <p>HWSS Gun
         <a class="link" href="#" onclick="loadLexi('hwssgun')">Spawn</a>
     </p>
-
-    <h3 class="header3">Misc Guns</h3>
+    <p>Blinker Ship Gun
+        <a class="link" href="#" onclick="loadLexi('bsgun')">Spawn</a>
+    </p>
+    <p>Sidecar Gun
+        <a class="link" href="#" onclick="loadLexi('sideCarGun')">Spawn</a>
+    </p>
     <p>Loafer Gun
         <a class="link" href="#" onclick="loadLexi('loafergun')">Spawn</a>
     </p>
     <p>Faster Loafer Gun
         <a class="link" href="#" onclick="loadLexi('fastloafgun')">Spawn</a>
     </p>
+    <p>p240 25P3H1V0.1 Gun
+        <a class="link" href="#" onclick="loadLexi('idk4')">Spawn</a>
+    </p>
+
+    <h3 class="header3">Misc Guns</h3>
     <p>Side-By-Side Glider Gun (vacuum)
         <a class="link" href="#" onclick="loadLexi('vacuumGun')">Spawn</a>
     </p>
@@ -771,9 +786,6 @@
     <p>Double Slide Gun
         <a class="link" href="#" onclick="loadLexi('doubleslide')">Spawn</a>
     </p>
-    <p>Sidecar Gun
-        <a class="link" href="#" onclick="loadLexi('sideCarGun')">Spawn</a>
-    </p>
     <p>Space Rake Gun
         <a class="link" href="#" onclick="loadLexi('spaceRakeGun')">Spawn</a>
     </p>
@@ -781,6 +793,12 @@
     <h3 class="header3">Very Large Guns</h3>
     <p>Dart Gun
         <a class="link" href="#" onclick="loadLexi('dartgun')">Spawn</a>
+    </p>
+    <p>Weekender Gun
+        <a class="link" href="#" onclick="loadLexi('idk5')">Spawn</a>
+    </p>
+    <p>Lobster Gun
+        <a class="link" href="#" onclick="loadLexi('lobgun')">Spawn</a>
     </p>
     <p>Spaceship1 Gun (p416)
         <a class="link" href="#" onclick="loadLexi('spaceshipgun1')">Spawn</a>
@@ -811,6 +829,12 @@
     </p>
     <p>Very Slow Diagonal Spaceship Gun
         <a class="link" href="#" onclick="loadLexi('idkgun')">Spawn</a>
+    </p>
+    <p>Solifuge Gun (p8064)
+        <a class="link" href="#" onclick="loadLexi('soligun')">Spawn</a>
+    </p>
+    <p>p1000 74p2h1v0 Gun With Attachment
+        <a class="link" href="#" onclick="loadLexi('idk3')">Spawn</a>
     </p>
     
     <h3 class="header3">Very Large Patterns</h3>
@@ -871,6 +895,12 @@
     <p>High Speed Telegraph
         <a class="link" href="#" onclick="loadLexi('telegraph')">Spawn</a>
     </p>
+    <p>Solifuge-Based Glider Gun Breeder
+        <a class="link" href="#" onclick="loadLexi('ggCam')">Spawn</a>
+    </p>
+    <p>14c/65 Growing Fuse Extender
+        <a class="link" href="#" onclick="loadLexi('idk6')">Spawn</a>
+    </p>
 </div>
 </body>
 
@@ -913,13 +943,6 @@ let glColorLoc = null;
 let glResolutionLoc = null;
 let glCamLoc = null;
 let glZoomLoc = null;
-
-
-
-
-const cursor = new Image();
-cursor.src = "cursor.png";
-
 
 let ctx = document.getElementById("gamecanvas").getContext("2d");
 
@@ -1468,11 +1491,11 @@ function draw() {
         );
     }
 
-    if (zoom > 15 || zoom < 1.5) {
-        canvas.style.cursor = 'auto';
-    } else {
-        canvas.style.cursor = 'none';
-    }
+    // if (zoom > 15 || zoom < 1.5) {
+    //     canvas.style.cursor = 'auto';
+    // } else {
+    //     canvas.style.cursor = 'none';
+    // }
 
     // Minimum pixel size for live cells
     const minCellSize = -99999
