@@ -338,15 +338,13 @@
         <a href="timer" target="_blank" class="linkbutton"><button class="button text">Open 30 Minute Timer</button></a>
         <a href="typing" target="_blank" class="linkbutton"><button class="button text">Open Typing Test</button></a>
         <a href="pelle" target="_blank" class="linkbutton"><button class="button text">Open Scary Text</button></a>
-        <a href="hacking" target="_blank" class="linkbutton button text" id="hacktext" style="font-family: monospace;">Open 0101010010</a>
+        <!-- Fix: Don't update the full button content; update just the binary span text -->
+        <a href="0101010010" target="_blank" class="linkbutton" id="hack-link-anchor">
+          <button class="button text" id="hacktext"><span>Open&nbsp;</span><span id="hacknum" style="color: #8f8">0101010010</span></button>
+        </a>
         <a href="colors" target="_blank" class="linkbutton"><button class="button text">Open Color Creator</button></a>
         <a href="plinkdefense" target="_blank" class="linkbutton"><button class="button text">Open Tower Defense</button></a>
         <a href="flappy2" target="_blank" class="linkbutton"><button class="button text">Open Flappy Bird 2</button></a>
-        
-
-    
-
-
       </div>
     </div>
     <p class="text" style="left: 0%; text-align: center; opacity: 50%;">Warning: These links are desinged for 60fps computer devices!</p>
@@ -437,9 +435,11 @@
       const ag2text = document.getElementById("ag2text");
       const algoText = document.getElementById("algoText");
       const hacktext = document.getElementById("hacktext");
+      const hacknum = document.getElementById("hacknum");
       const thingy = document.getElementById("thingy");
       const bgOverlay = document.getElementById("backgroundOverlay");
       const velkomm = document.getElementById("velkomm");
+
       let funclicked = false;
       const buttonOriginalTransformMap = new WeakMap();
       function getBaseTransform(el) {
@@ -482,7 +482,7 @@
 
         function adjustPfpGrid() {
           const linksRow = document.getElementById('linksRow');
-          const minPfpWidth = 140 * 2 + 20 * 2; // two profile containers + gaps (rough heuristic)
+          const minPfpWidth = 140 * 2 + 20 * 2
           if (window.innerWidth <= minPfpWidth + 20) {
             linksRow.style.flexDirection = "column";
             Array.from(linksRow.children).forEach(el => el.style.width = "100%");
@@ -553,12 +553,12 @@
         if (algoText) {
           algoText.style.color = `hsl(${(t*30)%360},50%,90%)`;
         }
-        if (hacktext) {
+        if (hacknum) {
           let temp = "";
-          for (let i = 0; i<10; i++) {
-            temp+= Math.floor(Math.random()*2);
+          for (let i = 0; i < 10; i++) {
+            temp += Math.floor(Math.random() * 2);
           }
-          hacktext.innerHTML = `<span>Open&nbsp</span><span style="color: #8f8">${temp}</span>`
+          hacknum.textContent = temp;
         }
 
         requestAnimationFrame(tick);
