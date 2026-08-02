@@ -1,0 +1,909 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aclass.io</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico" />
+</head>
+<style>
+    body {
+        background-color: #000;
+        overflow: hidden;
+    }
+    #gamecanvas {
+        border: #fff 5px solid;
+        border-radius: 10px;
+        width: calc(100vw - 11px);
+        height: calc(100vh - 11px);
+        margin-left: -8px;
+        margin-top: -8px;
+        position: relative;
+        z-index: 1;
+        display: block;
+        background: none;
+    }
+</style>
+<body>
+
+ <canvas id="gamecanvas"></canvas>
+
+</body>
+<script>
+
+// js objects go brrr
+
+console.clear()
+const canvas = document.getElementById("gamecanvas");
+const ctx = canvas.getContext('2d');
+
+setTimeout(() => {alert("Press keys e c and t")},100)
+let keysPressed = [];
+
+let fps = 60;
+let fpsHist = [];
+let fpsAv = 0;
+let mx = 0, my = 0;
+let md = false;
+
+const pi = Math.PI
+const tau = Math.PI*2
+
+let camera = {
+    x: 0,
+    y: 0,
+    z: 0.5
+};
+
+
+function updateMousePosition(e) {
+    const rect = canvas.getBoundingClientRect();
+    mx = canvas.width / -2 + ((e.clientX - rect.left) * (canvas.width / rect.width));
+    my = canvas.height / 2 - ((e.clientY - rect.top) * (canvas.height / rect.height));
+}
+canvas.addEventListener('mousemove', updateMousePosition);
+
+function arcAtCamera(x, y, rad, sd, ed) {
+    ctx.arc(
+        canvas.width / 2 + (x + camera.x) * camera.z,
+        canvas.height / 2 - (y + camera.y) * camera.z,
+        rad * camera.z,
+        sd,
+        ed
+    );
+}
+
+function fillQuadAtCamera(x1, y1, x2, y2, x3, y3, x4, y4) {
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2 + (x1 + camera.x) * camera.z, canvas.height / 2 - (y1 + camera.y) * camera.z);
+    ctx.lineTo(canvas.width / 2 + (x2 + camera.x) * camera.z, canvas.height / 2 - (y2 + camera.y) * camera.z);
+    ctx.lineTo(canvas.width / 2 + (x3 + camera.x) * camera.z, canvas.height / 2 - (y3 + camera.y) * camera.z);
+    ctx.lineTo(canvas.width / 2 + (x4 + camera.x) * camera.z, canvas.height / 2 - (y4 + camera.y) * camera.z);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function fillTriAtCamera(x1, y1, x2, y2, x3, y3) {
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2 + (x1 + camera.x) * camera.z, canvas.height / 2 - (y1 + camera.y) * camera.z);
+    ctx.lineTo(canvas.width / 2 + (x2 + camera.x) * camera.z, canvas.height / 2 - (y2 + camera.y) * camera.z);
+    ctx.lineTo(canvas.width / 2 + (x3 + camera.x) * camera.z, canvas.height / 2 - (y3 + camera.y) * camera.z);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawBody(x,y,size) {
+    ctx.save();
+        ctx.fillStyle = "#8ce";
+        ctx.beginPath();
+        arcAtCamera(x-size/2, y-size/2, size, 0, tau);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = "#adf";
+        ctx.beginPath();
+        arcAtCamera(x-size/2, y-size/2, size*0.82, 0, tau);
+        ctx.fill();
+        ctx.restore();
+}
+
+// drawBarrel unchanged
+function drawBarrel({
+    x, y, size,
+    dir = 0, dirOffset = 0,
+    barrelLength = size,
+    barrelWidth = size,
+    outlineBarrelLength = size * 1.07,
+    outlineBarrelWidth = size * 1.1,
+    offset = size * 0.8,
+    color = "#555",
+    outlineColor = "#777",
+    reload = 100,
+    spawnX = 0,
+    spawnY = 0
+}) {
+    const barrelDir = dir + dirOffset;
+    const cx = (x - size / 2) + Math.sin(barrelDir) * offset;
+    const cy = (y - size / 2) + Math.cos(barrelDir) * offset;
+
+    const dx = Math.sin(barrelDir);
+    const dy = Math.cos(barrelDir);
+
+    const perpX = Math.sin(barrelDir + Math.PI / 2);
+    const perpY = Math.cos(barrelDir + Math.PI / 2);
+
+    // Outline barrel
+    ctx.save();
+    ctx.fillStyle = outlineColor;
+    ctx.beginPath();
+
+    const ox1 = cx + perpX * (outlineBarrelWidth / 2);
+    const oy1 = cy + perpY * (outlineBarrelWidth / 2);
+
+    const ox2 = cx - perpX * (outlineBarrelWidth / 2);
+    const oy2 = cy - perpY * (outlineBarrelWidth / 2);
+
+    const ox3 = cx - perpX * (outlineBarrelWidth / 2) + dx * outlineBarrelLength;
+    const oy3 = cy - perpY * (outlineBarrelWidth / 2) + dy * outlineBarrelLength;
+
+    const ox4 = cx + perpX * (outlineBarrelWidth / 2) + dx * outlineBarrelLength;
+    const oy4 = cy + perpY * (outlineBarrelWidth / 2) + dy * outlineBarrelLength;
+
+    fillQuadAtCamera(ox1, oy1, ox2, oy2, ox3, oy3, ox4, oy4);
+    ctx.restore();
+
+    // Normal barrel
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+
+    const x1 = cx + perpX * (barrelWidth / 2);
+    const y1 = cy + perpY * (barrelWidth / 2);
+
+    const x2 = cx - perpX * (barrelWidth / 2);
+    const y2 = cy - perpY * (barrelWidth / 2);
+
+    const x3 = cx - perpX * (barrelWidth / 2) + dx * barrelLength;
+    const y3 = cy - perpY * (barrelWidth / 2) + dy * barrelLength;
+
+    const x4 = cx + perpX * (barrelWidth / 2) + dx * barrelLength;
+    const y4 = cy + perpY * (barrelWidth / 2) + dy * barrelLength;
+
+    fillQuadAtCamera(x1, y1, x2, y2, x3, y3, x4, y4);
+    ctx.restore();
+}
+
+// drawTriBarrel draws a truncated triangle barrel (flat tip) using fillQuadAtCamera
+function drawTriBarrel({
+    x, y, size,
+    dir = 0, dirOffset = 0,
+    barrelLength = size,
+    barrelWidth = size,
+    outlineBarrelLength = size * 1.07,
+    outlineBarrelWidth = size * 1.1,
+    offset = size * 0.8,
+    color = "#555",
+    outlineColor = "#777",
+    reload = 100,
+    spawnX = 0,
+    spawnY = 0
+}) {
+    // Determine how much to truncate the tip by: tipLen is how far the flat tip (truncation) is from the base/origin
+    // We'll set tipLen to always be half of the barrelWidth, so the tip becomes a line barrelWidth/2 wide.
+    // You could parameterize this if desired.
+    const tipLen = barrelWidth / 2;
+    const outlineTipLen = outlineBarrelWidth / 2;
+
+    const barrelDir = dir + dirOffset;
+    const cx = (x - size / 2) + Math.sin(barrelDir) * offset;
+    const cy = (y - size / 2) + Math.cos(barrelDir) * offset;
+
+    const dx = Math.sin(barrelDir);
+    const dy = Math.cos(barrelDir);
+
+    const perpX = Math.sin(barrelDir + Math.PI / 2);
+    const perpY = Math.cos(barrelDir + Math.PI / 2);
+
+    // --- Outline first ---
+
+    ctx.save();
+    ctx.fillStyle = outlineColor;
+    ctx.beginPath();
+
+    // Outline flat tip (near base/origin, truncated)
+    const outlineTipLeftX = cx + dx * outlineTipLen - perpX * (outlineBarrelWidth / 4);
+    const outlineTipLeftY = cy + dy * outlineTipLen - perpY * (outlineBarrelWidth / 4);
+    const outlineTipRightX = cx + dx * outlineTipLen + perpX * (outlineBarrelWidth / 4);
+    const outlineTipRightY = cy + dy * outlineTipLen + perpY * (outlineBarrelWidth / 4);
+
+    // Outline base (far end, wide)
+    const outlineBaseLeftX = cx + dx * outlineBarrelLength - perpX * (outlineBarrelWidth / 2);
+    const outlineBaseLeftY = cy + dy * outlineBarrelLength - perpY * (outlineBarrelWidth / 2);
+    const outlineBaseRightX = cx + dx * outlineBarrelLength + perpX * (outlineBarrelWidth / 2);
+    const outlineBaseRightY = cy + dy * outlineBarrelLength + perpY * (outlineBarrelWidth / 2);
+
+    fillQuadAtCamera(
+        outlineTipLeftX, outlineTipLeftY,
+        outlineTipRightX, outlineTipRightY,
+        outlineBaseRightX, outlineBaseRightY,
+        outlineBaseLeftX, outlineBaseLeftY
+    );
+
+    ctx.restore();
+
+    // --- Main triangle (truncated) ---
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+
+    // Truncated tip (near base/origin) - a short line
+    const tipLeftX = cx + dx * tipLen - perpX * (barrelWidth / 4);
+    const tipLeftY = cy + dy * tipLen - perpY * (barrelWidth / 4);
+    const tipRightX = cx + dx * tipLen + perpX * (barrelWidth / 4);
+    const tipRightY = cy + dy * tipLen + perpY * (barrelWidth / 4);
+
+    // Base (far end, wide)
+    const baseLeftX = cx + dx * barrelLength - perpX * (barrelWidth / 2);
+    const baseLeftY = cy + dy * barrelLength - perpY * (barrelWidth / 2);
+    const baseRightX = cx + dx * barrelLength + perpX * (barrelWidth / 2);
+    const baseRightY = cy + dy * barrelLength + perpY * (barrelWidth / 2);
+
+    fillQuadAtCamera(
+        tipLeftX, tipLeftY,
+        tipRightX, tipRightY,
+        baseRightX, baseRightY,
+        baseLeftX, baseLeftY
+    );
+
+    ctx.restore();
+}
+
+class Entity {
+    constructor(x, y, size) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+    }
+
+    draw() {
+        // Overridden by subclasses
+    }
+
+    update() {
+        // Overridden by subclasses
+    }
+}
+
+class Wall extends Entity {
+    constructor(x,y,size) {
+        super(x,y,size)
+    }
+
+    update() {
+        for (let tank of (typeof tanks !== "undefined" ? tanks : [])) {
+            const nearestX = Math.max(this.x, Math.min(tank.x, this.x + this.size));
+            const nearestY = Math.max(this.y, Math.min(tank.y, this.y + this.size));
+            const distX = tank.x - nearestX;
+            const distY = tank.y - nearestY;
+            const dist = Math.sqrt(distX * distX + distY * distY);
+
+            if (dist < tank.size) {
+                let pushX = distX, pushY = distY;
+                if (dist === 0) {
+                    const angle = Math.random() * 2 * Math.PI;
+                    pushX = Math.cos(angle);
+                    pushY = Math.sin(angle);
+                } else {
+                    pushX /= dist;
+                    pushY /= dist;
+                }
+                tank.x += (tank.size - dist + 0) * pushX;
+                tank.y += (tank.size - dist + 0) * pushY;
+            }
+        }
+        // Proper bullet-wall collision: use .rad (not .radius), fix logic
+        for (let bullet of (typeof bullets !== "undefined" ? bullets : [])) {
+            // Some bullet objects might use 'rad', not 'radius'
+            let bulletRadius = (typeof bullet.rad === "number") ? bullet.rad : bullet.radius;
+            // If both undefined, skip this collision test
+            if (typeof bulletRadius !== "number") continue;
+            // Adjust wall position by - bulletRadius/2 for correct collision
+            const wallX = this.x - bulletRadius / 1;
+            const wallY = this.y - bulletRadius / 1;
+            const wallSize = this.size;
+
+            // Calculate closest point on the wall to the bullet's center
+            const nearestX = Math.max(wallX, Math.min(bullet.x, wallX + wallSize));
+            const nearestY = Math.max(wallY, Math.min(bullet.y, wallY + wallSize));
+            const distX = bullet.x - nearestX;
+            const distY = bullet.y - nearestY;
+            const dist = Math.sqrt(distX * distX + distY * distY);
+
+            if (dist < bulletRadius) {
+                // Mark bullet as "done" (assuming time = 0.5 means soon to despawn)
+                if (bullet.time > 0.5) bullet.time = 0.2;
+                bullet.canDamage = false;
+                // Nudge bullet out of wall for clarity
+                if (dist !== 0) {
+                    bullet.x += (bulletRadius - dist + 0.1) * (distX / dist);
+                    bullet.y += (bulletRadius - dist + 0.1) * (distY / dist);
+                } else {
+                    // If directly inside wall center, pick a random direction
+                    const angle = Math.random() * 2 * Math.PI;
+                    bullet.x += (bulletRadius + 0.1) * Math.cos(angle);
+                    bullet.y += (bulletRadius + 0.1) * Math.sin(angle);
+                }
+            }
+       
+        }}
+
+    draw() {
+        const offset = tanks[0]?.size ? tanks[0].size / 2 : 15;
+        const drawX = this.x - offset;
+        const drawY = this.y - offset;
+
+        // Draw outline first (outer quad)
+        ctx.save();
+        ctx.fillStyle = "#2a2a2a";
+        fillQuadAtCamera(
+            drawX, drawY,
+            drawX + this.size, drawY,
+            drawX + this.size, drawY + this.size,
+            drawX, drawY + this.size
+        );
+        ctx.restore();
+
+        // Draw inner wall (smaller quad)
+        ctx.save();
+        ctx.fillStyle = "#3a3a3a";
+        const scale = 1 / 1.1;
+        const innerSize = this.size * scale;
+        const centerX = this.x + this.size/2 - offset;
+        const centerY = this.y + this.size/2 - offset;
+        const halfInner = innerSize / 2;
+        fillQuadAtCamera(
+            centerX - halfInner, centerY - halfInner,
+            centerX + halfInner, centerY - halfInner,
+            centerX + halfInner, centerY + halfInner,
+            centerX - halfInner, centerY + halfInner
+        );
+        ctx.restore();
+    }
+}
+
+class Tank extends Entity {
+    constructor(x, y, size, dir, spinning = false, autoFire = false, moveSpeed = 0.4, speedCap = 6, friction = 0.94) {
+        super(x, y, size);
+        this.dir = dir;
+        this.xv = 0;
+        this.yv = 0;
+        this.spinning = spinning;
+        this.autoFire = autoFire;
+
+        this.moveSpeed = moveSpeed;
+        this.speedCap = speedCap;
+        this.friction = friction;
+
+        // Recoil-related velocity and friction
+        this.recoilXv = 0;
+        this.recoilYv = 0;
+        this.recoilFriction = 0.98; // Lower friction for recoil, adjust as desired
+
+        // Default to empty array for barrels; subclasses add their barrels
+        this.barrels = [];
+    }
+
+    update() {
+        this.xv *= this.friction;
+        this.yv *= this.friction;
+        this.recoilXv *= this.recoilFriction;
+        this.recoilYv *= this.recoilFriction;
+
+        const recoilDecay = 0;  
+        if (this.recoilXv > 0) {
+            this.recoilXv = Math.max(0, this.recoilXv - recoilDecay);
+        } else if (this.recoilXv < 0) {
+            this.recoilXv = Math.min(0, this.recoilXv + recoilDecay);
+        }
+        if (this.recoilYv > 0) {
+            this.recoilYv = Math.max(0, this.recoilYv - recoilDecay);
+        } else if (this.recoilYv < 0) {
+            this.recoilYv = Math.min(0, this.recoilYv + recoilDecay);
+        }
+
+        const recoilCounteractFactor = 0.28;
+        if (keysPressed["w"]) {
+            if (this.yv < this.speedCap) this.yv += this.moveSpeed;
+            else this.yv = this.speedCap;
+        }
+        if (keysPressed["s"]) {
+            if (this.yv > -this.speedCap) this.yv -= this.moveSpeed;
+            else this.yv = -this.speedCap;
+        }
+        if (keysPressed["d"]) {
+            if (this.xv < this.speedCap) this.xv += this.moveSpeed;
+            else this.xv = this.speedCap;
+        }
+        if (keysPressed["a"]) {
+            if (this.xv > -this.speedCap) this.xv -= this.moveSpeed;
+            else this.xv = -this.speedCap;
+        }
+        if (keysPressed["w"] && this.recoilYv < 0) {
+            this.recoilYv -= recoilCounteractFactor;
+            if (this.recoilYv < 0) this.recoilYv = 0;
+        }
+        if (keysPressed["s"] && this.recoilYv > 0) {
+            this.recoilYv += recoilCounteractFactor;
+            if (this.recoilYv > 0) this.recoilYv = 0;
+        }
+        if (keysPressed["d"] && this.recoilXv < 0) {
+            this.recoilXv += recoilCounteractFactor;
+            if (this.recoilXv > 0) this.recoilXv = 0;
+        }
+        if (keysPressed["a"] && this.recoilXv > 0) {
+            this.recoilXv -= recoilCounteractFactor;
+            if (this.recoilXv < 0) this.recoilXv = 0;
+        }
+
+        const dxToMouse = mx - ((this.x+camera.x)*camera.z)+(this.size/2)*camera.z
+        const dyToMouse = my - ((this.y+camera.y)*camera.z)+(this.size/2)*camera.z
+
+        if (this.spinning === true) {
+            this.dir+=1/fps;
+        } else {
+            this.dir = Math.atan2(dxToMouse, -dyToMouse)*-1+pi;
+        }
+        this.x += this.xv + this.recoilXv;
+        this.y += this.yv + this.recoilYv;
+
+        if (typeof this._wasMdLastFrame === "undefined") this._wasMdLastFrame = false;
+        const isFiring = md || this.autoFire === true;
+        const wasFiring = this._wasMdLastFrame;
+
+        for (let b of this.barrels) {
+            if (typeof b.timeSinceShot === "undefined") b.timeSinceShot = b.reload;
+            if (typeof b._hasInitDelayPending === "undefined") b._hasInitDelayPending = false;
+            if (typeof b._initDelayTimer === "undefined") b._initDelayTimer = 0;
+            if (typeof b.initialDelay !== "number") {
+                if (typeof b.initialDecay === "number") {
+                    b.initialDelay = b.initialDecay;
+                } else {
+                    b.initialDelay = 0;
+                }
+            }
+            if (!isFiring) {
+                b._hasInitDelayPending = false;
+                b._initDelayTimer = 0;
+            }
+            b.timeSinceShot += 1 / fps;
+            if (
+                isFiring && !wasFiring
+                && b.initialDelay > 0
+                && b.timeSinceShot >= (b.reload / 1000)
+            ) {
+                b._hasInitDelayPending = true;
+                b._initDelayTimer = 0;
+            }
+            if (b._hasInitDelayPending) {
+                b._initDelayTimer += 1000 / fps;
+                if (b._initDelayTimer < b.initialDelay) {
+                    continue;
+                }
+            }
+            if (
+                isFiring &&
+                (
+                    (b._hasInitDelayPending && b._initDelayTimer >= b.initialDelay) ||
+                    (!b._hasInitDelayPending && b.initialDelay === 0 && b.timeSinceShot >= (b.reload / 1000)) ||
+                    (!b._hasInitDelayPending && b.initialDelay > 0 && b.timeSinceShot >= (b.reload / 1000))
+                )
+            ) {
+                b.timeSinceShot = 0;
+                b._hasInitDelayPending = false;
+                b._initDelayTimer = 0;
+                let px = this.x, py = this.y;
+
+                if (typeof b.spawnX !== "undefined" && typeof b.spawnY !== "undefined") {
+                    const angle = 0 - this.dir + b.dirOffset;
+                    const baseX = this.x - this.size / 2;
+                    const baseY = this.y - this.size / 2;
+                    const localX = b.spawnY; 
+                    const localY = b.spawnX; 
+                    px = baseX + (localX * Math.cos(angle) - localY * Math.sin(angle));
+                    py = baseY + (localX * Math.sin(angle) + localY * Math.cos(angle));
+                }
+
+                let bulletRadius     = (typeof b.bulletRadius     !== "undefined") ? b.bulletRadius     : 9;
+                let bulletDmg        = (typeof b.bulletDmg        !== "undefined") ? b.bulletDmg        : 10;
+                let bulletSpeed      = (typeof b.bulletSpeed      !== "undefined") ? b.bulletSpeed      : 11;
+                let bulletSpeedDecay = (typeof b.bulletSpeedDecay !== "undefined") ? b.bulletSpeedDecay : 0.99;
+                let bulletDuration   = (typeof b.bulletDuration   !== "undefined") ? b.bulletDuration   : 2;
+                let randStrength = (typeof b.randStrength !== "undefined") ? b.randStrength : 0;
+                let randDir = ((Math.random() - 0.5) * randStrength);
+
+                bullets.push(new Bullet(
+                    px, py,
+                    this.dir + b.dirOffset + randDir,
+                    bulletRadius,
+                    bulletDmg,
+                    bulletSpeed,
+                    bulletSpeedDecay,
+                    bulletDuration
+                ));
+
+                let recoilValue = (typeof b.recoil !== "undefined") ? b.recoil : 0;
+                this.recoilXv -= Math.sin(this.dir) * recoilValue;
+                this.recoilYv -= Math.cos(this.dir) * recoilValue;
+                continue;
+            }
+        }
+        this._wasMdLastFrame = isFiring;
+    }
+
+    draw() {
+        for (let b of this.barrels) {
+            let reloadDuration =  b.reload / 1000;
+            let shotTime = b.timeSinceShot;
+            let recoilPushback = Math.max(reloadDuration - shotTime, 0) * 30;
+            let reloaddIntensity = b.reloaddIntensity  ? b.reloaddIntensity : 40
+            let visualOffset = b.offset - recoilPushback*(this.size/reloaddIntensity);
+            drawBarrel({
+                x: this.x,
+                y: this.y,
+                size: this.size,
+                dir: this.dir,
+                dirOffset: b.dirOffset,
+                barrelLength: b.barrelLength,
+                barrelWidth: b.barrelWidth,
+                outlineBarrelLength: b.outlineBarrelLength,
+                outlineBarrelWidth: b.outlineBarrelWidth,
+                offset: visualOffset,
+                color: b.color,
+                outlineColor: b.outlineColor,
+                reload: b.reload,
+                spawnX: b.spawnX,
+                spawnY: b.spawnY
+            });
+        }
+        drawBody(this.x,this.y,this.size);
+    }
+}
+
+class Bullet extends Entity {
+    constructor(x,y,dir,rad,dmg,speed,speedDecay,duration) {
+        super(x, y, rad);
+        this.dir = dir;
+        this.time = duration;
+        this.dmg = dmg;
+        this.rad = rad;
+        this.speed = speed;
+        this.speedDecay = speedDecay;
+        this.duration = duration;
+    }
+
+    draw() {
+        ctx.save();
+
+        // Handle alpha if this.time < 0.5
+        let alpha = 1;
+        let sizer = 1;
+        if (this.time < 0.5) {
+            alpha = Math.max(0, Math.min(1, this.time * 5));
+            sizer = Math.max(0, Math.min(1, this.time * 5));
+        }
+        ctx.globalAlpha = alpha;
+
+        ctx.fillStyle = "#8ac";
+        ctx.beginPath();
+        arcAtCamera(this.x, this.y, this.rad*sizer, 0, tau);
+        ctx.fill();
+        ctx.fillStyle = "#adf";
+        ctx.beginPath();
+        arcAtCamera(this.x, this.y, (this.rad*sizer) / 1.3, 0, tau);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    update() {
+        this.x+=Math.sin(this.dir)*this.speed;
+        this.y+=Math.cos(this.dir)*this.speed;
+        this.speed*=this.speedDecay;
+        const temp = fps ? fps : 60
+        this.time -= 1/fps;
+    }
+
+    check() {
+        return (this.time<0);
+    }
+}
+
+    // import tanks list and data
+
+</script>
+<script src="tanks.js"></script>
+<script>
+
+let bullets = []
+
+let tempx = 0;
+let tempy = 0;
+
+let walls = [];
+
+// tempx = -333;
+// for(let i = 0; i<2; i++) {
+//     for (let i = 0; i<2; i++) {
+        
+//         walls.push(new Wall(tempx,200,400)),
+//         walls.push(new Wall(tempx,-600,400)),
+//         tempx+=400
+//     }
+//     tempx+=400
+// }
+
+// tempx=-200
+
+// for (let i = 0; i<2; i++) {
+//     for (let i = 0; i<6; i++) {
+//         walls.push(new Wall(tempx,-200,400/3))
+//         walls.push(new Wall(tempx,75,400/3))
+//         tempx+=400/3
+//     }
+//     tempx+=400/3
+// }
+// tempy = -595;
+// for (let i = 0; i<2; i++) {
+//     for (let i = 0; i<3; i++) {
+//         walls.push(new Wall(466.6,tempy,400/3))
+//         walls.push(new Wall(733,tempy,400/3))
+//         tempy+=400/3
+//     }
+//     tempy+=1200/3
+// }
+
+
+function logWallsForPaste() {
+    let arr = walls.map(w => `new Wall(${w.x}, ${w.y}, ${w.size})`);
+    let code = "let walls = [\n    " + arr.join(",\n    ") + "\n];";
+    console.log(code);
+}
+
+walls = [
+    new Wall(-333, 200, 400),
+    new Wall(-333, -600, 400),
+    new Wall(67, 200, 400),
+    new Wall(67, -600, 400),
+    new Wall(867, 200, 400),
+    new Wall(867, -600, 400),
+    new Wall(1267, 200, 400),
+    new Wall(1267, -600, 400),
+    new Wall(-200, -200, 133.33333333333334),
+    new Wall(-200, 75, 133.33333333333334),
+    new Wall(-66.66666666666666, -200, 133.33333333333334),
+    new Wall(-66.66666666666666, 75, 133.33333333333334),
+    new Wall(66.66666666666669, -200, 133.33333333333334),
+    new Wall(66.66666666666669, 75, 133.33333333333334),
+    new Wall(200.00000000000003, -200, 133.33333333333334),
+    new Wall(200.00000000000003, 75, 133.33333333333334),
+    new Wall(333.33333333333337, -200, 133.33333333333334),
+    new Wall(333.33333333333337, 75, 133.33333333333334),
+    new Wall(466.66666666666674, -200, 133.33333333333334),
+    new Wall(466.66666666666674, 75, 133.33333333333334),
+    new Wall(733.3333333333335, -200, 133.33333333333334),
+    new Wall(733.3333333333335, 75, 133.33333333333334),
+    new Wall(866.6666666666669, -200, 133.33333333333334),
+    new Wall(866.6666666666669, 75, 133.33333333333334),
+    new Wall(1000.0000000000002, -200, 133.33333333333334),
+    new Wall(1000.0000000000002, 75, 133.33333333333334),
+    new Wall(1133.3333333333335, -200, 133.33333333333334),
+    new Wall(1133.3333333333335, 75, 133.33333333333334),
+    new Wall(1266.6666666666667, -200, 133.33333333333334),
+    new Wall(1266.6666666666667, 75, 133.33333333333334),
+    new Wall(1400, -200, 133.33333333333334),
+    new Wall(1400, 75, 133.33333333333334),
+    new Wall(466.6, -595, 133.33333333333334),
+    new Wall(733, -595, 133.33333333333334),
+    new Wall(466.6, -461.66666666666663, 133.33333333333334),
+    new Wall(733, -461.66666666666663, 133.33333333333334),
+    new Wall(466.6, -328.33333333333326, 133.33333333333334),
+    new Wall(733, -328.33333333333326, 133.33333333333334),
+    new Wall(466.6, 205.00000000000009, 133.33333333333334),
+    new Wall(733, 205.00000000000009, 133.33333333333334),
+    new Wall(466.6, 338.3333333333334, 133.33333333333334),
+    new Wall(733, 338.3333333333334, 133.33333333333334),
+    new Wall(466.6, 471.66666666666674, 133.33333333333334),
+    new Wall(733, 471.66666666666674, 133.33333333333334)
+];
+
+// Patch: initialize barrel timeSinceShot for any tanks already present
+for (let t of tanks) {
+    for (let b of t.barrels) {
+        if (typeof b.timeSinceShot === "undefined") b.timeSinceShot = b.reload;
+        // Also initialize delayed firing for initalDelay feature
+        if (typeof b._hasInitDelayPending === "undefined") b._hasInitDelayPending = false;
+        if (typeof b._initDelayTimer === "undefined") b._initDelayTimer = 0;
+        if (typeof b.initialDelay !== "number" && typeof b.initialDecay === "number") {
+            b.initialDelay = b.initialDecay;
+        }
+    }
+}
+
+function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    camera.x = 0-tanks[0].x;
+    camera.y = 0-tanks[0].y;
+
+    // Draw ground checkerboard
+    // Determine how many tiles fit and base tile size
+    const tileSize = 66; // world units
+    const tilesRange = 25; // number of tiles out from tank to draw
+    const camWorldX = -camera.x;
+    const camWorldY = -camera.y;
+
+    // Find upper-left of visible world (extend several tiles for overscan)
+    const px0 = camWorldX - (canvas.width / 2) / camera.z - tileSize * tilesRange;
+    const py0 = camWorldY - (canvas.height / 2) / camera.z - tileSize * tilesRange;
+    const px1 = camWorldX + (canvas.width / 2) / camera.z + tileSize * tilesRange;
+    const py1 = camWorldY + (canvas.height / 2) / camera.z + tileSize * tilesRange;
+
+    const tileStartX = Math.floor(px0 / tileSize);
+    const tileStartY = Math.floor(py0 / tileSize);
+    const tileEndX = Math.ceil(px1 / tileSize);
+    const tileEndY = Math.ceil(py1 / tileSize);
+
+    // Make the tiles a bit bigger (extra 2px in world space for floating point imprecision)
+    const fudge = 2;
+    for (let gx = tileStartX; gx < tileEndX; gx++) {
+        for (let gy = tileStartY; gy < tileEndY; gy++) {
+            let even = (gx + gy) % 2 === 0;
+            ctx.fillStyle = even ? "#111214" : "#151618";
+            let wx = gx * tileSize;
+            let wy = gy * tileSize;
+            // Draw at camera, slightly bigger than nominal tileSize to cover seam artifacts
+            ctx.fillRect(
+                canvas.width/2 + (wx + camera.x) * camera.z - (fudge/2) * camera.z,
+                canvas.height/2 - (wy + camera.y + tileSize) * camera.z - (fudge/2) * camera.z,
+                (tileSize + fudge) * camera.z,
+                (tileSize + fudge) * camera.z
+            );
+        }
+    }
+
+    for (let t of tanks) {
+        t.update();
+    }
+
+    for (let b of bullets) {
+        b.update();
+    }
+
+    for (let w of walls) {
+        w.update();
+    }
+
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        if (bullets[i].check()) {
+            bullets.splice(i, 1);
+        }
+    }
+
+    for (let b of bullets) {
+        b.draw();
+    }
+
+    for (let t of tanks) {
+        t.draw();
+    }
+
+    for (let w of walls)  {
+        w.draw();
+    }
+
+    requestAnimationFrame(drawGame);
+}
+
+drawGame();
+
+function resizeCanvas() {
+    canvas.width = (window.innerWidth) - 25;
+    canvas.height = (window.innerHeight) - 25;
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+window.addEventListener("keydown", (e) => {
+    keysPressed[e.key.toLowerCase()] = true;
+
+    if (e.key == "t") {
+        let tankTypeNames = Object.keys(tankTypes);
+        let currentTank = tanks[0];
+        let currentTankTypeName = null;
+
+        for (let name of tankTypeNames) {
+            if (currentTank instanceof tankTypes[name]) {
+                currentTankTypeName = name;
+                break;
+            }
+        }
+        let currentIdx = tankTypeNames.indexOf(currentTankTypeName);
+        let nextIdx = (currentIdx + 1) % tankTypeNames.length;
+        let NextTankType = tankTypes[tankTypeNames[nextIdx]];
+
+        let x = currentTank?.x;
+        let y = currentTank?.y;
+        let size = currentTank?.size;
+        let dir = currentTank?.dir;
+        // Preserve spinning and autofire status
+        let spinning = currentTank?.spinning === true;
+        let autoFire = currentTank?.autoFire === true;
+        let moveSpeed = currentTank?.moveSpeed;
+        let speedCap = currentTank?.speedCap;
+        let friction = currentTank?.friction;
+        // Try to instantiate the next tank with same advanced arguments if possible
+        // These will be ignored if the constructor signature doesn't use them
+        tanks[0] = new NextTankType(
+            x, y, size, dir, 
+            spinning, autoFire, 
+            moveSpeed, speedCap, friction
+        );
+    }
+
+    if (e.key == "c") {
+        const thisTank = tanks[0]
+        if (thisTank.spinning === true) {
+            thisTank.spinning = false;
+        } else {
+            thisTank.spinning = true;
+        }
+    }
+
+    if (e.key == "e") {
+        const thisTank = tanks[0]
+        if (thisTank.autoFire === true) {
+            thisTank.autoFire = false;
+        } else {
+            thisTank.autoFire = true;
+        }
+    }
+
+});
+
+window.addEventListener("keyup", (e) => {
+    keysPressed[e.key.toLowerCase()] = false;
+});
+
+window.addEventListener("pointerdown", () => {
+    md = true;
+})
+
+window.addEventListener("pointerup", () => {
+    md = false;
+})
+
+let lastTimestamp;
+function sampleFPS() {
+    const now = performance.now();
+    const delta = now - lastTimestamp;
+
+    if (delta > 0 && delta < 1000) {
+        fps = 1000 / delta;
+    }
+    fpsHist.unshift(fps)
+    fpsAv = 0;
+    for (let i = 0; i < fpsHist.length; i++) {
+        fpsAv += fpsHist[i];
+    }
+    fpsAv /= fpsHist.length
+    if (fpsHist[60]) { fpsHist.splice(60, 1) }
+    lastTimestamp = now;
+
+    requestAnimationFrame(sampleFPS);
+}
+sampleFPS();
+
+</script>
+</html>
