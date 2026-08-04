@@ -91,6 +91,12 @@
 
 </body>
 <script>
+// Mobile detection
+function isMobileDevice() {
+    return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+}
+const isMobile = isMobileDevice();
+
 const canvas = document.getElementById("gamecanvas");
 const ctx = canvas.getContext('2d');
 const display = document.getElementById("display");
@@ -122,8 +128,6 @@ function formatTime(seconds) {
     }
 }
 
-
-
 sizer.addEventListener("input", (e) => {
     sizedisp.textContent = `Size:${Number(e.target.value)}x${Number(e.target.value)}`;
     ROWS = Number(e.target.value);
@@ -143,6 +147,11 @@ function updateBestTimeDisplay() {
 
 updateBestTimeDisplay();
 
+let mobileTouching = false;
+let touchTarget = {x: null, y: null}; // This stores the current finger coord for direction
+let lastTouchPos = null;
+let mobileHintDiv = null;
+
 startbtn.addEventListener("click", () => {
     menuCont.style.opacity = "0%";
     canvas.style.opacity = "100%";
@@ -152,12 +161,36 @@ startbtn.addEventListener("click", () => {
     finishedMaze = false;
     t = 0;
 
-    canvas.addEventListener("mousedown", () => {
-        tracing = !tracing;
-        path.push({x: player.x, y:player.y, draw: false})
-    })
+    // On mobile, tracing (trail) is always disabled
+    if (!isMobile) {
+        canvas.addEventListener("mousedown", () => {
+            tracing = !tracing;
+            path.push({x: player.x, y:player.y, draw: false})
+        });
+    }
 
-})
+    // Show a hint if on mobile
+    if (isMobile) {
+        if (!mobileHintDiv) {
+            mobileHintDiv = document.createElement("div");
+            mobileHintDiv.style.position = "fixed";
+            mobileHintDiv.style.bottom = "60px";
+            mobileHintDiv.style.left = "0";
+            mobileHintDiv.style.right = "0";
+            mobileHintDiv.style.textAlign = "center";
+            mobileHintDiv.style.color = "#fff";
+            mobileHintDiv.style.fontSize = "17px";
+            mobileHintDiv.style.zIndex = 199999;
+            mobileHintDiv.style.pointerEvents = "none";
+            mobileHintDiv.textContent = "Tap and hold anywhere, drag to control movement direction!";
+            mobileHintDiv.style.opacity = "0.86";
+            document.body.appendChild(mobileHintDiv);
+            setTimeout(() => {
+                if (mobileHintDiv) mobileHintDiv.style.opacity = "0";
+            }, 3000);
+        }
+    }
+});
 
 let keysPressed = [];
 
@@ -184,7 +217,6 @@ let mx = 0, my = 0;
 
 let maze = [];
 let exitCol = 0;
-
 
 function getCell(x, y) {
     if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return undefined; 
@@ -282,12 +314,73 @@ function generateMaze(x = 0, y = 0) {
     player.y = -0.6;
 }
 
+// Mouse/Touch/Pointer input
 function updateMousePosition(e) {
     const rect = canvas.getBoundingClientRect();
     mx = canvas.width / -2 + ((e.clientX - rect.left) * (canvas.width / rect.width));
     my = canvas.height / 2 - ((e.clientY - rect.top) * (canvas.height / rect.height));
 }
-canvas.addEventListener('mousemove', updateMousePosition);
+
+// Desktop mouse move event
+if (!isMobile) {
+    canvas.addEventListener('mousemove', updateMousePosition);
+}
+
+// MOBILE: Moves in direction of touch only while touch is down, and only at a much slower speed
+if (isMobile) {
+    canvas.style.touchAction = "none";
+    function calcMazeCoordsFromEvent(e) {
+        const rect = canvas.getBoundingClientRect();
+        let xCanvas, yCanvas;
+        if (e.touches && e.touches.length > 0) {
+            xCanvas = (e.touches[0].pageX - window.scrollX - rect.left) * (canvas.width / rect.width);
+            yCanvas = (e.touches[0].pageY - window.scrollY - rect.top) * (canvas.height / rect.height);
+        } else {
+            xCanvas = (e.clientX - rect.left) * (canvas.width / rect.width);
+            yCanvas = (e.clientY - rect.top) * (canvas.height / rect.height);
+        }
+        let thingy = player.z * 50;
+        let mazeX = player.x + ((xCanvas - canvas.width/2) / thingy);
+        let mazeY = player.y - ((yCanvas - canvas.height/2) / thingy);
+        return {x: mazeX, y: mazeY};
+    }
+
+    // Only update direction while touching or holding down
+    function setTargetFromEvent(e) {
+        if (finishedMaze) return;
+        mobileTouching = true;
+        let coords = calcMazeCoordsFromEvent(e);
+        touchTarget.x = coords.x;
+        touchTarget.y = coords.y;
+        e.preventDefault && e.preventDefault();
+    }
+    function updateTargetFromEvent(e) {
+        if (!mobileTouching || finishedMaze) return;
+        let coords = calcMazeCoordsFromEvent(e);
+        touchTarget.x = coords.x;
+        touchTarget.y = coords.y;
+        e.preventDefault && e.preventDefault();
+    }
+    function clearTarget(e) {
+        mobileTouching = false;
+        touchTarget.x = null;
+        touchTarget.y = null;
+        e.preventDefault && e.preventDefault();
+    }
+
+    // Listen for pointerdown/pointermove/pointerup as well as touch
+    canvas.addEventListener("pointerdown", setTargetFromEvent, {passive: false});
+    canvas.addEventListener("pointermove", updateTargetFromEvent, {passive: false});
+    canvas.addEventListener("pointerup", clearTarget, {passive: false});
+    canvas.addEventListener("pointerleave", clearTarget, {passive: false});
+
+    canvas.addEventListener("touchstart", setTargetFromEvent, {passive: false});
+    canvas.addEventListener("touchmove", updateTargetFromEvent, {passive: false});
+    canvas.addEventListener("touchend", clearTarget, {passive: false});
+    canvas.addEventListener("touchcancel", clearTarget, {passive: false});
+}
+
+// =====================
 
 function resolvePlayerCollision(px, py) {
     let half = playerSize / 2;
@@ -378,6 +471,7 @@ function resolvePlayerCollision(px, py) {
 
     return {x: newX, y: newY};
 }
+
 let zoomout = false;
 function animateZoomout() {
     if (!zoomout) {return};
@@ -391,6 +485,7 @@ function animateZoomout() {
       requestAnimationFrame(animateZoomout);
 }
 
+// ---------- DRAW LOOP -----------
 function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     if (!finishedMaze) {t+=1/fps}
@@ -416,23 +511,52 @@ function draw() {
         }
     }
 
-    if (keysPressed["w"]) {
-        player.yv += 0.003*(60/fps);
+    // Mobile: ONLY move when finger is held down, and move in the direction, not to the position, and at slower speed
+    if (
+        isMobile &&
+        mobileTouching &&
+        touchTarget.x !== null &&
+        touchTarget.y !== null &&
+        !zoomout &&
+        !finishedMaze
+    ) {
+        // Compute direction vector from player to touch
+        let dx = touchTarget.x - player.x;
+        let dy = touchTarget.y - player.y;
+        let dist = Math.hypot(dx, dy);
+        const minDist = 0.02; // deadzone
+        const maxSpeed = 0.045 * (60 / fps); // Much slower speed for mobile!
+        if (dist > minDist) {
+            // Move in the direction of the finger, but don't move directly to it
+            let angle = Math.atan2(dy, dx);
+            player.xv = Math.cos(angle) * maxSpeed;
+            player.yv = Math.sin(angle) * maxSpeed;
+        } else {
+            player.xv *= 0.6;
+            player.yv *= 0.6;
+        }
     }
-    if (keysPressed["a"]) {
-        player.xv -= 0.003*(60/fps);
-    }
-    if (keysPressed["s"]) {
-        player.yv -= 0.003*(60/fps);
-    }
-    if (keysPressed["d"]) {
-        player.xv += 0.003*(60/fps);
-    }
-    if (keysPressed["q"]) {
-        player.z = Math.min(Math.max(player.z/1.01,0.1),10)
-    }
-    if (keysPressed["e"]) {
-        player.z = Math.min(Math.max(player.z*1.01,0.1),10)
+
+    // Desktop: keyboard controls
+    if (!isMobile) {
+        if (keysPressed["w"]) {
+            player.yv += 0.003*(60/fps);
+        }
+        if (keysPressed["a"]) {
+            player.xv -= 0.003*(60/fps);
+        }
+        if (keysPressed["s"]) {
+            player.yv -= 0.003*(60/fps);
+        }
+        if (keysPressed["d"]) {
+            player.xv += 0.003*(60/fps);
+        }
+        if (keysPressed["q"]) {
+            player.z = Math.min(Math.max(player.z/1.01,0.1),10)
+        }
+        if (keysPressed["e"]) {
+            player.z = Math.min(Math.max(player.z*1.01,0.1),10)
+        }
     }
 
     player.xv *= 0.93;
@@ -521,7 +645,7 @@ function draw() {
         }
     }
 
-        // Draw green square at finish line
+    // Draw green square at finish line
     let finishX = (canvas.width / 2) + ((exitCol + 0.5) - player.x) * thingy;
     let finishY = (canvas.height / 2) - ((ROWS - 0.5) - player.y) * thingy;
     let squareSize = playerSize * thingy * 1.3;
@@ -599,14 +723,11 @@ function draw() {
     );
     ctx.restore();
 
-   
-
-   
-    
-
-    if (!zoomout && tracing && Math.abs(player.xv)+Math.abs(player.yv) > 0.01) { 
+    // Only draw trail if not mobile and tracing enabled and moving fast enough
+    if (!isMobile && !zoomout && tracing && Math.abs(player.xv)+Math.abs(player.yv) > 0.01) { 
         path.push({x: player.x, y:player.y, draw: true});
     }
+    // On mobile, trail is always off
 
     if (!finishedMaze) {
         display.textContent= `${formatTime(t.toFixed(3))}`
@@ -629,30 +750,33 @@ let prevzoom = 0;
 let prevx = 0;
 let prevy = 0;
 
-window.addEventListener("keydown", (e) => {
-  keysPressed[e.key.toLowerCase()] = true;
-  if (e.key == "k") {
-    if (!zoomout) {
-        prevzoom = player.z;
-        prevx = player.x;
-        prevy = player.y;
-        zoomout = true;
-        animateZoomout();
-    } else {
+// Keyboard ONLY for desktop devices
+if (!isMobile) {
+    window.addEventListener("keydown", (e) => {
+      keysPressed[e.key.toLowerCase()] = true;
+      if (e.key == "k") {
+        if (!zoomout) {
+            prevzoom = player.z;
+            prevx = player.x;
+            prevy = player.y;
+            zoomout = true;
+            animateZoomout();
+        } else {
 
-    zoomout = false;
-    player.z = prevzoom
-    player.x = prevx; 
-    player.y = prevy;
-  
-    }
-  } 
-});
+        zoomout = false;
+        player.z = prevzoom
+        player.x = prevx; 
+        player.y = prevy;
+      
+        }
+      } 
+    });
 
-window.addEventListener("keyup", (e) => {
-  keysPressed[e.key.toLowerCase()] = false;
-});
-
+    window.addEventListener("keyup", (e) => {
+      keysPressed[e.key.toLowerCase()] = false;
+    });
+}
+// On mobile, do not add keyboard listeners
 
 let lastTimestamp;
 function sampleFPS() {
