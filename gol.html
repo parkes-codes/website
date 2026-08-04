@@ -305,6 +305,15 @@
       <a href="https://cannabrava.co/golly/" target="_blank" rel="noopener noreferrer">Marcos</a> (a few)
     </p>
     <h3 class="header3">Randoms</h3>
+    <p>Random Pattern (10x10)
+        <a class="link" href="#" onclick="loadLexi('rand010')">Generate</a>
+    </p>
+    <p>Random Pattern (25x25)
+        <a class="link" href="#" onclick="loadLexi('rand025')">Generate</a>
+    </p>
+    <p>Random Pattern (50x50)
+        <a class="link" href="#" onclick="loadLexi('rand050')">Generate</a>
+    </p>
     <p>Random Pattern (100x100)
         <a class="link" href="#" onclick="loadLexi('rand100')">Generate</a>
     </p>
@@ -367,6 +376,9 @@
     </p>
     <p>Glider Loop (p63)
         <a class="link" href="#" onclick="loadLexi('gliderloop')">Spawn</a>
+    </p>
+    <p>Glider Loop 2
+        <a class="link" href="#" onclick="loadLexi('idk10')">Spawn</a>
     </p>
     <p>Two blockers hassling a thingy
         <a class="link" href="#" onclick="loadLexi('47p72')">Spawn</a>
@@ -743,6 +755,12 @@
     <p>4 Direction Glider Gun (p256)
         <a class="link" href="#" onclick="loadLexi('omnigun')">Spawn</a>
     </p>
+    <p>P ~15000 Glider Gun
+        <a class="link" href="#" onclick="loadLexi('idk8')">Spawn</a>
+    </p>
+    <p>Crystallization And Decay Based Gun (p4800 ish)
+        <a class="link" href="#" onclick="loadLexi('idk9')">Spawn</a>
+    </p>
     <p>Slowest Glider Gun (p103079214841)
         <a class="link" href="#" onclick="loadLexi('wrGlider')">Spawn</a>
     </p>
@@ -766,6 +784,9 @@
     <p>Sidecar Gun
         <a class="link" href="#" onclick="loadLexi('sideCarGun')">Spawn</a>
     </p>
+    <p>Half On HWSS Gun
+        <a class="link" href="#" onclick="loadLexi('idk7')">Spawn</a>
+    </p>
     <p>Loafer Gun
         <a class="link" href="#" onclick="loadLexi('loafergun')">Spawn</a>
     </p>
@@ -774,6 +795,9 @@
     </p>
     <p>p240 25P3H1V0.1 Gun
         <a class="link" href="#" onclick="loadLexi('idk4')">Spawn</a>
+    </p>
+    <p>Wide c2 Ship gun
+        <a class="link" href="#" onclick="loadLexi('idk8')">Spawn</a>
     </p>
 
     <h3 class="header3">Misc Guns</h3>
@@ -794,8 +818,11 @@
     <p>Dart Gun
         <a class="link" href="#" onclick="loadLexi('dartgun')">Spawn</a>
     </p>
-    <p>Weekender Gun
+    <p>P444 Weekender Gun
         <a class="link" href="#" onclick="loadLexi('idk5')">Spawn</a>
+    </p>
+    <p>P690 &lt; 300x300 Weekender Gun 
+        <a class="link" href="#" onclick="loadLexi('smallweek')">Spawn</a>
     </p>
     <p>Lobster Gun
         <a class="link" href="#" onclick="loadLexi('lobgun')">Spawn</a>
@@ -832,6 +859,9 @@
     </p>
     <p>Solifuge Gun (p8064)
         <a class="link" href="#" onclick="loadLexi('soligun')">Spawn</a>
+    </p>
+    <p>Spider Gun (p2619)
+        <a class="link" href="#" onclick="loadLexi('spidergun')">Spawn</a>
     </p>
     <p>p1000 74p2h1v0 Gun With Attachment
         <a class="link" href="#" onclick="loadLexi('idk3')">Spawn</a>
@@ -1354,6 +1384,8 @@ function getData() {
     livePx = pixels.length;
 }
 
+
+
 function tick() {
     if (draggingSelection) return;
 
@@ -1432,37 +1464,23 @@ function tick() {
 
     const newPixels = survivors.concat(births);
 
-    // --- Check for repeated state (still lifes, oscillators, etc) for fast early stop ---
-    if (newPixels.length < 4096) { // Reason: very large patterns vary too often; hash for small/normal cases
+    if (newPixels.length < 4096) { 
         const stateHash = hashPixArr(newPixels);
-
-        // Early detect cycles or stability: e.g. block still life, blinkers, etc.
         let result = detectCycleOrStable(newPixels);
         if (result) {
-            // We hit a previous state (oscillator/loop or stability)
-            // Could optionally auto-pause, flash UI, or flag "Loop length n"
-            // Optionally only tickn++; -- no change in state if stable
             if (result.period === 1) {
-                // Stable (still life)
-                // Optionally set paused=true; Only update if something visual expects tickn.
                 tickn++;
-                // Overwrite .pixels with newPixels (idempotent), but don't update history again
                 pixels = newPixels;
-                return; // Early exit
+                return; 
             } else {
-                // Oscillator detected
                 tickn++;
                 pixels = newPixels;
-                // Optionally: pause or visually indicate period
-                // e.g. alertMsg.textContent = `Oscillator of period ${result.period} detected`;
                 return;
             }
         }
-        // Remember state for future cycle detection
         prevTickHashes.unshift({ hash: stateHash, arr: newPixels });
         if (prevTickHashes.length > MAX_STATE_HISTORY) prevTickHashes.length = MAX_STATE_HISTORY;
     } else {
-        // For very large pattern, don't store state history (avoid OOM)
         prevTickHashes.length = 0;
     }
 
@@ -1470,14 +1488,13 @@ function tick() {
     pixels = newPixels;
 }
 
-// Draw a single pixel using WebGL fast path if in liveCells and not highlighted, else fallback to CPU drawing
 function drawPixelGL(x, y, color) {
-    // Used internally for buffer fill, see draw()
+
 }
 
-// ========== OPTIMIZED DRAW: GPU FAST PATH ==========
+
 function draw() {
-    // Counter for the number of *actually visible on-screen* rendered pixels this frame
+
     rendered = 0;
     getData();
 
@@ -1486,15 +1503,20 @@ function draw() {
         camy += (Number(camyin.value) * tps) * tpt * 0.005
     }
 
-    hoverX = Math.floor(((mouseX - canvas.width / 2) / zoom + camx) - 14 / zoom);
-    hoverY = 1 + Math.floor((-(mouseY - canvas.height / 2) / zoom + camy) + 14 / zoom);
+    {
+        const rect = canvas.getBoundingClientRect();
+        let mx = canvas.width / -2 + ((mouseX - rect.left) * (canvas.width / rect.width));
+        let my = canvas.height / 2 - ((mouseY - rect.top) * (canvas.height / rect.height));
+        hoverX = Math.floor((mx / zoom + camx));
+        hoverY = 1 + Math.floor((my / zoom + camy));
+    }
 
-    let cellSize = Math.max(zoom+0.1/zoom,0.4);
+    // Enforce minimum cell size of 0.4
+    let cellSize = Math.max(zoom, 0.4);
 
     function isPixelOnScreen(px, py, size = 1) {
         const sx = (px - camx) * zoom + canvas.width / 2;
         const sy = canvas.height / 2 - (py - camy) * zoom;
-        // Slight margins to compensate for fractional/rounded cells
         return (
             sx + cellSize > 0 &&
             sx - cellSize < canvas.width &&
@@ -1503,14 +1525,6 @@ function draw() {
         );
     }
 
-    // if (zoom > 15 || zoom < 1.5) {
-    //     canvas.style.cursor = 'auto';
-    // } else {
-    //     canvas.style.cursor = 'none';
-    // }
-
-    // Minimum pixel size for live cells
-    const minCellSize = -99999
     // Calculate sparsity factor for pixel drawing always
     let sparsity = Math.max(Math.ceil(0.5 / zoom), 1); // Less pixels for more zoomed out, optimises game by a lot
     if (!sparseEnabled) {sparsity = 1;}
@@ -1546,9 +1560,8 @@ function draw() {
         for (let i = 0; i < pixels.length; i++) {
             let p = pixels[i], key = p.x + "," + p.y;
             if (draggingSelection && highlights.has(key)) continue; // skip, will draw in drag
-            // Use both x and y for sparsity checks now
-            if (((p.x + p.y) % sparsity) !== 0) continue; // Enforce sparsity
-            if (!isPixelOnScreen(p.x, p.y, minCellSize)) continue; // skip offscreen
+            if (((p.x + p.y) % sparsity) !== 0) continue;
+            if (!isPixelOnScreen(p.x, p.y, cellSize)) continue;
             mainVerts.push(p.x, p.y);
             rendered++;
         }
@@ -1568,22 +1581,18 @@ function draw() {
             for (let i = 0; i < pixels.length; i++) {
                 let p = pixels[i], key = p.x + "," + p.y;
                 if (highlights.has(key)) {
-                    if (((p.x + p.y) % sparsity) === 0 && isPixelOnScreen(p.x, p.y, minCellSize)) {
+                    if (((p.x + p.y) % sparsity) === 0 && isPixelOnScreen(p.x, p.y, cellSize)) {
                         selVerts.push(p.x, p.y);
-                        // Count highlit pixel as visible for rendered ONLY if not also in mainVerts (i.e. not skipped above; main rendered++ is not for selection highlight)
-                        // Actually, highlights are also pixels shown onscreen, so count them too if onscreen
                         rendered++;
                     }
                 }
             }
-            // Use GL for highlight if zoomed in, else ctx
-            if (selVerts.length > 0 && zoom >= minCellSize) {
+            if (selVerts.length > 0 && zoom > 0) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
                 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(selVerts), gl.STREAM_DRAW);
                 gl.uniform2f(glResolutionLoc, canvas.width, canvas.height);
                 gl.uniform2f(glCamLoc, camx, camy);
                 gl.uniform1f(glZoomLoc, zoom);
-                // Animate green highlight
                 let s = (Math.sin(t2 / 10) + 1.2) * 0.25;
                 gl.uniform4f(glColorLoc, 0.2, 0.7, 0.2 + s, 1);
                 gl.drawArrays(gl.POINTS, 0, selVerts.length / 2);
@@ -1592,11 +1601,11 @@ function draw() {
                 ctx.fillStyle = `rgba(44,181,44,${0.7 + s})`;
                 for (let k = 0; k < selVerts.length; k += 2) {
                     let x = selVerts[k], y = selVerts[k + 1];
-                    if (!isPixelOnScreen(x, y, minCellSize)) continue;
+                    if (!isPixelOnScreen(x, y, cellSize)) continue;
                     ctx.fillRect(
-                        (x - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
-                        canvas.height / 2 - (y - camy) * zoom - (minCellSize - zoom) / 2,
-                        minCellSize, minCellSize
+                        (x - camx) * zoom + canvas.width / 2,
+                        canvas.height / 2 - (y - camy) * zoom,
+                        cellSize, cellSize
                     );
                 }
             }
@@ -1606,12 +1615,12 @@ function draw() {
         if (draggingSelection && selectionOriginal.length > 0) {
             for (let i = 0; i < selectionOriginal.length; i++) {
                 let nx = selectionOriginal[i].x + dragOffset.x, ny = selectionOriginal[i].y + dragOffset.y;
-                if (!isPixelOnScreen(nx, ny, minCellSize)) continue;
+                if (!isPixelOnScreen(nx, ny, cellSize)) continue;
                 ctx.fillStyle = "rgba(50,180,255,0.5)";
                 ctx.fillRect(
-                    (nx - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
-                    canvas.height / 2 - (ny - camy) * zoom - (minCellSize - zoom) / 2,
-                    Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
+                    (nx - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (ny - camy) * zoom,
+                    cellSize, cellSize
                 );
             }
         }
@@ -1625,13 +1634,13 @@ function draw() {
             for (let i = 0; i < copiedPixels.length; i++) {
                 let nx = copiedPixels[i].x + offsetX,
                     ny = copiedPixels[i].y + offsetY;
-                if (!isPixelOnScreen(nx, ny, minCellSize)) continue;
+                if (!isPixelOnScreen(nx, ny, cellSize)) continue;
                 if (already.has(`${nx},${ny}`)) ctx.fillStyle = "rgba(240,40,40,0.4)";
                 else ctx.fillStyle = "rgba(80,180,255,0.5)";
                 ctx.fillRect(
-                    (nx - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
-                    canvas.height / 2 - (ny - camy) * zoom - (minCellSize - zoom) / 2,
-                    Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
+                    (nx - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (ny - camy) * zoom,
+                    cellSize, cellSize
                 );
             }
         }
@@ -1645,23 +1654,23 @@ function draw() {
             const maxY = Math.max(hiliteCorner1.y, hiliteCorner2.y);
             for (let hx = minX; hx <= maxX; hx++) {
                 for (let hy = minY; hy <= maxY; hy++) {
-                    if (!isPixelOnScreen(hx, hy, minCellSize)) continue;
+                    if (!isPixelOnScreen(hx, hy, cellSize)) continue;
                     ctx.fillRect(
-                        (hx - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
-                        canvas.height / 2 - (hy - camy) * zoom - (minCellSize - zoom) / 2,
-                        Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
+                        (hx - camx) * zoom + canvas.width / 2,
+                        canvas.height / 2 - (hy - camy) * zoom,
+                        cellSize, cellSize
                     );
                 }
             }
             ctx.globalAlpha = 1;
         }
         // Draw hovered cell
-        if (isPixelOnScreen(hoverX, hoverY, minCellSize)) {
+        if (isPixelOnScreen(hoverX, hoverY, cellSize)) {
             ctx.globalAlpha = 0.5; ctx.fillStyle = "#888";
             ctx.fillRect(
-                (hoverX - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
-                canvas.height / 2 - (hoverY - camy) * zoom - (minCellSize - zoom) / 2,
-                Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
+                (hoverX - camx) * zoom + canvas.width / 2,
+                canvas.height / 2 - (hoverY - camy) * zoom,
+                cellSize, cellSize
             );
             ctx.globalAlpha = 1;
         }
@@ -1671,12 +1680,12 @@ function draw() {
             ctx.globalAlpha = 0.4;
             for (let i = 0; i < markers.length; i++) {
                 let m = markers[i];
-                if (!isPixelOnScreen(m.x, m.y, minCellSize)) continue;
+                if (!isPixelOnScreen(m.x, m.y, cellSize)) continue;
                 ctx.fillStyle = m.color;
                 ctx.fillRect(
-                    (m.x - camx) * zoom + canvas.width / 2 - (minCellSize - zoom) / 2,
-                    canvas.height / 2 - (m.y - camy) * zoom - (minCellSize - zoom) / 2,
-                    Math.max(zoom, minCellSize), Math.max(zoom, minCellSize)
+                    (m.x - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (m.y - camy) * zoom,
+                    cellSize, cellSize
                 );
             }
             ctx.globalAlpha = 1;
@@ -1709,33 +1718,31 @@ function draw() {
             let p = pixels[i], key = p.x + "," + p.y;
             if (draggingSelection && highlights.has(key)) continue;
             if (((p.x + p.y) % sparsity) !== 0) continue;
-            if (!isPixelOnScreen(p.x, p.y, minCellSize)) continue;
+            if (!isPixelOnScreen(p.x, p.y, cellSize)) continue;
             if (highlights.has(key)) {
                 ctx.fillStyle = `hsla(120,${(Math.sin(t2 / 10) + 1.2) * 25}%,80%,1)`;
             } else {
                 ctx.fillStyle = "white";
             }
-            // Enforce minimum cell size for live cells
-
             ctx.fillRect(
-                (p.x - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
-                canvas.height / 2 - (p.y - camy) * zoom - (cellSize - zoom) / 2,
+                (p.x - camx) * zoom + canvas.width / 2,
+                canvas.height / 2 - (p.y - camy) * zoom,
                 cellSize, cellSize
             );
             rendered++;
         }
 
         // draw 0,0 cell whiter
-        if (isPixelOnScreen(0, 0, minCellSize)) {
+        if (isPixelOnScreen(0, 0, cellSize)) {
             ctx.fillStyle = "#fff1";
             if (zoom >= 4) {
                 ctx.fillRect(
-                    (0 - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
-                    canvas.height / 2 - (0 - camy) * zoom - (cellSize - zoom) / 2,
+                    (0 - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (0 - camy) * zoom,
                     cellSize, cellSize
                 );
             } else {
-                const diameter = Math.max(Math.min(canvas.width, canvas.height) * 0.01, minCellSize);
+                const diameter = Math.max(Math.min(canvas.width, canvas.height) * 0.01, zoom);
                 ctx.beginPath();
                 ctx.arc(
                     (0 - camx) * zoom + canvas.width / 2,
@@ -1750,11 +1757,11 @@ function draw() {
             for (let i = 0; i < selectionOriginal.length; i++) {
                 let nx = selectionOriginal[i].x + dragOffset.x,
                     ny = selectionOriginal[i].y + dragOffset.y;
-                if (!isPixelOnScreen(nx, ny, minCellSize)) continue;
+                if (!isPixelOnScreen(nx, ny, cellSize)) continue;
                 ctx.fillStyle = "rgba(60,180,250,0.5)";
                 ctx.fillRect(
-                    (nx - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
-                    canvas.height / 2 - (ny - camy) * zoom - (cellSize - zoom) / 2,
+                    (nx - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (ny - camy) * zoom,
                     cellSize, cellSize
                 );
             }
@@ -1766,12 +1773,12 @@ function draw() {
             let already = new Set(pixels.map(p => `${p.x},${p.y}`));
             for (let i = 0; i < copiedPixels.length; i++) {
                 let nx = copiedPixels[i].x + offsetX, ny = copiedPixels[i].y + offsetY;
-                if (!isPixelOnScreen(nx, ny, minCellSize)) continue;
+                if (!isPixelOnScreen(nx, ny, cellSize)) continue;
                 if (already.has(`${nx},${ny}`)) ctx.fillStyle = "hsla(0,100%,60%,0.4)";
                 else ctx.fillStyle = "hsla(210,100%,60%,0.5)";
                 ctx.fillRect(
-                    (nx - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
-                    canvas.height / 2 - (ny - camy) * zoom - (cellSize - zoom) / 2,
+                    (nx - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (ny - camy) * zoom,
                     cellSize, cellSize
                 );
             }
@@ -1784,20 +1791,20 @@ function draw() {
             const minY = Math.min(hiliteCorner1.y, hiliteCorner2.y);
             const maxY = Math.max(hiliteCorner1.y, hiliteCorner2.y);
             for (let hx = minX; hx <= maxX; hx++) for (let hy = minY; hy <= maxY; hy++) {
-                if (!isPixelOnScreen(hx, hy, minCellSize)) continue;
+                if (!isPixelOnScreen(hx, hy, cellSize)) continue;
                 ctx.fillRect(
-                    (hx - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
-                    canvas.height / 2 - (hy - camy) * zoom - (cellSize - zoom) / 2,
+                    (hx - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (hy - camy) * zoom,
                     cellSize, cellSize
                 );
             }
             ctx.globalAlpha = 1;
         }
-        if (isPixelOnScreen(hoverX, hoverY, minCellSize)) {
+        if (isPixelOnScreen(hoverX, hoverY, cellSize)) {
             ctx.globalAlpha = 0.5; ctx.fillStyle = "#888";
             ctx.fillRect(
-                (hoverX - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
-                canvas.height / 2 - (hoverY - camy) * zoom - (cellSize - zoom) / 2,
+                (hoverX - camx) * zoom + canvas.width / 2,
+                canvas.height / 2 - (hoverY - camy) * zoom,
                 cellSize, cellSize
             );
         }
@@ -1809,11 +1816,11 @@ function draw() {
             ctx.globalAlpha = 0.6;
             for (let i = 0; i < markers.length; i++) {
                 let m = markers[i];
-                if (!isPixelOnScreen(m.x, m.y, minCellSize)) continue;
+                if (!isPixelOnScreen(m.x, m.y, cellSize)) continue;
                 ctx.fillStyle = m.color || "#0ff";
                 ctx.fillRect(
-                    (m.x - camx) * zoom + canvas.width / 2 - (cellSize - zoom) / 2,
-                    canvas.height / 2 - (m.y - camy) * zoom - (cellSize - zoom) / 2,
+                    (m.x - camx) * zoom + canvas.width / 2,
+                    canvas.height / 2 - (m.y - camy) * zoom,
                     cellSize, cellSize
                 );
             }
@@ -2310,6 +2317,19 @@ tptInput.addEventListener("keydown", (e) => {
 window.addEventListener("keydown", (e) => {
     cmdPressed = e.metaKey || e.ctrlKey;
     keysPressed[e.key.toLowerCase()] = true;
+
+    const stuff = [
+        "rand010",
+        "rand025",
+        "rand050",
+        "rand100",
+        "rand250",
+        "rand500",
+    ]
+
+    if (Number(e.key) > 0 && Number(e.key) < 7 && !inputFocus) {
+        loadLexi(stuff[Number(e.key)-1])
+    }
 
     if (e.key === "f") {
         const markerIndex = markers.findIndex(m => m.x === hoverX && m.y === hoverY);
