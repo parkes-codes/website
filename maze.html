@@ -473,16 +473,50 @@ function resolvePlayerCollision(px, py) {
 }
 
 let zoomout = false;
+
+// Enhanced animateZoomout: 
+// calculates the ideal zoom so the full maze fits in the current canvas with some padding/margin.
+// Will slowly zoom out and pan towards the maze center, and keep adjusting if the canvas resizes during zoomout.
+function getMazeFitZoom() {
+    // Maze width and height in "cells"
+    // thingy = player.z * 50, so: 
+    // width in px = COLS * thingy, want thingy such that maze fits in canvas and has a margin
+    // -> thingy_max = min(canvas.width, canvas.height) / (max(COLS, ROWS) + margin_in_cells)
+    // z_max = thingy_max / 50
+    const marginCells = 1.3;  // number of cells to add as margin on all sides
+    const mazeWidth = COLS;
+    const mazeHeight = ROWS;
+    // want both width and height to fit INSIDE the canvas, so use min of ratio for each
+    const availW = canvas.width;
+    const availH = canvas.height;
+    // avoid div 0
+    if (mazeWidth === 0 || mazeHeight === 0) return 1;
+    const zW = availW / ((mazeWidth + marginCells) * 50);
+    const zH = availH / ((mazeHeight + marginCells) * 50);
+    return Math.min(zW, zH);
+}
+
 function animateZoomout() {
-    if (!zoomout) {return};
+    if (!zoomout) return;
     const centerX = COLS / 2;
     const centerY = ROWS / 2;
 
+    // Smoothly pan player position to maze center
     player.x += (centerX - player.x) * 0.005;
     player.y += (centerY - player.y) * 0.005;
 
-    player.z = Math.max(Math.min(player.z / 1.005, ROWS / 10), (15 / (COLS)));
-      requestAnimationFrame(animateZoomout);
+    // Calculate the desired max zoom so the maze *fully* fits within the current canvas size
+    const targetZoom = getMazeFitZoom();
+
+    // Smoothly interpolate current zoom towards targetZoom
+    player.z += (targetZoom - player.z) * 0.07;
+
+    // Clamp zoom exactly if very close
+    if (Math.abs(player.z - targetZoom) < 0.0001) {
+        player.z = targetZoom;
+    }
+
+    requestAnimationFrame(animateZoomout);
 }
 
 // ---------- DRAW LOOP -----------
@@ -525,7 +559,7 @@ function draw() {
         let dy = touchTarget.y - player.y;
         let dist = Math.hypot(dx, dy);
         const minDist = 0.02; // deadzone
-        const maxSpeed = 0.045 * (60 / fps); // Much slower speed for mobile!
+        const maxSpeed = 0.045 * (60 / fps) * 0.6; // Multiplied by 0.6 for mobile speed reduction
         if (dist > minDist) {
             // Move in the direction of the finger, but don't move directly to it
             let angle = Math.atan2(dy, dx);
