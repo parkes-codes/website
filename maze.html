@@ -414,19 +414,18 @@ function draw() {
             animateZoomout();
         }
     }
-    
 
     if (keysPressed["w"]) {
-        player.yv += 0.003;
+        player.yv += 0.003*(60/fps);
     }
     if (keysPressed["a"]) {
-        player.xv -= 0.003;
+        player.xv -= 0.003*(60/fps);
     }
     if (keysPressed["s"]) {
-        player.yv -= 0.003;
+        player.yv -= 0.003*(60/fps);
     }
     if (keysPressed["d"]) {
-        player.xv += 0.003;
+        player.xv += 0.003*(60/fps);
     }
     if (keysPressed["q"]) {
         player.z = Math.min(Math.max(player.z/1.01,0.1),10)
@@ -435,8 +434,8 @@ function draw() {
         player.z = Math.min(Math.max(player.z*1.01,0.1),10)
     }
 
-    player.xv *= 0.92;
-    player.yv *= 0.92;
+    player.xv *= 0.93;
+    player.yv *= 0.93;
 
     if (!zoomout) {
         let oldX = player.x;
@@ -557,28 +556,32 @@ function draw() {
     let dir = Math.atan2(0-dy, dx);
 
     // Indicator distance from player
-    let indicatorDist = 500 ; // px
+    let indicatorDist = 400 // px
 
     // Indicator screen position
     let indX = (canvas.width / 2) + Math.cos(dir) * indicatorDist;
     let indY = (canvas.height / 2) + Math.sin(dir) * indicatorDist;
 
+        // Arrow scale variable
+        let arrowScale = 1.5; // Change this value to resize arrow
         ctx.save();
-        ctx.globalAlpha = Math.min(1, Math.max(0, (Math.pow(Math.hypot(dx, dy),6) / 6000)));
+        ctx.globalAlpha = Math.min(1, Math.max(0, (Math.pow(Math.hypot(dx, dy),6) / 6000)))/2;
         if (zoomout) ctx.globalAlpha = 0;
         ctx.translate(indX, indY);
         ctx.rotate(dir + Math.PI / 2); // rotate 90 degrees to the right
+        ctx.scale(arrowScale, arrowScale);
         ctx.beginPath();
         ctx.moveTo(0, -18);    // tip of the triangle (now pointing right)
-        ctx.lineTo(7, 8);      // bottom right
-        ctx.lineTo(-7, 8);     // bottom left
+        ctx.lineTo(10, 8);      // bottom right
+        ctx.lineTo(-10, 8);     // bottom left
         ctx.closePath();
-        ctx.fillStyle = "rgba(80,255,80,0.95)";
-        ctx.strokeStyle = "#0f0";
+        ctx.fillStyle = "#aaa";
+        ctx.strokeStyle = "#aaa";
         ctx.lineWidth = 3;
         ctx.fill();
         ctx.stroke();
         ctx.restore();
+   
 
    
     
@@ -595,6 +598,7 @@ function draw() {
 
     requestAnimationFrame(draw);
 }
+
 
 function resizeCanvas() {
   canvas.width = (window.innerWidth) - 25;
