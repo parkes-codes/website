@@ -32,7 +32,7 @@
         left: 8px;
         bottom: 8px;
         z-index: 5;
-        font-size: 10px;
+        font-size: 15px;
     }
     #startCont {
         display: flex;
@@ -378,6 +378,18 @@ function resolvePlayerCollision(px, py) {
 
     return {x: newX, y: newY};
 }
+let zoomout = false;
+function animateZoomout() {
+    zoomout = true;
+    const centerX = COLS / 2;
+    const centerY = ROWS / 2;
+
+    player.x += (centerX - player.x) * 0.005;
+    player.y += (centerY - player.y) * 0.005;
+
+    player.z = Math.max(Math.min(player.z / 1.005, ROWS / 10), 20 / COLS);
+    requestAnimationFrame(animateZoomout);
+}
 
 function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -399,8 +411,10 @@ function draw() {
                 localStorage.setItem(key, t.toFixed(3));
             }
             updateBestTimeDisplay();
+            animateZoomout();
         }
     }
+    
 
     if (keysPressed["w"]) {
         player.yv += 0.003;
@@ -418,31 +432,34 @@ function draw() {
         player.z = Math.min(Math.max(player.z/1.01,0.1),10)
     }
     if (keysPressed["e"]) {
-        player.z = Math.min(Math.max(player.z*1.01,0.3),10)
+        player.z = Math.min(Math.max(player.z*1.01,0.1),10)
     }
 
-    player.xv *= 0.94;
-    player.yv *= 0.94;
+    player.xv *= 0.92;
+    player.yv *= 0.92;
 
-    let oldX = player.x;
-    let oldY = player.y;
+    if (!zoomout) {
+        let oldX = player.x;
+        let oldY = player.y;
 
-    let tryX = player.x + player.xv;
-    let tryY = player.y;
-    let resX = resolvePlayerCollision(tryX, tryY);
-    if (Math.abs(resX.x - tryX) > 1e-6) player.xv = 0;
-    player.x = resX.x;
+        let tryX = player.x + player.xv;
+        let tryY = player.y;
+        let resX = resolvePlayerCollision(tryX, tryY);
+        if (Math.abs(resX.x - tryX) > 1e-6) player.xv = 0;
+        player.x = resX.x;
 
-    tryX = player.x;
-    tryY = player.y + player.yv;
-    let resY = resolvePlayerCollision(tryX, tryY);
-    if (Math.abs(resY.y - tryY) > 1e-6) player.yv = 0;
-    player.y = resY.y;
+        tryX = player.x;
+        tryY = player.y + player.yv;
+        let resY = resolvePlayerCollision(tryX, tryY);
+        if (Math.abs(resY.y - tryY) > 1e-6) player.yv = 0;
+        player.y = resY.y;
+    }
 
     if (path.length > 0) {
         ctx.save();
-        ctx.strokeStyle = "#8ff7";
-        ctx.lineWidth = player.z*2;
+        ctx.strokeStyle = "#8ff";
+        ctx.globalAlpha = zoomout ? 1 : 0.5
+        ctx.lineWidth = player.z*(zoomout ? 4 : 2);
 
         let i = 0;
         while (i < path.length) {
@@ -472,7 +489,7 @@ function draw() {
             let py = (canvas.height / 2) - (y - player.y) * thingy;
 
             ctx.strokeStyle = "#fff";
-            ctx.lineWidth = player.z*2;
+            ctx.lineWidth = player.z*(zoomout ? 4 : 2);
 
             if (thiscell.walls[0]) {
                 ctx.beginPath();
@@ -505,7 +522,7 @@ function draw() {
     }
 
         // Draw green square at finish line
-        let finishX = (canvas.width / 2) + ((exitCol + 0.5) - player.x) * thingy;
+    let finishX = (canvas.width / 2) + ((exitCol + 0.5) - player.x) * thingy;
     let finishY = (canvas.height / 2) - ((ROWS - 0.5) - player.y) * thingy;
     let squareSize = playerSize * thingy * 1.3;
 
@@ -521,25 +538,62 @@ function draw() {
     );
     ctx.restore()
 
-    ctx.save();
-    ctx.fillStyle = "#fff";
-    let renderW = playerSize * thingy;
-    let renderH = playerSize * thingy;
-    let px = (canvas.width / 2) - (renderW / 2);
-    let py = (canvas.height / 2) - (renderH / 2);
-    ctx.fillRect(px, py, renderW, renderH);
-    ctx.restore();
+    if (!zoomout) {
+        ctx.save();
+        ctx.fillStyle = "#fff";
+        let renderW = playerSize * thingy;
+        let renderH = playerSize * thingy;
+        let px = (canvas.width / 2) - (renderW / 2);
+        let py = (canvas.height / 2) - (renderH / 2);
+        ctx.fillRect(px, py, renderW, renderH);
+        ctx.restore();
+    }
 
-    if (tracing && Math.abs(player.xv)+Math.abs(player.yv) > 0.01) { 
+    // Draw an indicator arrow pointing toward the finish line when it's offscreen
+
+    // Calculate angle to finish
+    let dx = (exitCol + 0.5) - player.x;
+    let dy = (ROWS - 0.5) - player.y;
+    let dir = Math.atan2(0-dy, dx);
+
+    // Indicator distance from player
+    let indicatorDist = 500 ; // px
+
+    // Indicator screen position
+    let indX = (canvas.width / 2) + Math.cos(dir) * indicatorDist;
+    let indY = (canvas.height / 2) + Math.sin(dir) * indicatorDist;
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, Math.max(0, (Math.pow(Math.hypot(dx, dy),6) / 6000)));
+        if (zoomout) ctx.globalAlpha = 0;
+        ctx.translate(indX, indY);
+        ctx.rotate(dir + Math.PI / 2); // rotate 90 degrees to the right
+        ctx.beginPath();
+        ctx.moveTo(0, -18);    // tip of the triangle (now pointing right)
+        ctx.lineTo(7, 8);      // bottom right
+        ctx.lineTo(-7, 8);     // bottom left
+        ctx.closePath();
+        ctx.fillStyle = "rgba(80,255,80,0.95)";
+        ctx.strokeStyle = "#0f0";
+        ctx.lineWidth = 3;
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+   
+    
+
+    if (!zoomout && tracing && Math.abs(player.xv)+Math.abs(player.yv) > 0.01) { 
         path.push({x: player.x, y:player.y, draw: true});
     }
 
     if (!finishedMaze) {
         display.textContent= `${formatTime(t.toFixed(3))}`
     } else {
-        display.textContent= `Finished! Time: ${formatTime(t.toFixed(3))} Refresh to play again`
+        display.textContent= `Finished! Time: ${formatTime(t.toFixed(3))}! Refresh to play again`
     }
-    requestAnimationFrame(draw)
+
+    requestAnimationFrame(draw);
 }
 
 function resizeCanvas() {
