@@ -41,15 +41,15 @@ class Annihilator extends Tank {
         this.barrels = [
             {
                 dirOffset: 0,                        
-                barrelLength: size * 1.8,
+                barrelLength: size * 1.6,
                 barrelWidth: size * 1.6,
-                outlineBarrelLength: size * 1.06*1.8,
+                outlineBarrelLength: size * 1.06*1.6,
                 outlineBarrelWidth: size * 1.2*1.6,
                 offset: size * 0.3,
                 reloaddIntensity: 80,
                 color: "#888",
                 outlineColor: "#aaa",
-                reload: 1500,
+                reload: 1000,
                 initialDelay: 0,
                 recoil: 10,
 
@@ -301,7 +301,7 @@ class Lorry extends Tank {
                 initialDelay: 0,
                 recoil: 0.2,
 
-                spawnX: size*2.5, 
+                spawnX: size*2.7, 
                 spawnY: 0,        
                 timeSinceShot: 0,
                 
@@ -310,7 +310,7 @@ class Lorry extends Tank {
                 bulletDmg: 10,
                 bulletSpeed: size/3,
                 bulletSpeedDecay: 0.99,
-                bulletDuration: 1,
+                bulletDuration: 1.5,
             },
         ];
     }
@@ -355,8 +355,8 @@ class Octo extends Tank {
         const baseBarrel = {
             barrelLength: size * 1,
             barrelWidth: size * 0.8,
-            outlineBarrelLength: size * 1 + 4,
-            outlineBarrelWidth: size * 0.8 + 8,
+            outlineBarrelLength: size * 1 *1.1,
+            outlineBarrelWidth: size * 0.8 * 1.2,
             offset: size * 0.8,
             color: "#888",
             outlineColor: "#aaa",
@@ -393,17 +393,101 @@ class Octo extends Tank {
 }
 
 
+class QuadLorry extends Tank {
+    constructor(x, y, size, dir, moveSpeed = 0.4, speedCap = 6, friction = 0.94) {
+        super(x, y, size, dir, moveSpeed, speedCap, friction);
+
+        // Create 4 identical barrels at dirOffset 0, 90, 180, 270 degrees (in radians)
+        const baseBarrel = {
+            barrelLength: size * 3.5,
+            barrelWidth: size * 2,
+            outlineBarrelLength: size * 3.5 + 3,
+            outlineBarrelWidth: size * 1.2 * 2,
+            offset: size * -0.55,
+            color: "#888",
+            outlineColor: "#aaa",
+            reload: 20,
+            initialDelay: 0,
+            recoil: 0,
+            spawnX: 0,
+            spawnY: 0,
+            timeSinceShot: 0,
+            randStrength: 1.5,
+            bulletRadius: size * 0.5,
+            bulletDmg: 10,
+            bulletSpeed: size / 3,
+            bulletSpeedDecay: 0.99,
+            bulletDuration: 1,
+        };
+
+        this.barrels = [];
+        for (let i = 0; i < 4; i++) {
+            const angle = i * (Math.PI / 2); // 0, pi/2, pi, 3pi/2
+            this.barrels.push({
+                ...baseBarrel,
+                dirOffset: angle,
+            });
+        }
+
+        //adjust posthaste
+        this.barrels[0].spawnX = size*2.5;
+        this.barrels[0].spawnY = 0;
+
+        this.barrels[1].spawnX = -size*2.5;
+        this.barrels[1].spawnY = 0;
+
+        this.barrels[2].spawnX = size*2.5;
+        this.barrels[2].spawnY = 0;
+
+        this.barrels[3].spawnX = -size*2.5;
+        this.barrels[3].spawnY = 0;
+    }
+
+    draw() {
+        for (let b of this.barrels) {
+            let reloadDuration = b.reload / 1000;
+            let shotTime = (typeof b.timeSinceShot !== "undefined") ? b.timeSinceShot : reloadDuration;
+
+            let recoilPushback = Math.max(reloadDuration - shotTime, 0) * 30;
+            let visualOffset = b.offset - recoilPushback * 15;
+
+            drawTriBarrel({
+                x: this.x,
+                y: this.y,
+                size: this.size,
+                dir: this.dir,
+                dirOffset: b.dirOffset,
+                barrelLength: b.barrelLength,
+                barrelWidth: b.barrelWidth,
+                outlineBarrelLength: b.outlineBarrelLength,
+                outlineBarrelWidth: b.outlineBarrelWidth,
+                offset: visualOffset,
+                color: b.color,
+                outlineColor: b.outlineColor,
+                reload: b.reload,
+                spawnX: b.spawnX,
+                spawnY: b.spawnY
+            });
+        }
+        drawBody(this.x, this.y, this.size);
+    }
+}
+
+
 
 // for rendering
 const tankTypes = {
     "Basic": Basic,
     "Annihilator": Annihilator,
     "Tri": Tri,
-    "Penta": Penta,
+    "Penta": Penta, 
     "Octo": Octo,
-    "Lorry": Lorry
+    "Lorry": Lorry,
+    // "QuadLorry": QuadLorry // ass tank XD
+    "Overseer": Overseer,
+    "Bigcheese": Bigcheese
 };
 
 const tanks = [
-    new Basic(0, 0, 50, 0),
+    new Basic(-200, 0, 50, 0),
 ];
