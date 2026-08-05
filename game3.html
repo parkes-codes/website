@@ -1,4 +1,4 @@
-<!doctype html>
+ <!doctype html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -25,13 +25,9 @@
     }
 </style>
 <body>
-
  <canvas id="gamecanvas"></canvas>
-
 </body>
 <script>
-
-// js objects go brrr
 
 console.clear()
 const canvas = document.getElementById("gamecanvas");
@@ -45,6 +41,7 @@ let fpsHist = [];
 let fpsAv = 0;
 let mx = 0, my = 0;
 let md = false;
+let rmd = false; // NEW: right mouse down (right click held)
 
 const pi = Math.PI
 const tau = Math.PI*2
@@ -55,13 +52,68 @@ let camera = {
     z: 0.5
 };
 
-
+// --- Fix: Mouse tracking must work during both left AND right clicks ---
+// Always update mouse pos on pointermove, not just mousemove (so rightclick works)
 function updateMousePosition(e) {
     const rect = canvas.getBoundingClientRect();
     mx = canvas.width / -2 + ((e.clientX - rect.left) * (canvas.width / rect.width));
     my = canvas.height / 2 - ((e.clientY - rect.top) * (canvas.height / rect.height));
 }
-canvas.addEventListener('mousemove', updateMousePosition);
+canvas.addEventListener('pointermove', updateMousePosition);
+canvas.addEventListener('mousemove', updateMousePosition); // fallback for old browsers
+
+// Prevent default context menu on right-click
+canvas.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+}, false);
+
+function drawEquilateralTriAtCamera(x, y, size, direction, fill1 = "#8ac", fill2 = "#adf", alpha = 1) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = fill1;
+    ctx.beginPath();
+    let h = size * Math.sqrt(3) / 2;
+    for (let i = 0; i < 3; i++) {
+        let angle = direction + pi/2 + i * (2*pi/3);
+        let px = x + Math.cos(angle) * h;
+        let py = y + Math.sin(angle) * h;
+        if (i === 0) {
+            ctx.moveTo(
+                canvas.width/2 + (px + camera.x) * camera.z,
+                canvas.height/2 - (py + camera.y) * camera.z
+            );
+        } else {
+            ctx.lineTo(
+                canvas.width/2 + (px + camera.x) * camera.z,
+                canvas.height/2 - (py + camera.y) * camera.z
+            );
+        }
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = fill2;
+    ctx.beginPath();
+    let h2 = h * 0.75;
+    for (let i = 0; i < 3; i++) {
+        let angle = direction + pi/2 + i * (2*pi/3);
+        let px = x + Math.cos(angle) * h2;
+        let py = y + Math.sin(angle) * h2;
+        if (i === 0) {
+            ctx.moveTo(
+                canvas.width/2 + (px + camera.x) * camera.z,
+                canvas.height/2 - (py + camera.y) * camera.z
+            );
+        } else {
+            ctx.lineTo(
+                canvas.width/2 + (px + camera.x) * camera.z,
+                canvas.height/2 - (py + camera.y) * camera.z
+            );
+        }
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
 
 function arcAtCamera(x, y, rad, sd, ed) {
     ctx.arc(
@@ -108,7 +160,6 @@ function drawBody(x,y,size) {
         ctx.restore();
 }
 
-// drawBarrel unchanged
 function drawBarrel({
     x, y, size,
     dir = 0, dirOffset = 0,
@@ -133,7 +184,6 @@ function drawBarrel({
     const perpX = Math.sin(barrelDir + Math.PI / 2);
     const perpY = Math.cos(barrelDir + Math.PI / 2);
 
-    // Outline barrel
     ctx.save();
     ctx.fillStyle = outlineColor;
     ctx.beginPath();
@@ -153,7 +203,6 @@ function drawBarrel({
     fillQuadAtCamera(ox1, oy1, ox2, oy2, ox3, oy3, ox4, oy4);
     ctx.restore();
 
-    // Normal barrel
     ctx.save();
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -174,7 +223,6 @@ function drawBarrel({
     ctx.restore();
 }
 
-// drawTriBarrel draws a truncated triangle barrel (flat tip) using fillQuadAtCamera
 function drawTriBarrel({
     x, y, size,
     dir = 0, dirOffset = 0,
@@ -189,9 +237,6 @@ function drawTriBarrel({
     spawnX = 0,
     spawnY = 0
 }) {
-    // Determine how much to truncate the tip by: tipLen is how far the flat tip (truncation) is from the base/origin
-    // We'll set tipLen to always be half of the barrelWidth, so the tip becomes a line barrelWidth/2 wide.
-    // You could parameterize this if desired.
     const tipLen = barrelWidth / 2;
     const outlineTipLen = outlineBarrelWidth / 2;
 
@@ -205,19 +250,15 @@ function drawTriBarrel({
     const perpX = Math.sin(barrelDir + Math.PI / 2);
     const perpY = Math.cos(barrelDir + Math.PI / 2);
 
-    // --- Outline first ---
-
     ctx.save();
     ctx.fillStyle = outlineColor;
     ctx.beginPath();
 
-    // Outline flat tip (near base/origin, truncated)
     const outlineTipLeftX = cx + dx * outlineTipLen - perpX * (outlineBarrelWidth / 4);
     const outlineTipLeftY = cy + dy * outlineTipLen - perpY * (outlineBarrelWidth / 4);
     const outlineTipRightX = cx + dx * outlineTipLen + perpX * (outlineBarrelWidth / 4);
     const outlineTipRightY = cy + dy * outlineTipLen + perpY * (outlineBarrelWidth / 4);
 
-    // Outline base (far end, wide)
     const outlineBaseLeftX = cx + dx * outlineBarrelLength - perpX * (outlineBarrelWidth / 2);
     const outlineBaseLeftY = cy + dy * outlineBarrelLength - perpY * (outlineBarrelWidth / 2);
     const outlineBaseRightX = cx + dx * outlineBarrelLength + perpX * (outlineBarrelWidth / 2);
@@ -229,22 +270,17 @@ function drawTriBarrel({
         outlineBaseRightX, outlineBaseRightY,
         outlineBaseLeftX, outlineBaseLeftY
     );
-
     ctx.restore();
-
-    // --- Main triangle (truncated) ---
 
     ctx.save();
     ctx.fillStyle = color;
     ctx.beginPath();
 
-    // Truncated tip (near base/origin) - a short line
     const tipLeftX = cx + dx * tipLen - perpX * (barrelWidth / 4);
     const tipLeftY = cy + dy * tipLen - perpY * (barrelWidth / 4);
     const tipRightX = cx + dx * tipLen + perpX * (barrelWidth / 4);
     const tipRightY = cy + dy * tipLen + perpY * (barrelWidth / 4);
 
-    // Base (far end, wide)
     const baseLeftX = cx + dx * barrelLength - perpX * (barrelWidth / 2);
     const baseLeftY = cy + dy * barrelLength - perpY * (barrelWidth / 2);
     const baseRightX = cx + dx * barrelLength + perpX * (barrelWidth / 2);
@@ -256,7 +292,6 @@ function drawTriBarrel({
         baseRightX, baseRightY,
         baseLeftX, baseLeftY
     );
-
     ctx.restore();
 }
 
@@ -268,11 +303,603 @@ class Entity {
     }
 
     draw() {
-        // Overridden by subclasses
     }
 
     update() {
-        // Overridden by subclasses
+    }
+}
+
+// --- REWRITE: Define drone accel/speed cap in barrel not in drone class ---
+class SeerDrone extends Entity {
+    // Accept a generic droneAttrs object to override all relevant drone parameters per-shot
+    constructor(x, y, size, parentSeer, id, droneAttrs = {}) {
+        super(x, y, size);
+        this.dir = 0;
+        this.targetDir = 0;
+        this.parentSeer = parentSeer;
+        this.id = id ?? 0;
+
+        // All movement attributes (accel, maxSpeed) for drones are now only set on the barrel and passed via droneAttrs
+        // and NOT at the drone class (do not use fallback here, must be supplied via barrel!).
+        // Only other attributes get a fallback.
+        this.accel = typeof droneAttrs.accel === "number" ? droneAttrs.accel : undefined;
+        this.maxSpeed = typeof droneAttrs.maxSpeed === "number" ? droneAttrs.maxSpeed : undefined;
+        this.maxTurnSpeed = typeof droneAttrs.maxTurnSpeed === "number" ? droneAttrs.maxTurnSpeed : pi*2;
+        this.fadeTime = typeof droneAttrs.fadeTime === "number" ? droneAttrs.fadeTime : 0.5;
+        this.state = typeof droneAttrs.state === "string" ? droneAttrs.state : "spawning";
+
+        this.xv = 0;
+        this.yv = 0;
+        this.goalX = x;
+        this.goalY = y;
+        this._fading = false;
+        this._fadeTimer = 0;
+        this._origSize = size;
+    }
+
+    update() {
+        if (this._fading) {
+            this._fadeTimer += 1/fps;
+            // Shrink and fade
+            let t = this._fadeTimer;
+            let fade = Math.max(0, this.fadeTime - t) / this.fadeTime;
+            this.size = this._origSize * fade;
+        }
+
+        if (!this._fading) {
+            let mouseWorldX = (mx / camera.z) - camera.x;
+            let mouseWorldY = (my / camera.z) - camera.y;
+
+            let px = this.parentSeer.x;
+            let py = this.parentSeer.y;
+
+            let dronesCount = this.parentSeer.drones.length;
+            let idx = this.id % Math.max(dronesCount, 1);
+            let angleInCircle = ((tau/(Math.max(dronesCount,1))) * idx) + this.parentSeer.orientAngle;
+            let orbitRadius = 130 + Math.sin(performance.now()/520 + idx) * 20 + 32*(dronesCount-1);
+
+            // If rmd, repel away from mouse. Otherwise: orbit, else go to mouse.
+            if (rmd) {
+                this.goalX = this.x - (mouseWorldX - this.x);
+                this.goalY = this.y - (mouseWorldY - this.y);
+            } else {
+                let wantOrbit = false;
+                if (md === false && this.parentSeer.autoFire !== true) {
+                    wantOrbit = true;
+                }
+                if (wantOrbit) {
+                    this.goalX = px + Math.cos(angleInCircle) * orbitRadius;
+                    this.goalY = py + Math.sin(angleInCircle) * orbitRadius;
+                } else {
+                    this.goalX = mouseWorldX;
+                    this.goalY = mouseWorldY;
+                }
+            }
+
+            // Direction logic: if holding right click (rmd), point opposite from mouse
+            let targetDir;
+            if (rmd) {
+                targetDir = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x) + Math.PI;
+            } else {
+                targetDir = Math.atan2(this.goalY - this.y, this.goalX - this.x);
+            }
+
+            // Normalize angle to [-pi, pi]
+            function angleDiff(a, b) {
+                let d = a-b;
+                while (d > pi) d -= tau;
+                while (d < -pi) d += tau;
+                return d;
+            }
+            let diff = angleDiff(targetDir, this.dir);
+
+            let maxTurnPerFrame = this.maxTurnSpeed / fps;
+
+            if (Math.abs(diff) < maxTurnPerFrame) {
+                this.dir = targetDir;
+            } else {
+                this.dir += Math.sign(diff) * maxTurnPerFrame;
+                if (this.dir > tau) this.dir -= tau;
+                if (this.dir < -tau) this.dir += tau;
+            }
+
+            let dx = this.goalX - this.x;
+            let dy = this.goalY - this.y;
+            let dist = Math.hypot(dx, dy);
+
+            // Use ONLY the values set from the droneAttrs/barrel!
+            let droneAccel = this.accel;
+            let droneMaxSpeed = this.maxSpeed;
+
+            let desiredSpeed = (typeof droneMaxSpeed === "number") ? Math.min(droneMaxSpeed, dist) : 0;
+            let desiredVx = Math.cos(this.dir) * desiredSpeed;
+            let desiredVy = Math.sin(this.dir) * desiredSpeed;
+
+            let deltaVx = desiredVx - this.xv;
+            let deltaVy = desiredVy - this.yv;
+
+            let maxAccelPerFrame = (typeof droneAccel === "number") ? droneAccel / fps : 0;
+
+            let totalDeltaV = Math.hypot(deltaVx, deltaVy);
+            if (typeof droneAccel === "number" && totalDeltaV > maxAccelPerFrame) {
+                deltaVx = deltaVx / totalDeltaV * maxAccelPerFrame;
+                deltaVy = deltaVy / totalDeltaV * maxAccelPerFrame;
+            }
+
+            if (dist > 4) {
+                this.xv += deltaVx;
+                this.yv += deltaVy;
+            } else {
+                this.xv *= 0.6;
+                this.yv *= 0.6;
+            }
+
+            let currSpd = Math.hypot(this.xv, this.yv);
+            if (typeof droneMaxSpeed === "number" && currSpd > droneMaxSpeed) {
+                this.xv = (this.xv / currSpd) * droneMaxSpeed;
+                this.yv = (this.yv / currSpd) * droneMaxSpeed;
+            }
+
+            this.xv *= 0.985;
+            this.yv *= 0.985;
+
+            this.x += this.xv;
+            this.y += this.yv;
+
+            // COLLISION WITH OTHER DRONES: Increase radius by 1.56x and add randomness on collision
+            let myRadius = (this.size / 2.2) * 1.3;
+            let siblings = this.parentSeer.drones;
+            for (let j = 0; j < siblings.length; j++) {
+                let other = siblings[j];
+                if (other === this) continue;
+                let ox = other.x;
+                let oy = other.y;
+                let oradius = (other.size / 2.2) * 1.56;
+                let minDist = myRadius + oradius - 1;
+                let ddx = this.x - ox;
+                let ddy = this.y - oy;
+                let d = Math.hypot(ddx, ddy);
+                if (d > 0 && d < minDist) {
+                    let push = (minDist - d) / 2;
+                    let nx = ddx / d;
+                    let ny = ddy / d;
+                    this.x += nx * push * 0.8;
+                    this.y += ny * push * 0.8;
+                    let damp = 0.07;
+                    let randAngle = Math.random() * tau;
+                    let randStrength = 0.18 + Math.random() * 0.09;
+                    let rx = Math.cos(randAngle) * randStrength;
+                    let ry = Math.sin(randAngle) * randStrength;
+                    this.xv += nx * push * damp + rx;
+                    this.yv += ny * push * damp + ry;
+                }
+            }
+        }
+
+        // Wall collision check (like bullets)
+        if (!this._fading && typeof walls !== "undefined") {
+            let droneRadius = this.size / 2.2;
+            for (let w=0; w<walls.length; w++) {
+                let wall = walls[w];
+                const wallX = wall.x - droneRadius / 1;
+                const wallY = wall.y - droneRadius / 1;
+                const wallSize = wall.size;
+
+                const nearestX = Math.max(wallX, Math.min(this.x, wallX + wallSize));
+                const nearestY = Math.max(wallY, Math.min(this.y, wallY + wallSize));
+                const distX = this.x - nearestX;
+                const distY = this.y - nearestY;
+                const dist = Math.sqrt(distX * distX + distY * distY);
+
+                if (dist < droneRadius) {
+                    if (!this._fading) {
+                        this._fading = true;
+                        this._fadeTimer = 0;
+                    }
+                    if (dist !== 0) {
+                        this.x += (droneRadius - dist + 0.1) * (distX / dist);
+                        this.y += (droneRadius - dist + 0.1) * (distY / dist);
+                    } else {
+                        const angle = Math.random() * 4 * Math.PI;
+                        this.x += (droneRadius + 0.1) * Math.cos(angle);
+                        this.y += (droneRadius + 0.1) * Math.sin(angle);
+                    }
+                }
+            }
+        }
+    }
+
+    draw() {
+        let alpha = 1;
+        let sizer = 1;
+        if (this._fading) {
+            let fade = Math.max(0, this.fadeTime - this._fadeTimer) / this.fadeTime;
+            fade = Math.max(0, Math.min(1, fade));
+            alpha = fade;
+            sizer = 1;
+        }
+        ctx.save();
+        drawEquilateralTriAtCamera(this.x, this.y, this.size * sizer, this.dir+pi/5, "#8ac", "#adf", alpha);
+        ctx.restore();
+    }
+
+    check() {
+        return this._fading && this._fadeTimer >= this.fadeTime;
+    }
+}
+
+class Seer extends Entity {
+    constructor(
+        x, y, size,
+        {
+            droneSize = Math.max(26, size * 0.44),
+            maxDrones = 100,
+            orientAngle = 0,
+            dir = 0,
+            xv = 0,
+            yv = 0,
+            spinning = false,
+            autoFire = false,
+            moveSpeed = 0.4,
+            speedCap = 6,
+            friction = 0.94,
+            recoilXv = 0,
+            recoilYv = 0,
+            recoilFriction = 0.98,
+            barrel = null,
+            droneType = SeerDrone,
+            droneShotSpeedMin = 16,
+            droneShotSpeedMax = 19
+        } = {}
+    ) {
+        super(x, y, size);
+
+        this.droneSize = droneSize;
+        this.orientAngle = orientAngle;
+        this.maxDrones = maxDrones;
+        this.drones = [];
+        this.dir = dir;
+        this.xv = xv;
+        this.yv = yv;
+        this.spinning = spinning;
+        this.autoFire = autoFire;
+        this.moveSpeed = moveSpeed;
+        this.speedCap = speedCap;
+        this.friction = friction;
+        this.recoilXv = recoilXv;
+        this.recoilYv = recoilYv;
+        this.recoilFriction = recoilFriction;
+
+        // Add droneSize to all tanks for consistency, even if unused
+        if (typeof this.droneSize === "undefined") {
+            this.droneSize = Math.max(26, size * 0.44);
+        }
+
+        this.barrel = barrel ? Object.assign({}, barrel) : null;
+
+        this.droneType = droneType; // Class for drone
+        this.droneShotSpeedMin = droneShotSpeedMin;
+        this.droneShotSpeedMax = droneShotSpeedMax;
+
+        this._wasMdLastFrame = false;
+        this._barrelRecoilPush = 0;
+    }
+
+    // Pass drone attributes on spawn, based on the barrel config
+    addDroneShot(dir, offset = 0) {
+        if (this.drones.length >= this.maxDrones) return;
+        const id = this.drones.length;
+        const barrel = this.barrel || {};
+        const rad = typeof this.droneSize !== "undefined" ? this.droneSize : (this.size * 0.44);
+        const baseX = this.x - this.size / 2;
+        const baseY = this.y - this.size / 2;
+        const spawnX = typeof barrel.spawnX === "number" ? barrel.spawnX : 0;
+        const spawnY = typeof barrel.spawnY === "number" ? barrel.spawnY : 0;
+        let angle = (dir + (barrel.dirOffset || 0));
+
+        let temp = angle;
+        angle = -1 * angle + pi / 2;
+        const px = baseX + Math.cos(angle) * spawnX - Math.sin(angle) * spawnY;
+        const py = baseY + Math.sin(angle) * spawnX + Math.cos(angle) * spawnY;
+        angle = temp;
+
+        const DroneClass = this.droneType || SeerDrone;
+
+        // --- drone barrel attributes (accel and maxSpeed REQUIRED on barrel!) ---
+        // If not specified in barrel, drones will be slow/immobile (undefined).
+        const droneAttrs = {
+            accel: barrel.drone_accel,
+            maxSpeed: barrel.drone_maxSpeed,
+            maxTurnSpeed: typeof barrel.drone_maxTurnSpeed === "number" ? barrel.drone_maxTurnSpeed : pi * 2,
+            fadeTime: typeof barrel.drone_fadeTime === "number" ? barrel.drone_fadeTime : 0.5,
+            state: typeof barrel.drone_state === "string" ? barrel.drone_state : "spawning"
+            // Add more if needed in future!
+        };
+
+        const drone = new DroneClass(px, py, rad, this, id, droneAttrs);
+
+        // Shot launch speed min/max is still per-tank, but could be made per-barrel if wanted
+        const shootSpeed = this.droneShotSpeedMin + Math.random() * (this.droneShotSpeedMax - this.droneShotSpeedMin);
+        drone.xv = Math.sin(angle) * shootSpeed;
+        drone.yv = Math.cos(angle) * shootSpeed;
+
+        let currSpd = Math.hypot(drone.xv, drone.yv);
+        if (typeof drone.maxSpeed === "number" && currSpd > drone.maxSpeed) {
+            drone.xv = (drone.xv / currSpd) * drone.maxSpeed;
+            drone.yv = (drone.yv / currSpd) * drone.maxSpeed;
+        }
+        drone.dir = angle;
+        this.drones.push(drone);
+    }
+
+    update() {
+        this.xv *= this.friction;
+        this.yv *= this.friction;
+        this.recoilXv *= this.recoilFriction;
+        this.recoilYv *= this.recoilFriction;
+
+        // Controls (can be overridden by subclasses!)
+        if (typeof keysPressed !== "undefined") {
+            if (keysPressed["w"]) {
+                if (this.yv < this.speedCap) this.yv += this.moveSpeed;
+                else this.yv = this.speedCap;
+            }
+            if (keysPressed["s"]) {
+                if (this.yv > -this.speedCap) this.yv -= this.moveSpeed;
+                else this.yv = -this.speedCap;
+            }
+            if (keysPressed["d"]) {
+                if (this.xv < this.speedCap) this.xv += this.moveSpeed;
+                else this.xv = this.speedCap;
+            }
+            if (keysPressed["a"]) {
+                if (this.xv > -this.speedCap) this.xv -= this.moveSpeed;
+                else this.xv = -this.speedCap;
+            }
+        }
+
+        this.x += this.xv + this.recoilXv;
+        this.y += this.yv + this.recoilYv;
+        this.orientAngle += 0.018;
+
+        // Rotation
+        if (this.spinning === true) {
+            this.dir += 1 / (typeof fps !== "undefined" ? fps : 60);
+        } else if (typeof mx !== "undefined" && typeof my !== "undefined" && typeof camera !== "undefined") {
+            const dxToMouse = mx - ((this.x + camera.x) * camera.z) + (this.size / 2) * camera.z;
+            const dyToMouse = my - ((this.y + camera.y) * camera.z) + (this.size / 2) * camera.z;
+            this.dir = Math.atan2(dxToMouse, -dyToMouse) * -1 + pi;
+        }
+
+        // Barrel logic (used for Overseer and any future drone tank)
+        if (this.barrel) {
+            const barrel = this.barrel;
+            let isFiring = true;
+            let wasFiring = this._wasMdLastFrame;
+
+            barrel.timeSinceShot = (typeof barrel.timeSinceShot === "number") ? barrel.timeSinceShot + 1000/(typeof fps !== "undefined" ? fps : 60) : barrel.reload;
+
+            if (!isFiring) {
+                barrel._hasInitDelayPending = false;
+                barrel._initDelayTimer = 0;
+            }
+            if (typeof barrel.initialDelay !== "number" && typeof barrel.initialDecay === "number") barrel.initialDelay = barrel.initialDecay;
+            if (typeof barrel._hasInitDelayPending === "undefined") barrel._hasInitDelayPending = false;
+            if (typeof barrel._initDelayTimer === "undefined") barrel._initDelayTimer = 0;
+
+            if (
+                isFiring && !wasFiring &&
+                barrel.initialDelay > 0 &&
+                barrel.timeSinceShot >= barrel.reload
+            ) {
+                barrel._hasInitDelayPending = true;
+                barrel._initDelayTimer = 0;
+            }
+            if (barrel._hasInitDelayPending) {
+                barrel._initDelayTimer += 1000 / (typeof fps !== "undefined" ? fps : 60);
+                if (barrel._initDelayTimer < barrel.initialDelay) {
+                    this._wasMdLastFrame = isFiring;
+                    for (let i = 0; i < this.drones.length; i++) {
+                        this.drones[i].id = i;
+                        this.drones[i].update();
+                    }
+                    this._barrelRecoilPush *= 0.9;
+                    if (this._barrelRecoilPush < 0.0001) this._barrelRecoilPush = 0;
+                    return;
+                }
+            }
+
+            if (
+                isFiring &&
+                (
+                    (barrel._hasInitDelayPending && barrel._initDelayTimer >= barrel.initialDelay)
+                    || (!barrel._hasInitDelayPending && barrel.initialDelay === 0 && barrel.timeSinceShot >= barrel.reload)
+                    || (!barrel._hasInitDelayPending && barrel.initialDelay > 0 && barrel.timeSinceShot >= barrel.reload)
+                ) &&
+                this.drones.length < this.maxDrones
+            ) {
+                barrel.timeSinceShot = 0;
+                barrel._hasInitDelayPending = false;
+                barrel._initDelayTimer = 0;
+                this._barrelRecoilPush = 1;
+
+                const recoilValue = (typeof barrel.recoil !== "undefined") ? barrel.recoil : 0;
+                this.recoilXv -= Math.sin(this.dir + (barrel.dirOffset || 0)) * recoilValue;
+                this.recoilYv -= Math.cos(this.dir + (barrel.dirOffset || 0)) * recoilValue;
+
+                // Now addDroneShot will pass drone parameters from barrel, not from SeerDrone class defaults
+                this.addDroneShot(this.dir, 0);
+            }
+            this._wasMdLastFrame = isFiring;
+
+            // Drones update (destroy faded)
+            for (let i = this.drones.length - 1; i >= 0; i--) {
+                this.drones[i].id = i;
+                this.drones[i].update();
+                if (typeof this.drones[i].check === "function" && this.drones[i].check()) {
+                    this.drones.splice(i, 1);
+                }
+            }
+
+            this._barrelRecoilPush *= 0.9;
+            if (this._barrelRecoilPush < 0.0001) this._barrelRecoilPush = 0;
+        } else {
+            // If no barrel: fallback - just update drones and remove faded
+            for (let i = this.drones.length - 1; i >= 0; i--) {
+                let d = this.drones[i];
+                d.update();
+                if (typeof d.check === "function" && d.check()) {
+                    this.drones.splice(i, 1);
+                }
+            }
+            this.orientAngle += 0.015;
+        }
+    }
+
+    draw() {
+        // Draw all drones
+        for (let d of this.drones) d.draw();
+
+        // Draw barrel (if present)
+        if (this.barrel) {
+            let pushback = this._barrelRecoilPush * 24;
+            let barrelSpec = this.barrel;
+            let visualOffset = barrelSpec.offset - pushback;
+            drawTriBarrel({
+                x: this.x,
+                y: this.y,
+                size: this.size * 0.95,
+                dir: this.dir,
+                dirOffset: barrelSpec.dirOffset,
+                barrelLength: barrelSpec.barrelLength,
+                barrelWidth: barrelSpec.barrelWidth,
+                outlineBarrelLength: barrelSpec.outlineBarrelLength,
+                outlineBarrelWidth: barrelSpec.outlineBarrelWidth,
+                offset: visualOffset,
+                color: barrelSpec.color,
+                outlineColor: barrelSpec.outlineColor,
+                reload: barrelSpec.reload,
+                spawnX: barrelSpec.spawnX,
+                spawnY: barrelSpec.spawnY
+            });
+            drawBody(this.x, this.y, this.size);
+        } else {
+            drawBody(this.x, this.y, this.size * 0.92);
+        }
+    }
+}
+
+class Overseer extends Seer {
+    constructor(
+        x, y, size,
+        dir, spinning, autoFire, moveSpeed, speedCap, friction
+    ) {
+        super(
+            x, y, size,
+            {
+                droneSize: size,
+                maxDrones: 10,
+                orientAngle: 0,
+                dir: dir !== undefined ? dir : 0,
+                xv: 0,
+                yv: 0,
+                spinning: spinning !== undefined ? spinning : false,
+                autoFire: autoFire !== undefined ? autoFire : false,
+                moveSpeed: moveSpeed !== undefined ? moveSpeed : 0.4,
+                speedCap: speedCap !== undefined ? speedCap : 6,
+                friction: friction !== undefined ? friction : 0.94,
+                recoilXv: 0,
+                recoilYv: 0,
+                recoilFriction: 0.98,
+                barrel: {
+                    dirOffset: 0,
+                    barrelLength: size * 2,
+                    barrelWidth: size * 1.2,
+                    outlineBarrelLength: size * 2 * 1.05,
+                    outlineBarrelWidth: size * 1.2 * 1.2,
+                    offset: size * -0.8,
+                    color: "#888",
+                    outlineColor: "#aaa",
+                    reload: 600,
+                    timeSinceShot: 0,
+                    spawnX: 10,
+                    spawnY: 0,
+                    initialDelay: 0,
+                    initialDecay: 0,
+                    bulletRadius: undefined,
+                    bulletDmg: undefined,
+                    bulletSpeed: undefined,
+                    bulletSpeedDecay: undefined,
+                    bulletDuration: undefined,
+                    randStrength: undefined,
+                    reloaddIntensity: undefined,
+                    recoil: 0.4,
+                    drone_accel: 25,      // <--- MOVE DRONE ACCEL AND MAXSPEED TO BARREL
+                    drone_maxSpeed: 100.6,
+                    _disableAutoInitDrones: true // So Overseer doesn't spawn all drones at start
+                },
+                droneType: SeerDrone,
+                droneShotSpeedMin: 16,
+                droneShotSpeedMax: 19
+            }
+        );
+        // Other Overseer-specific settings can be added here if needed
+    }
+}
+
+class Bigcheese extends Seer {
+    constructor(
+        x, y, size,
+        dir, spinning, autoFire, moveSpeed, speedCap, friction
+    ) {
+        super(
+            x, y, size,
+            {
+                droneSize: size*2,
+                maxDrones: 1,
+                orientAngle: 0,
+                dir: dir !== undefined ? dir : 0,
+                xv: 0,
+                yv: 0,
+                spinning: spinning !== undefined ? spinning : false,
+                autoFire: autoFire !== undefined ? autoFire : false,
+                moveSpeed: moveSpeed !== undefined ? moveSpeed : 0.4,
+                speedCap: speedCap !== undefined ? speedCap : 6,
+                friction: friction !== undefined ? friction : 0.94,
+                recoilXv: 0,
+                recoilYv: 0,
+                recoilFriction: 0.98,
+                barrel: {
+                    dirOffset: 0,
+                    barrelLength: size * 2.7,
+                    barrelWidth: size * 2.1,
+                    outlineBarrelLength: size * 2.7 * 1.05,
+                    outlineBarrelWidth: size * 2.1 * 1.2,
+                    offset: size * -1.2,
+                    color: "#888",
+                    outlineColor: "#aaa",
+                    reload: 600,
+                    timeSinceShot: 0,
+                    spawnX: size*2,
+                    spawnY: 0,
+                    initialDelay: 0,
+                    initialDecay: 0,
+                    bulletRadius: undefined,
+                    bulletDmg: undefined,
+                    bulletSpeed: 10,
+                    bulletSpeedDecay: undefined,
+                    bulletDuration: undefined,
+                    randStrength: undefined,
+                    reloaddIntensity: undefined,
+                    recoil: 0.4,
+                    drone_accel: 10,      // <--- MOVE DRONE ACCEL AND MAXSPEED TO BARREL
+                    drone_maxSpeed: 50.6
+                },
+                droneType: SeerDrone,
+                droneShotSpeedMin: 16,
+                droneShotSpeedMax: 19
+            }
+        );
     }
 }
 
@@ -280,7 +907,6 @@ class Wall extends Entity {
     constructor(x,y,size) {
         super(x,y,size)
     }
-
     update() {
         for (let tank of (typeof tanks !== "undefined" ? tanks : [])) {
             const nearestX = Math.max(this.x, Math.min(tank.x, this.x + this.size));
@@ -303,18 +929,13 @@ class Wall extends Entity {
                 tank.y += (tank.size - dist + 0) * pushY;
             }
         }
-        // Proper bullet-wall collision: use .rad (not .radius), fix logic
         for (let bullet of (typeof bullets !== "undefined" ? bullets : [])) {
-            // Some bullet objects might use 'rad', not 'radius'
             let bulletRadius = (typeof bullet.rad === "number") ? bullet.rad : bullet.radius;
-            // If both undefined, skip this collision test
             if (typeof bulletRadius !== "number") continue;
-            // Adjust wall position by - bulletRadius/2 for correct collision
             const wallX = this.x - bulletRadius / 1;
             const wallY = this.y - bulletRadius / 1;
             const wallSize = this.size;
 
-            // Calculate closest point on the wall to the bullet's center
             const nearestX = Math.max(wallX, Math.min(bullet.x, wallX + wallSize));
             const nearestY = Math.max(wallY, Math.min(bullet.y, wallY + wallSize));
             const distX = bullet.x - nearestX;
@@ -322,29 +943,24 @@ class Wall extends Entity {
             const dist = Math.sqrt(distX * distX + distY * distY);
 
             if (dist < bulletRadius) {
-                // Mark bullet as "done" (assuming time = 0.5 means soon to despawn)
                 if (bullet.time > 0.5) bullet.time = 0.2;
                 bullet.canDamage = false;
-                // Nudge bullet out of wall for clarity
                 if (dist !== 0) {
                     bullet.x += (bulletRadius - dist + 0.1) * (distX / dist);
                     bullet.y += (bulletRadius - dist + 0.1) * (distY / dist);
                 } else {
-                    // If directly inside wall center, pick a random direction
                     const angle = Math.random() * 2 * Math.PI;
                     bullet.x += (bulletRadius + 0.1) * Math.cos(angle);
                     bullet.y += (bulletRadius + 0.1) * Math.sin(angle);
                 }
             }
-       
-        }}
+        }
+    }
 
     draw() {
         const offset = tanks[0]?.size ? tanks[0].size / 2 : 15;
         const drawX = this.x - offset;
         const drawY = this.y - offset;
-
-        // Draw outline first (outer quad)
         ctx.save();
         ctx.fillStyle = "#2a2a2a";
         fillQuadAtCamera(
@@ -354,8 +970,6 @@ class Wall extends Entity {
             drawX, drawY + this.size
         );
         ctx.restore();
-
-        // Draw inner wall (smaller quad)
         ctx.save();
         ctx.fillStyle = "#3a3a3a";
         const scale = 1 / 1.1;
@@ -381,17 +995,12 @@ class Tank extends Entity {
         this.yv = 0;
         this.spinning = spinning;
         this.autoFire = autoFire;
-
         this.moveSpeed = moveSpeed;
         this.speedCap = speedCap;
         this.friction = friction;
-
-        // Recoil-related velocity and friction
         this.recoilXv = 0;
         this.recoilYv = 0;
-        this.recoilFriction = 0.98; // Lower friction for recoil, adjust as desired
-
-        // Default to empty array for barrels; subclasses add their barrels
+        this.recoilFriction = 0.98;
         this.barrels = [];
     }
 
@@ -400,19 +1009,11 @@ class Tank extends Entity {
         this.yv *= this.friction;
         this.recoilXv *= this.recoilFriction;
         this.recoilYv *= this.recoilFriction;
-
         const recoilDecay = 0;  
-        if (this.recoilXv > 0) {
-            this.recoilXv = Math.max(0, this.recoilXv - recoilDecay);
-        } else if (this.recoilXv < 0) {
-            this.recoilXv = Math.min(0, this.recoilXv + recoilDecay);
-        }
-        if (this.recoilYv > 0) {
-            this.recoilYv = Math.max(0, this.recoilYv - recoilDecay);
-        } else if (this.recoilYv < 0) {
-            this.recoilYv = Math.min(0, this.recoilYv + recoilDecay);
-        }
-
+        if (this.recoilXv > 0) this.recoilXv = Math.max(0, this.recoilXv - recoilDecay);
+        else if (this.recoilXv < 0) this.recoilXv = Math.min(0, this.recoilXv + recoilDecay);
+        if (this.recoilYv > 0) this.recoilYv = Math.max(0, this.recoilYv - recoilDecay);
+        else if (this.recoilYv < 0) this.recoilYv = Math.min(0, this.recoilYv + recoilDecay);
         const recoilCounteractFactor = 0.28;
         if (keysPressed["w"]) {
             if (this.yv < this.speedCap) this.yv += this.moveSpeed;
@@ -446,7 +1047,6 @@ class Tank extends Entity {
             this.recoilXv -= recoilCounteractFactor;
             if (this.recoilXv < 0) this.recoilXv = 0;
         }
-
         const dxToMouse = mx - ((this.x+camera.x)*camera.z)+(this.size/2)*camera.z
         const dyToMouse = my - ((this.y+camera.y)*camera.z)+(this.size/2)*camera.z
 
@@ -585,8 +1185,6 @@ class Bullet extends Entity {
 
     draw() {
         ctx.save();
-
-        // Handle alpha if this.time < 0.5
         let alpha = 1;
         let sizer = 1;
         if (this.time < 0.5) {
@@ -594,7 +1192,6 @@ class Bullet extends Entity {
             sizer = Math.max(0, Math.min(1, this.time * 5));
         }
         ctx.globalAlpha = alpha;
-
         ctx.fillStyle = "#8ac";
         ctx.beginPath();
         arcAtCamera(this.x, this.y, this.rad*sizer, 0, tau);
@@ -619,8 +1216,6 @@ class Bullet extends Entity {
     }
 }
 
-    // import tanks list and data
-
 </script>
 <script src="tanks.js"></script>
 <script>
@@ -629,40 +1224,7 @@ let bullets = []
 
 let tempx = 0;
 let tempy = 0;
-
-let walls = [];
-
-// tempx = -333;
-// for(let i = 0; i<2; i++) {
-//     for (let i = 0; i<2; i++) {
-        
-//         walls.push(new Wall(tempx,200,400)),
-//         walls.push(new Wall(tempx,-600,400)),
-//         tempx+=400
-//     }
-//     tempx+=400
-// }
-
-// tempx=-200
-
-// for (let i = 0; i<2; i++) {
-//     for (let i = 0; i<6; i++) {
-//         walls.push(new Wall(tempx,-200,400/3))
-//         walls.push(new Wall(tempx,75,400/3))
-//         tempx+=400/3
-//     }
-//     tempx+=400/3
-// }
-// tempy = -595;
-// for (let i = 0; i<2; i++) {
-//     for (let i = 0; i<3; i++) {
-//         walls.push(new Wall(466.6,tempy,400/3))
-//         walls.push(new Wall(733,tempy,400/3))
-//         tempy+=400/3
-//     }
-//     tempy+=1200/3
-// }
-
+let walls = []
 
 function logWallsForPaste() {
     let arr = walls.map(w => `new Wall(${w.x}, ${w.y}, ${w.size})`);
@@ -670,58 +1232,19 @@ function logWallsForPaste() {
     console.log(code);
 }
 
-walls = [
-    new Wall(-333, 200, 400),
-    new Wall(-333, -600, 400),
-    new Wall(67, 200, 400),
-    new Wall(67, -600, 400),
-    new Wall(867, 200, 400),
-    new Wall(867, -600, 400),
-    new Wall(1267, 200, 400),
-    new Wall(1267, -600, 400),
-    new Wall(-200, -200, 133.33333333333334),
-    new Wall(-200, 75, 133.33333333333334),
-    new Wall(-66.66666666666666, -200, 133.33333333333334),
-    new Wall(-66.66666666666666, 75, 133.33333333333334),
-    new Wall(66.66666666666669, -200, 133.33333333333334),
-    new Wall(66.66666666666669, 75, 133.33333333333334),
-    new Wall(200.00000000000003, -200, 133.33333333333334),
-    new Wall(200.00000000000003, 75, 133.33333333333334),
-    new Wall(333.33333333333337, -200, 133.33333333333334),
-    new Wall(333.33333333333337, 75, 133.33333333333334),
-    new Wall(466.66666666666674, -200, 133.33333333333334),
-    new Wall(466.66666666666674, 75, 133.33333333333334),
-    new Wall(733.3333333333335, -200, 133.33333333333334),
-    new Wall(733.3333333333335, 75, 133.33333333333334),
-    new Wall(866.6666666666669, -200, 133.33333333333334),
-    new Wall(866.6666666666669, 75, 133.33333333333334),
-    new Wall(1000.0000000000002, -200, 133.33333333333334),
-    new Wall(1000.0000000000002, 75, 133.33333333333334),
-    new Wall(1133.3333333333335, -200, 133.33333333333334),
-    new Wall(1133.3333333333335, 75, 133.33333333333334),
-    new Wall(1266.6666666666667, -200, 133.33333333333334),
-    new Wall(1266.6666666666667, 75, 133.33333333333334),
-    new Wall(1400, -200, 133.33333333333334),
-    new Wall(1400, 75, 133.33333333333334),
-    new Wall(466.6, -595, 133.33333333333334),
-    new Wall(733, -595, 133.33333333333334),
-    new Wall(466.6, -461.66666666666663, 133.33333333333334),
-    new Wall(733, -461.66666666666663, 133.33333333333334),
-    new Wall(466.6, -328.33333333333326, 133.33333333333334),
-    new Wall(733, -328.33333333333326, 133.33333333333334),
-    new Wall(466.6, 205.00000000000009, 133.33333333333334),
-    new Wall(733, 205.00000000000009, 133.33333333333334),
-    new Wall(466.6, 338.3333333333334, 133.33333333333334),
-    new Wall(733, 338.3333333333334, 133.33333333333334),
-    new Wall(466.6, 471.66666666666674, 133.33333333333334),
-    new Wall(733, 471.66666666666674, 133.33333333333334)
-];
+walls = [];
 
-// Patch: initialize barrel timeSinceShot for any tanks already present
-for (let t of tanks) {
+for (let y = -25; y<25; y++) {
+
+    for (let x = -25; x<25; x++) {
+        if (Math.random()<0.5)
+        walls.push(new Wall(x*400,y*400,400))
+    }
+}
+
+for (let t of (typeof tanks !== "undefined" ? tanks : [])) {
     for (let b of t.barrels) {
         if (typeof b.timeSinceShot === "undefined") b.timeSinceShot = b.reload;
-        // Also initialize delayed firing for initalDelay feature
         if (typeof b._hasInitDelayPending === "undefined") b._hasInitDelayPending = false;
         if (typeof b._initDelayTimer === "undefined") b._initDelayTimer = 0;
         if (typeof b.initialDelay !== "number" && typeof b.initialDecay === "number") {
@@ -736,25 +1259,17 @@ function drawGame() {
     camera.x = 0-tanks[0].x;
     camera.y = 0-tanks[0].y;
 
-    // Draw ground checkerboard
-    // Determine how many tiles fit and base tile size
-    const tileSize = 66; // world units
-    const tilesRange = 25; // number of tiles out from tank to draw
-    const camWorldX = -camera.x;
-    const camWorldY = -camera.y;
-
-    // Find upper-left of visible world (extend several tiles for overscan)
+    const tileSize = 66, tilesRange = 25;
+    const camWorldX = -camera.x, camWorldY = -camera.y;
     const px0 = camWorldX - (canvas.width / 2) / camera.z - tileSize * tilesRange;
     const py0 = camWorldY - (canvas.height / 2) / camera.z - tileSize * tilesRange;
     const px1 = camWorldX + (canvas.width / 2) / camera.z + tileSize * tilesRange;
     const py1 = camWorldY + (canvas.height / 2) / camera.z + tileSize * tilesRange;
-
     const tileStartX = Math.floor(px0 / tileSize);
     const tileStartY = Math.floor(py0 / tileSize);
     const tileEndX = Math.ceil(px1 / tileSize);
     const tileEndY = Math.ceil(py1 / tileSize);
 
-    // Make the tiles a bit bigger (extra 2px in world space for floating point imprecision)
     const fudge = 2;
     for (let gx = tileStartX; gx < tileEndX; gx++) {
         for (let gy = tileStartY; gy < tileEndY; gy++) {
@@ -762,7 +1277,6 @@ function drawGame() {
             ctx.fillStyle = even ? "#111214" : "#151618";
             let wx = gx * tileSize;
             let wy = gy * tileSize;
-            // Draw at camera, slightly bigger than nominal tileSize to cover seam artifacts
             ctx.fillRect(
                 canvas.width/2 + (wx + camera.x) * camera.z - (fudge/2) * camera.z,
                 canvas.height/2 - (wy + camera.y + tileSize) * camera.z - (fudge/2) * camera.z,
@@ -772,17 +1286,9 @@ function drawGame() {
         }
     }
 
-    for (let t of tanks) {
-        t.update();
-    }
-
-    for (let b of bullets) {
-        b.update();
-    }
-
-    for (let w of walls) {
-        w.update();
-    }
+    for (let t of tanks) { t.update(); }
+    for (let b of bullets) { b.update(); }
+    for (let w of walls) { w.update(); }
 
     for (let i = bullets.length - 1; i >= 0; i--) {
         if (bullets[i].check()) {
@@ -790,17 +1296,9 @@ function drawGame() {
         }
     }
 
-    for (let b of bullets) {
-        b.draw();
-    }
-
-    for (let t of tanks) {
-        t.draw();
-    }
-
-    for (let w of walls)  {
-        w.draw();
-    }
+    for (let b of bullets) { b.draw(); }
+    for (let t of tanks) { t.draw(); }
+    for (let w of walls) { w.draw(); }
 
     requestAnimationFrame(drawGame);
 }
@@ -822,7 +1320,6 @@ window.addEventListener("keydown", (e) => {
         let tankTypeNames = Object.keys(tankTypes);
         let currentTank = tanks[0];
         let currentTankTypeName = null;
-
         for (let name of tankTypeNames) {
             if (currentTank instanceof tankTypes[name]) {
                 currentTankTypeName = name;
@@ -837,14 +1334,11 @@ window.addEventListener("keydown", (e) => {
         let y = currentTank?.y;
         let size = currentTank?.size;
         let dir = currentTank?.dir;
-        // Preserve spinning and autofire status
         let spinning = currentTank?.spinning === true;
         let autoFire = currentTank?.autoFire === true;
         let moveSpeed = currentTank?.moveSpeed;
         let speedCap = currentTank?.speedCap;
         let friction = currentTank?.friction;
-        // Try to instantiate the next tank with same advanced arguments if possible
-        // These will be ignored if the constructor signature doesn't use them
         tanks[0] = new NextTankType(
             x, y, size, dir, 
             spinning, autoFire, 
@@ -853,20 +1347,22 @@ window.addEventListener("keydown", (e) => {
     }
 
     if (e.key == "c") {
-        const thisTank = tanks[0]
-        if (thisTank.spinning === true) {
-            thisTank.spinning = false;
-        } else {
-            thisTank.spinning = true;
-        }
+        const thisTank = tanks[0];
+        thisTank.spinning = !thisTank.spinning;
     }
 
     if (e.key == "e") {
-        const thisTank = tanks[0]
-        if (thisTank.autoFire === true) {
-            thisTank.autoFire = false;
-        } else {
-            thisTank.autoFire = true;
+        const thisTank = tanks[0];
+        thisTank.autoFire = !thisTank.autoFire;
+    }
+
+    if (e.key == "q") {
+        if (typeof mx !== "undefined" && typeof my !== "undefined" && typeof camera !== "undefined") {
+            const thisTank = tanks[0];
+            let newX = (mx / camera.z) - camera.x - (thisTank.size / 2);
+            let newY = (my / camera.z) - camera.y - (thisTank.size / 2);
+            thisTank.x = newX;
+            thisTank.y = newY;
         }
     }
 
@@ -876,12 +1372,37 @@ window.addEventListener("keyup", (e) => {
     keysPressed[e.key.toLowerCase()] = false;
 });
 
-window.addEventListener("pointerdown", () => {
-    md = true;
+// Mouse pointer events: left and right click tracking
+window.addEventListener("pointerdown", (e) => {
+    if (e.button === 2) { // right mouse button
+        rmd = true;
+        // Prevent context menu just in case
+        e.preventDefault();
+    }
+    if (e.button === 0) { // left mouse button
+        md = true;
+    }
 })
 
-window.addEventListener("pointerup", () => {
+window.addEventListener("pointerup", (e) => {
+    if (e.button === 2) {
+        rmd = false;
+        e.preventDefault();
+    }
+    if (e.button === 0) {
+        md = false;
+    }
+})
+
+// Also if pointer leaves canvas/window, reset flags
+window.addEventListener("pointerleave", (e) => {
+    rmd = false;
     md = false;
+})
+
+// Also update mouse position if pointer enters, for instant update after alt-tab etc.
+window.addEventListener("pointerenter", (e) => {
+    updateMousePosition(e);
 })
 
 let lastTimestamp;
